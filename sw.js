@@ -4,7 +4,7 @@
      navigator.serviceWorker.register('sw.js');
    注意：file:// 协议与微信 webview 内不生效（自动跳过，不影响游戏）。
 */
-const CACHE = 'drg-rig-v2';           // 每次发新版把 v1 改成 v2，旧缓存自动清理
+const CACHE = 'drg-rig-v3';           // F3 修复（09-16）：v2 曾横跨 v1.4~v1.9.1 六版未变，回头玩家被钉死旧版。发版规则：每次打包必 +1
 const ASSETS = [
   './',
   './游戏.html',
@@ -24,11 +24,28 @@ self.addEventListener('activate', e => {
 });
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
+  const url = e.request.url;
+  const isHTML = url.endsWith('/游戏.html') || url.endsWith('/index.html') || url.endsWith('/');
+  if (isHTML) {
+    /* F3 根治：HTML 网络优先——新版先到，断网才回落缓存，免疫忘改版本号 */
+    e.respondWith(
+      fetch(e.request).then(res => {
+        const copy = res.clone();
+        caches.open(CACHE).then(c => c.put(e.request, copy));
+        return res;
+      }).catch(() => caches.match(e.request).then(h => h || caches.match('./游戏.html')))
+    );
+    return;
+  }
+  /* 其余资源：缓存优先 + 后台静默更新 */
   e.respondWith(
-    caches.match(e.request).then(hit => hit || fetch(e.request).then(res => {
-      const copy = res.clone();
-      caches.open(CACHE).then(c => c.put(e.request, copy));
-      return res;
-    }).catch(() => caches.match('./游戏.html')))
+    caches.match(e.request).then(hit => {
+      const net = fetch(e.request).then(res => {
+        const copy = res.clone();
+        caches.open(CACHE).then(c => c.put(e.request, copy));
+        return res;
+      }).catch(() => hit);
+      return hit || net;
+    })
   );
 });

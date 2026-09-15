@@ -6,6 +6,6 @@ const run = (args) => {
   return r;
 };
 run(['add', '-A']);
-run(['commit', '-m', '夜间试玩bug单 F1/F2 修复：挂机券单人开局自动接单（门槛≥2→≥1）+ 托管事件决策改 autoResolveEvent 内部调用（去 DOM 依赖）']);
+run(['commit', '-m', 'F3(P1) 修复：SW 缓存版本 v2→v3 + HTML 网络优先策略（根治回头玩家被钉死旧版）+ v1.9 包重建']);
 const p = run(['push']);
 process.exit(p.status);
