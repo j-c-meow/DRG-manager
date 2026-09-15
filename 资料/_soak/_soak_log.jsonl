@@ -1,0 +1,16 @@
+{"kind":"info","msg":"game booted","day":1,"gm":480,"mode":"idle"}
+{"kind":"err","errorKind":"invariant","key":"dep-squad","detail":"[] | day=2"}
+{"kind":"err","errorKind":"invariant","key":"dep-squad","detail":"[] | day=2"}
+{"kind":"info","msg":"doCheat applied → full phase","day":367,"missions":6}
+{"kind":"err","errorKind":"invariant","key":"dep-squad","detail":"[] | day=544"}
+{"kind":"err","errorKind":"invariant","key":"dep-squad","detail":"[] | day=544"}
+{"kind":"err","errorKind":"invariant","key":"dep-squad","detail":"[] | day=544"}
+{"kind":"err","errorKind":"invariant","key":"dep-squad","detail":"[] | day=545"}
+{"kind":"snapshot","step":500,"day":1288,"gm":1852895,"mode":"rush","credits":345511,"nitra":82017,"missions":106,"miners":"s:i17,e:i16,g:i14,d:i14","deps":0,"errs":8}
+{"kind":"info","msg":"mode→rush","day":1315,"nitra":88384}
+{"kind":"snapshot","step":1000,"day":1316,"gm":1894423,"mode":"rush","credits":384383,"nitra":89579,"missions":190,"miners":"s:i22,e:i20,g:i20,d:i19","deps":0,"errs":19}
+{"kind":"info","msg":"mode→rush","day":1321,"nitra":90558}
+{"kind":"info","msg":"mode→rush","day":1337,"nitra":94691}
+{"kind":"info","msg":"mode→rush","day":1350,"nitra":97967}
+{"kind":"snapshot","step":1500,"day":1352,"gm":1945851,"mode":"rush","credits":466270,"nitra":98561,"missions":298,"miners":"s:i25,e:i25,g:i25,d:i24","deps":0,"errs":23}
+{"kind":"fatal","where":"finish","detail":"{\"ended\":\"2026-09-15T19:08:44.791Z\",\"reason\":\"deadline\",\"totalErrs\":23,\"errKeys\":{\"dep-squad\":23},\"saveBytes\":14268,\"final\":{\"steps\":1553,\"day\":1354,\"gm\":1949032,\"mode\":\"rush\",\"credits\":468911,\"nitra\":98996,\"missions\":304,\"miners\":4,\"deps\":0,\"rigLv\":10,\"blanks\":118,\"kpiTerm\":11,\"kpiDone\":4413,\"loop\":0}}"}

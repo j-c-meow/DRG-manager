@@ -1,0 +1,25 @@
+{
+  "ended": "2026-09-15T19:08:44.791Z",
+  "reason": "deadline",
+  "totalErrs": 23,
+  "errKeys": {
+    "dep-squad": 23
+  },
+  "saveBytes": 14268,
+  "final": {
+    "steps": 1553,
+    "day": 1354,
+    "gm": 1949032,
+    "mode": "rush",
+    "credits": 468911,
+    "nitra": 98996,
+    "missions": 304,
+    "miners": 4,
+    "deps": 0,
+    "rigLv": 10,
+    "blanks": 118,
+    "kpiTerm": 11,
+    "kpiDone": 4413,
+    "loop": 0
+  }
+}
