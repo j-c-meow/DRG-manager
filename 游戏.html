@@ -3172,7 +3172,7 @@ const ACHIEVEMENTS = [
   {id:'ach_idle24',     name:'挂机大师',   grp:'大师', rw:{credits:500}, ck:()=>(S.stats.idleSecs||0)>=86400},
   /* 隐藏 4 */
   {id:'ach_karl3',      name:'卡尔的遗产', grp:'隐藏', rw:{credits:500, merit:10}, ck:()=>(S.flags.karlCount||0)>=3},
-  {id:'ach_v50',        name:'五十deserve',grp:'隐藏', rw:{credits:50},  ck:()=>!!S.flags.lcyf166_bless},
+  {id:'ach_v50',        name:'v他50',grp:'隐藏', rw:{credits:50},  ck:()=>!!S.flags.lcyf166_bless},
   {id:'ach_blackout',   name:'断片初体验', grp:'隐藏', rw:{credits:100}, ck:()=>!!S.flags.blackoutDrunk},
   {id:'ach_mystery',    name:'神秘莫测',   grp:'隐藏', rw:{credits:150}, ck:()=>!!S.flags.mysteryDrunk},
 ];
@@ -3818,13 +3818,15 @@ function marketBuy(k, qty){
 }
 /* ---------------- 深潜系统（B-4 双轨 WEEKLY_DIVE 版） ---------------- */
 function isoWeek(){
-  const d = new Date();
-  const t = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-  const dayNum = t.getDay() || 7;
-  t.setDate(t.getDate() + 4 - dayNum);
-  const yearStart = new Date(t.getFullYear(), 0, 1);
+  /* F4 修复：周号从编年史游戏日历日期算（同 holidayForNow 口径），不再用现实时钟——
+     否则游戏内日期与现实漂移后深潜周永不翻页。统一用 UTC 取值防时区偏移。 */
+  const d = dayToDate(gameDay());
+  const t = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+  const dayNum = t.getUTCDay() || 7;
+  t.setUTCDate(t.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(t.getUTCFullYear(), 0, 1));
   const wk = Math.ceil((((t - yearStart) / 86400000) + 1) / 7);
-  return t.getFullYear() + '-W' + String(wk).padStart(2,'0');
+  return t.getUTCFullYear() + '-W' + String(wk).padStart(2,'0');
 }
 function bestStars(){ let m = 0; S.miners.forEach(x=>{ if((x.stars||0) > m) m = x.stars; }); return m; }
 function allRecruited(){ return Object.keys(CLASSES).every(c => S.recruited[c]); }
