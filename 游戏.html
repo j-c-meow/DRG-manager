@@ -586,6 +586,12 @@ function campProgress(kind, match, amount){
 }
 
 /* 酒吧 v1.6 改版（B 退回项④，数值表 §3.5）：士气制 → 原作功能性 buff 制；一次派遣带 1 款，后饮覆盖 */
+/* ---------------- 矿骡升级线（四系统补充设计 §四） ---------------- */
+const MULE_UPGRADES = [
+  {lv:2, cost:{'玉石':30, '乌玛石':30}, name:'自动收集', txt:'任务结算时矿骡自动拾取遗漏——墨菱石产出 +20%'},
+  {lv:3, cost:{'玉石':60, '乌玛石':60, '蜂母石':30}, name:'超载运输', txt:'矿骡多背了一倍——硝石返还 +50%'},
+];
+
 /* ---------------- 酒吧 v2：抽酒制（执行单 §一，用户拍板） ---------------- */
 const DRINK_POOL = [
   {name:'油头精酿',        en:'Oily Oaf Brew',        rarity:'常见', w:50, icon:'assets/anim/drinks/drink_01.png',     buff:{yield:10},                txt:'全队产出 +10%'},
@@ -620,6 +626,9 @@ function rollDrink(){
   return Object.assign({ dname: pickD.name, rarity: pickD.rarity, icon: pickD.icon, bad: pickD.bad || 0, txt: pickD.txt }, eff);
 }
 function applyDrinkImmediate(db){
+  S.stats.barDrinks = (S.stats.barDrinks||0) + 1;
+  if(db.autoEvents) S.flags.blackoutDrunk = true;
+  if(db.mystery) S.flags.mysteryDrunk = true;
   if(db.healNow){
     let healed = 0;
     S.miners.forEach(m => { if(m.state === 'med'){ m.state = 'idle'; m.medUntil = 0; healed++; } });
@@ -1898,7 +1907,7 @@ function newGame(){
     trinkets:{}, trinketEq:null,
     blanks:0, modsOwned:{}, equipped:{}, drawSinceT1:0, rerolled:false,
     dive:{week:'', normal:{stage:0, done:false}, elite:{locked:true, stage:0, done:false}, modifiers:[]},
-    log:[], flags:{}, speed:1, stats:{missions:0, inj:0}, mode:'idle', idleReport:null,
+    log:[], flags:{}, speed:1, stats:{missions:0, inj:0}, mode:'idle', idleReport:null, muleLv:1,
     recruited:{scout:true, engineer:false, gunner:false, driller:false},
   };
   S.miners.push(newMiner('scout'));
@@ -1932,6 +1941,7 @@ function load(){
     if(typeof S.gm !== 'number') S.gm = 480;
     if(typeof S.lastReal !== 'number') S.lastReal = Date.now();
     if(!S.mode) S.mode = 'idle';
+    if(!S.muleLv) S.muleLv = 1;
     if(S.idleReport === undefined) S.idleReport = null;
     if(!S.flags) S.flags = {};
     if(!S.rare) S.rare = {};
@@ -2512,6 +2522,7 @@ function resolveEvent(d, c){
       team.forEach(m => m.morale = clamp(m.morale+15, 0, 100));
       S.nextDurMul = 0.9;   /* 下次派遣时长 -10%（doDispatch 消费） */
       S.catGrudge = Math.max(0, (S.catGrudge||0) - 1);
+      S.flags.catPet = (S.flags.catPet||0) + 1;
       log(TEXT.ev_cat_a_result, 'good');
     } else {
       S.catGrudge = (S.catGrudge||0) + 1;
@@ -2595,6 +2606,7 @@ function settle(d, offline, forceMul){
       /* 精英救援：产出保 50%，账单退一半，治疗时长 -25% */
       const refund = Math.round((d.medBillsPaid||0) * 0.5);
       S.credits += refund;
+      S.flags.wipeRescued = true;
       d.hurtIds.forEach(id => {
         const m2 = S.miners.find(x=>x.id===id);
         if(m2 && m2.state==='med') m2.medUntil = Math.max(S.gm, m2.medUntil - Math.round((m2.medUntil - S.gm) * 0.25));
@@ -2637,11 +2649,12 @@ function settle(d, offline, forceMul){
     gain[k] = Math.round(x);
   });
   /* 公共副产物硝石：净收入保证为正，防止硝石死锁 */
-  gain.nitra += Math.round((50 + 40*d.hc) * (0.8 + 0.2*m.hazard));
+  gain.nitra += Math.round((50 + 40*d.hc) * (0.8 + 0.2*m.hazard) * ((S.muleLv||1) >= 3 ? 1.5 : 1));   /* 矿骡 Lv3 超载运输：返还 +50% */
   /* 武器模组：产出加成 */
   const me = d.modEff || {};
   const yMul = 1 + (me.yield||0)/100;
   ['morkite','moil','gold'].forEach(k => { if(gain[k]) gain[k] = Math.round(gain[k]*yMul); });
+  if((S.muleLv||1) >= 2 && gain.morkite){ gain.morkite = Math.round(gain.morkite * 1.2); }   /* 矿骡 Lv2 自动收集 */
   if(d.mode === 'rush'){
     gain.credits = Math.round(gain.credits * 0.35);
     gain.morkite = Math.round(gain.morkite * 0.35);
@@ -2683,7 +2696,7 @@ function settle(d, offline, forceMul){
   S.dayStats.missions++;
   S.dayStats.credits += gain.credits;
   S.dayStats.morkite += gain.morkite;
-  if(m.hazard >= 5 && !d.isDive) gainMerit(1, '危险 5 任务');
+  if(m.hazard >= 5 && !d.isDive){ gainMerit(1, '危险 5 任务'); S.flags.hz5Done = true; }
   holidayProgress('missions', 1);
   if(d.m && d.m.trit){
     const n = 1 + (m.hazard >= 3 ? 1 : 0);
@@ -2701,6 +2714,8 @@ function settle(d, offline, forceMul){
   });
   if(me.morale) team.forEach(m => m.morale = clamp(m.morale + me.morale, 10, 100));
   S.stats.missions = (S.stats.missions||0) + 1;
+  if(!d.hurtIds || d.hurtIds.length === 0){ S.flags.streak = (S.flags.streak||0) + 1; }
+  else { S.flags.streak = 0; }
   /* 托管收益面板：挂机券生效期间自动累计 */
   if(S.autoUntil && Date.now() < S.autoUntil){
     const R = S.idleReport || (S.idleReport = {credits:0, missions:0, morkite:0, moil:0, nitra:0, rare:{}, events:0, med:0});
@@ -2727,6 +2742,7 @@ function settle(d, offline, forceMul){
   /* 卡尔彩蛋 */
   if(!S.flags.karl && Math.random() < 0.02){
     S.flags.karl = true;
+    S.flags.karlCount = (S.flags.karlCount||0) + 1;
     log(pick(NAMES_EGG), 'gold');
   }
 }
@@ -2968,6 +2984,17 @@ function rigCost(){
   const oi = lv >= 3 ? Math.round(60 * Math.pow(1.9, lv-3)) : 0;
   return {mo, oi};
 }
+function upgradeMule(){
+  const mule = MULE_UPGRADES.find(x => x.lv === (S.muleLv||1) + 1);
+  if(!mule) return;
+  for(const [k, v] of Object.entries(mule.cost)){
+    if((S.rare[k]||0) < v){ log('矿骡升级缺料：' + k + '×' + v + '。', 'bad'); return; }
+  }
+  Object.entries(mule.cost).forEach(([k, v]) => S.rare[k] -= v);
+  S.muleLv = mule.lv;
+  log('Pack骡升级完成：Lv.' + S.muleLv + ' ' + mule.name + '——' + mule.txt + '。矿骡表示车斗里终于像样了。', 'gold');
+  renderAll(); save();
+}
 function upgradeRig(){
   if(S.rigLv >= CFG.RIG_MAX) return;
   const c = rigCost();
@@ -3104,6 +3131,77 @@ function fmtDur(gm){
   if(gm < 120) return gm+' 游戏分钟';
   return (gm/60).toFixed(1)+' 游戏小时';
 }
+/* ---------------- 成就系统（四系统补充设计 §一，40 项） ---------------- */
+const ACHIEVEMENTS = [
+  /* 入门 8 */
+  {id:'ach_dispatch1',  name:'初次派遣',   grp:'入门', rw:{credits:50},  ck:()=>S.stats.missions>=1},
+  {id:'ach_scout3',     name:'侦察兵入门', grp:'入门', rw:{credits:50},  ck:()=>S.miners.some(m=>m.cls==='scout'&&m.lv>=3)},
+  {id:'ach_drink1',     name:'第一杯酒',   grp:'入门', rw:{credits:30},  ck:()=>(S.stats.barDrinks||0)>=1},
+  {id:'ach_star1',      name:'第一颗星',   grp:'入门', rw:{credits:100}, ck:()=>S.miners.some(m=>(m.stars||0)>=1)},
+  {id:'ach_mod1',       name:'第一件模组', grp:'入门', rw:{credits:50},  ck:()=>Object.keys(S.modsOwned||{}).some(k=>S.modsOwned[k]>0)},
+  {id:'ach_trinket1',   name:'第一颗饰品', grp:'入门', rw:{credits:50},  ck:()=>Object.keys(S.trinkets||{}).length>=1},
+  {id:'ach_ch7',        name:'编年史开篇', grp:'入门', rw:{credits:50},  ck:()=>gameDay()>=7},
+  {id:'ach_wiperescue', name:'团灭初体验', grp:'入门', rw:{credits:100}, ck:()=>!!S.flags.wipeRescued},
+  /* 进阶 10 */
+  {id:'ach_4cls',       name:'满编作战',   grp:'进阶', rw:{credits:200}, ck:()=>Object.keys(CLASSES).every(c=>S.miners.some(m=>m.cls===c))},
+  {id:'ach_hz5',        name:'危5首通',    grp:'进阶', rw:{credits:200}, rare:20, ck:()=>!!S.flags.hz5Done},
+  {id:'ach_diven',      name:'深潜首通',   grp:'进阶', rw:{blank:2},     ck:()=>!!(S.dive&&S.dive.normal&&S.dive.normal.done)},
+  {id:'ach_divee',      name:'精英首通',   grp:'进阶', rw:{blank:2, merit:5}, ck:()=>!!(S.dive&&S.dive.elite&&S.dive.elite.done)},
+  {id:'ach_missions10', name:'十连派遣',   grp:'进阶', rw:{credits:100}, ck:()=>S.stats.missions>=10},
+  {id:'ach_mod10',      name:'模组收藏家', grp:'进阶', rw:{credits:100}, ck:()=>Object.keys(S.modsOwned||{}).filter(k=>S.modsOwned[k]>0).length>=10},
+  {id:'ach_trinket10',  name:'饰品鉴赏家', grp:'进阶', rw:{credits:100}, ck:()=>Object.keys(S.trinkets||{}).length>=10},
+  {id:'ach_bar20',      name:'酒保常客',   grp:'进阶', rw:{credits:100}, ck:()=>(S.stats.barDrinks||0)>=20},
+  {id:'ach_ch100',      name:'编年史百日', grp:'进阶', rw:{credits:200}, ck:()=>gameDay()>=100},
+  {id:'ach_cat5',       name:'猫的好朋友', grp:'进阶', rw:{credits:150}, ck:()=>(S.flags.catPet||0)>=5 && (S.catGrudge||0)===0},
+  /* 精通 10 */
+  {id:'ach_weapon5',    name:'武器大师',   grp:'精通', rw:{credits:300}, rare:20, ck:()=>Object.values(S.wlv||{}).some(pools=>Object.values(pools).some(v=>v>=5))},
+  {id:'ach_modt1',      name:'模组毕业',   grp:'精通', rw:{credits:300}, ck:()=>['scout','engineer','gunner','driller'].some(cls=>{ const a=equippedModFor(cls), b=equippedOffModFor(cls); return [a,b].some(id=>id && MOD_INDEX[id] && MOD_INDEX[id].tier==='T1'); })},
+  {id:'ach_rig10',      name:'平台全满',   grp:'精通', rw:{merit:10},    ck:()=>S.rigLv>=10},
+  {id:'ach_ch120',      name:'编年史双百', grp:'精通', rw:{credits:300}, ck:()=>gameDay()>=120},
+  {id:'ach_fest4',      name:'节日全制霸', grp:'精通', rw:{credits:500}, ck:()=>{ const ids=(S.holidayDone&&Object.keys(S.holidayDone)||[]).map(k=>k.split('-')[0]); return new Set(ids).size>=4; }},
+  {id:'ach_trade5000',  name:'交易大亨',   grp:'精通', rw:{credits:300}, ck:()=>(S.stats.tradeProfit||0)>=5000},
+  {id:'ach_cat10',      name:'猫的知己',   grp:'精通', rw:{credits:300}, ck:()=>(S.flags.catPet||0)>=10 && (S.catGrudge||0)===0},
+  {id:'ach_streak10',   name:'零伤亡十连', grp:'精通', rw:{credits:500}, ck:()=>(S.flags.streak||0)>=10},
+  {id:'ach_rich10000',  name:'富甲一方',   grp:'精通', rw:{credits:200}, ck:()=>S.credits>=10000},
+  {id:'ach_lv25',       name:'满级矿工',   grp:'精通', rw:{credits:500}, ck:()=>S.miners.some(m=>m.lv>=25)},
+  /* 大师 8 */
+  {id:'ach_ch2316',     name:'编年史·完',  grp:'大师', rw:{credits:1000, merit:10}, ck:()=>gameDay()>=2316},
+  {id:'ach_weapon24',   name:'武器全满',   grp:'大师', rw:{credits:1000}, ck:()=>allWeaponsMax()},
+  {id:'ach_modall',     name:'模组全图鉴', grp:'大师', rw:{merit:50},    ck:()=>Object.keys(S.modsOwned||{}).filter(k=>S.modsOwned[k]>0).length>=99},
+  {id:'ach_trinketall', name:'饰品全图鉴', grp:'大师', rw:{merit:30},    ck:()=>Object.keys(S.trinkets||{}).length >= (typeof TRINKETS!=='undefined' ? TRINKETS.pool.length : 24)},
+  {id:'ach_elite5',     name:'精英全员',   grp:'大师', rw:{merit:20},    ck:()=>(S.elite.owned||[]).length >= ELITE_UNITS.units.length},
+  {id:'ach_diveboth',   name:'深潜双通',   grp:'大师', rw:{blank:5},     ck:()=>!!(S.dive.normal.done && S.dive.elite.done)},
+  {id:'ach_streak50',   name:'无伤五十连', grp:'大师', rw:{credits:800}, ck:()=>(S.flags.streak||0)>=50},
+  {id:'ach_idle24',     name:'挂机大师',   grp:'大师', rw:{credits:500}, ck:()=>(S.stats.idleSecs||0)>=86400},
+  /* 隐藏 4 */
+  {id:'ach_karl3',      name:'卡尔的遗产', grp:'隐藏', rw:{credits:500, merit:10}, ck:()=>(S.flags.karlCount||0)>=3},
+  {id:'ach_v50',        name:'五十deserve',grp:'隐藏', rw:{credits:50},  ck:()=>!!S.flags.lcyf166_bless},
+  {id:'ach_blackout',   name:'断片初体验', grp:'隐藏', rw:{credits:100}, ck:()=>!!S.flags.blackoutDrunk},
+  {id:'ach_mystery',    name:'神秘莫测',   grp:'隐藏', rw:{credits:150}, ck:()=>!!S.flags.mysteryDrunk},
+];
+function allWeaponsMax(){
+  return Object.keys(WEAPON_SET).every(cls => WEAPON_SET[cls].main.concat(WEAPON_SET[cls].off).every(wid => ((S.wlv[cls]||{})[wid]||0) >= 5));
+}
+function checkAchievements(){
+  if(!S || !S.stats) return;
+  if(!S.achievements) S.achievements = {};
+  ACHIEVEMENTS.forEach(a=>{
+    if(S.achievements[a.id]) return;
+    let ok = false;
+    try{ ok = a.ck(); }catch(e){ return; }
+    if(ok){
+      S.achievements[a.id] = true;
+      const parts = [];
+      const rw = a.rw || {};
+      if(rw.credits){ S.credits += rw.credits; parts.push('代币+'+rw.credits); }
+      if(rw.rare){ RARES.forEach(rr => S.rare[rr] = (S.rare[rr]||0) + rw.rare); parts.push('稀有矿物全族+'+rw.rare); }
+      if(rw.blank){ S.blanks = (S.blanks||0) + rw.blank; parts.push('空白模组+'+rw.blank); }
+      if(rw.merit){ S.merit = (S.merit||0) + rw.merit; parts.push('功绩点+'+rw.merit); }
+      log('🏆 成就达成【'+a.name+'】'+(parts.length ? '（'+parts.join('，')+'）' : ''), 'gold');
+    }
+  });
+}
+
 function renderHeader(){
   const spdChip = document.getElementById('spd-chip');
   if(spdChip) spdChip.style.display = (S.mode === 'rush') ? 'none' : '';
@@ -3486,7 +3584,7 @@ function renderBar(){
     const db = S.activeDrinkBuff;
   const RCOL = {'常见':'var(--dim)','少见':'var(--green)','精英':'var(--amber)','传说':'var(--gold)'};
   html += '<div class="meta">待生效酒：' + (db
-      ? ('<img src="'+db.icon+'" style="width:20px;height:28px;image-rendering:pixelated;vertical-align:-8px;margin-right:4px;"><b style="color:'+(RCOL[db.rarity]||'var(--txt)')+'">「'+db.dname+'」</b>（'+db.rarity+'）'+db.txt+' —— 下一次派遣消耗')
+      ? ('<span data-barinfo="1" style="cursor:pointer;border-bottom:1px dotted var(--dim)"><img src="'+db.icon+'" style="width:20px;height:28px;image-rendering:pixelated;vertical-align:-8px;margin-right:4px;"><b style="color:'+(RCOL[db.rarity]||'var(--txt)')+'">「'+db.dname+'」</b>（'+db.rarity+'）'+db.txt+' —— 下一次派遣消耗</span>')
       : '下一次派遣出发时自动白送一轮') + '</div>';
   html += '<div class="row"><button class="btn pri" id="btn-reroll" style="flex:1" '+(S.fac.bar<1||S.credits<REROLL_COST?'disabled':'')+'>🎲 再抽一轮（'+REROLL_COST+' 代币）</button></div>';
   html += '<div class="meta" style="margin-top:4px;">酒池 '+DRINK_POOL.length+' 款：' + DRINK_POOL.map(d =>
@@ -3499,6 +3597,7 @@ function renderBar(){
   }
   $('#side').innerHTML = html;
   const rr = $('#btn-reroll'); if(rr) rr.onclick = rerollDrink;
+  const binfo = $('#side [data-barinfo]'); if(binfo) binfo.onclick = () => { const db = S.activeDrinkBuff; if(db) showDetail(db.dname, [{label:'稀有度', value:db.rarity}, {label:'效果', value:db.txt}, {label:'来源', value:'酒吧抽酒'}]); };
   const bb = $('#btn-bar'); if(bb) bb.onclick = upgradeBar;
 }
 function renderMed(){
@@ -3528,6 +3627,19 @@ function renderRig(){
   html += '<div class="row">'+animDiv('doretta_head', 90, 63)+'<span style="flex:1" class="note">镇台之宝：朵蕾妲头雕——第一次护送任务后，工程部坚持把它焊在了钻台顶上。没人舍得拆。</span></div>';
   html += '<div class="note">'+TEXT.ui_rig_effect.replace('{mul}', rigYield().toFixed(2))
     .replace('{depth}', rigTier()).replace('{slots}', depCap()).replace('{cap}', hcCap())+'</div>';
+  /* 矿骡升级线 */
+  {
+    const mule = MULE_UPGRADES.find(x => x.lv === (S.muleLv||1) + 1);
+    let mtxt = 'Pack骡 M.U.L.E. Lv.' + (S.muleLv||1) + (mule ? '' : '（已满级）');
+    if(mule){
+      const cs = Object.entries(mule.cost).map(([k, v]) => k + '×' + v).join(' + ');
+      const can = S.rare['玉石']>=mule.cost['玉石'] && S.rare['乌玛石']>=mule.cost['乌玛石'] && (!mule.cost['蜂母石'] || S.rare['蜂母石']>=mule.cost['蜂母石']);
+      html += '<div class="row"><span style="flex:1">' + mtxt + ' → Lv.' + mule.lv + ' ' + mule.name + '（' + mule.txt + '）：' + cs + '</span>' +
+        '<button class="btn" id="btn-mule" onclick="upgradeMule()" '+(can?'':'disabled')+'>升级</button></div>';
+    } else {
+      html += '<div class="row"><span style="flex:1">' + mtxt + '</span></div>';
+    }
+  }
   if(S.rigLv < CFG.RIG_MAX){
     html += '<div class="row"><span style="flex:1">升级至 Lv.'+(S.rigLv+1)+
       '：墨菱石×'+c.mo+(c.oi?(' + 墨菱油×'+c.oi):'')+'</span>'+
@@ -3565,6 +3677,17 @@ function renderSys(){
     html += '</div>';
   }
   html += '<div class="note">自动存档保存在浏览器里；绑定文件夹后（Chrome/Edge），每次存档同步写入 drg_save.json，方便备份和传给朋友。</div>';
+  /* 成就墙（四系统补充设计 §一） */
+  {
+    const done = Object.keys(S.achievements||{}).length;
+    html += '<h3 class="sec">成就 ' + done + '/' + ACHIEVEMENTS.length + '</h3>';
+    ['入门','进阶','精通','大师','隐藏'].forEach(g => {
+      const list = ACHIEVEMENTS.filter(a => a.grp === g);
+      const got = list.filter(a => S.achievements[a.id]);
+      html += '<div class="note"><b>' + g + '</b> ' + got.length + '/' + list.length + '：' +
+        list.map(a => '<span style="color:' + (S.achievements[a.id] ? 'var(--gold)' : 'var(--dim)') + '">' + (S.achievements[a.id] ? '★' : '☆') + a.name + '</span>').join('、') + '</div>';
+    });
+  }
   html += '<h3 class="sec">统计</h3>';
   html += '<div class="note">完成任务 '+(S.stats.missions||0)+' 次｜重伤 '+(S.stats.inj||0)+' 人次｜游戏时间 '+clockStr()+'</div>';
   {
@@ -3913,8 +4036,19 @@ function renderDive(){
     });
   });
   html += '<div class="note">每周一 0 点刷新。</div>';
+  html += '<div class="row"><button class="btn" id="btn-dive-mods" style="flex:1">查看本周修正器</button></div>';
   if(S.mode === 'rush') html = '<div class="note" style="color:var(--amber)">' + TEXT.dm_rush_dive_lock + '</div>' + html;
   $('#side').innerHTML = html;
+  const bmods = $('#btn-dive-mods'); if(bmods) bmods.onclick = () => {
+    const rows = [];
+    ['normal','elite'].forEach(v => {
+      diveModifiers(v).forEach(id => {
+        const mm = WEEKLY_DIVE.modifiers.pool.find(x => x.id === id);
+        if(mm) rows.push({label:(v === 'normal' ? '普通 · ' : '精英 · ') + (mm.name_zh || mm.id), value:mm.desc || mm.name_zh || ''});
+      });
+    });
+    showDetail('本周修正器', rows.length ? rows : [{label:'本周无修正器记录', value:'—'}]);
+  };
   $('#side').querySelectorAll('[data-dive]').forEach(el=>{
     el.onclick = () => {
       if(S.mode === 'rush'){ log(TEXT.dm_rush_dive_lock, 'bad'); return; }
@@ -3952,7 +4086,7 @@ function renderMarket(){
     const chg = pv ? Math.round((p-pv)/pv*1000)/10 : 0;
     const held = S[t.k]||0;
     const chgColor = chg > 0 ? 'var(--red)' : chg < 0 ? 'var(--green)' : 'var(--dim)';
-    html += '<div class="mcard"><div class="t"><span class="nm">'+t.name+'</span><span>'+
+    html += '<div class="mcard"><div class="t"><span class="nm" data-mdetail="'+t.k+'" style="cursor:pointer;border-bottom:1px dotted var(--dim)">'+t.name+'</span><span>'+
       p+' 代币 <span style="color:'+chgColor+'">'+(chg>0?'+':'')+chg.toFixed(1)+'%</span></span></div>'+
       '<div class="meta">'+TEXT.ui_market_hold.replace('{n}', held).replace('{v}', Math.round(held*p))+'</div>'+
       '<div class="row"><button class="btn" data-mb="'+t.k+':10">'+TEXT.ui_market_buy10.replace('{cost}', Math.ceil(p*10*1.05))+'</button>'+
@@ -3962,6 +4096,20 @@ function renderMarket(){
       '<button class="btn" data-ms="'+t.k+':all">'+TEXT.ui_market_sellall+'</button></div></div>';
   });
   $('#side').innerHTML = html;
+  $('#side').querySelectorAll('[data-mdetail]').forEach(el=>{
+    el.onclick = () => {
+      const t = TRADEABLES.find(x => x.k === el.dataset.mdetail); if(!t) return;
+      const p = S.market.prices[t.k] || t.base, base = t.base, held = S[t.k]||0;
+      const chg = base ? Math.round((p-base)/base*1000)/10 : 0;
+      showDetail(t.name, [
+        {label:'当前价', value:p + ' 代币'},
+        {label:'基准价', value:base + ' 代币'},
+        {label:'相对基准', value:(chg>0?'+':'') + chg.toFixed(1) + '%'},
+        {label:'持有量', value:held},
+        {label:'持仓净值', value:fmt(Math.round(held*p)) + ' 代币'},
+      ]);
+    };
+  });
   $('#side').querySelectorAll('[data-mb]').forEach(el=>{
     el.onclick = () => { const [k, q] = el.dataset.mb.split(':');
       if(q === 'max'){ const p = S.market.prices[k] || 1; const u = Math.ceil(p*1.05); const qm = Math.max(0, Math.floor(S.credits/u)); marketBuy(k, qm); }
@@ -3982,6 +4130,7 @@ function marketSell(k, qty){
   if(qty <= 0) return;
   const gain = Math.floor(p2(S.market.prices[k]) * qty * (1-TRADE_FEE));
   S.credits += gain; S[k] -= qty;
+  S.stats.tradeProfit = (S.stats.tradeProfit||0) + gain;
   log(TEXT.log_market_sell.replace('{k}', k).replace('{qty}', qty).replace('{gain}', gain), 'good');
   renderAll(); save();
 }
@@ -4065,6 +4214,7 @@ function updateTabBadges(){
   set('dive', diveN);
 }
 function renderIfChanged(){
+  try{ checkAchievements(); }catch(e){}
   const sig = stateSig();
   if(sig !== lastSig){
     lastSig = sig;
@@ -4171,6 +4321,7 @@ setInterval(() => {
   autoPlayStep();
   autoPlayStep();
   autoPlayStep();
+  if(S.autoUntil && Date.now() < S.autoUntil) S.stats.idleSecs = (S.stats.idleSecs||0) + dt;
   acc += dt;
   if(acc >= 1){ acc = 0; renderIfChanged(); save(); }
 }, 1000);

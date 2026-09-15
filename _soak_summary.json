@@ -1,0 +1,22 @@
+{
+  "ended": "2026-09-15T19:03:41.153Z",
+  "reason": "deadline",
+  "totalErrs": 0,
+  "errKeys": {},
+  "saveBytes": 13552,
+  "final": {
+    "steps": 1553,
+    "day": 82,
+    "gm": 117174,
+    "mode": "rush",
+    "credits": 101513,
+    "nitra": 12001,
+    "missions": 1,
+    "miners": 4,
+    "deps": 2,
+    "rigLv": 10,
+    "blanks": 30,
+    "diveNormal": 0,
+    "kpiTerm": 1
+  }
+}
