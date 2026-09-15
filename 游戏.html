@@ -2506,34 +2506,11 @@ function settle(d, offline, forceMul){
   const me = d.modEff || {};
   const yMul = 1 + (me.yield||0)/100;
   ['morkite','moil','gold'].forEach(k => { if(gain[k]) gain[k] = Math.round(gain[k]*yMul); });
-  /* 战役钩子 */
-  campProgress('mission', m.type, 1);
-  campProgress('biome', m.biome, 1);
-  campProgress('hazard', m.hazard, 1);
+  /* 战役钩子（修复：原在此处与下方各计一次，导致一次任务双计战役进度——只保留下方完整版） */
   S.credits += gain.credits; S.nitra += gain.nitra||0;
   S.morkite += gain.morkite; S.moil += gain.moil||0; S.gold += gain.gold||0;
   S.kpi.done += gain.morkite;
-  /* 深潜结算：空白模组奖励 + 阶段推进 + 功绩点 */
-  if(d.isDive){
-    const blanksN = (m.r && m.r.blanks) || 0;
-    if(blanksN){ S.blanks = (S.blanks||0) + blanksN; }
-    const dv = S.dive[ d.diveVariant ];
-    if(dv && dv.stage === d.diveStage){
-      dv.stage++;
-      const meritN = d.diveVariant==='normal' ? 2 : 3;
-      S.merit = (S.merit||0) + meritN;
-      if(dv.stage >= 3){
-        dv.done = true;
-        const finMerit = d.diveVariant==='normal' ? 4 : 6;
-        S.merit = (S.merit||0) + finMerit;
-        campProgress('dive', '', 1);
-        awardRandomTrinket(d.diveVariant==='normal' ? '深潜通关' : '精英深潜通关');
-        log('🏆 '+(d.diveVariant==='normal'?'深潜':'精英深潜')+'三阶段全部通关！功绩点 +'+finMerit+'。本周深潜完结，下周一刷新。', 'gold');
-      } else {
-        log('✔ 深潜阶段 '+(d.diveStage+1)+' 通关！功绩点 +'+meritN+'，下一阶段已开闸。', 'gold');
-      }
-    }
-  }
+  /* （深潜阶段推进在 diveSettle 内处理；此处原有一段不可达的 isDive 残留块已删） */
   /* 稀有矿物副产物 */
   const b = biomeById(m.biome);
   const avgLv = team.length ? team.reduce((a,x)=>a+x.lv,0)/team.length : 1;
@@ -2700,10 +2677,15 @@ function worldAdvanceBody(gm, offline){
         }
         continue;
       }
-      d.done = (d.done || 0) + adv;
+      d.done = Math.min(d.dur, (d.done || 0) + adv);   /* 封顶防浮点残差卡死 */
       if(d.done >= d.dur){
         d.finished = true;   /* 先标记防嵌套重复结算 */
-        settle(d, offline);
+        try{ settle(d, offline); }
+        catch(err){
+          try{ d.minerIds.forEach(id => { const mn = S.miners.find(x=>x.id===id); if(mn && mn.state==='mission') mn.state = 'idle'; }); }catch(e2){}
+          log('⚠ 结算异常（已保底处理，矿工已归队，不影响存档）：'+(err && err.message || err), 'bad');
+          console.error('settle error', err, d);
+        }
         continue;
       }
       if(!offline) maybeEvent(d, d.done / d.dur);
@@ -3036,13 +3018,15 @@ function renderDeps(){
   let html = '';
   if(!S.deps.length) html = '<div style="text-align:center;padding:8px 0;"><img src="assets/icons/misc_bosco.png" alt="" style="width:72px;image-rendering:pixelated;opacity:.8"><div class="note">'+TEXT.ui_deps_empty+'</div></div>';
   S.deps.forEach(d=>{
-    const done = clamp(S.gm - d.start, 0, d.dur);
+    /* 修复：进度与结算同源（d.done 累加），不再用 S.gm-start——事件挂起/加时不再显示背离 */
+    const done = clamp(d.done || 0, 0, d.dur);
     const pct = (done/d.dur*100).toFixed(0);
     const team = d.minerIds.map(id=>minerName(S.miners.find(x=>x.id===id))).join('、');
+    const remainTxt = d.paused ? '待管理层决策' : fmtDur(Math.ceil(Math.max(0, d.dur-done)));
     html += '<div class="dep'+(d.paused?' evt':'')+'">'+
       '<div class="t"><span class="nm">'+mtypeById(d.m.type).name+' · '+biomeById(d.m.biome).name+'</span>'+
       '<span class="hz">'+'★'.repeat(d.m.hazard)+'</span></div>'+
-      '<div class="meta">'+team+'　剩余 '+fmtDur(Math.max(0, d.dur-done))+'</div>'+
+      '<div class="meta">'+team+'　剩余 '+remainTxt+'</div>'+
       '<div class="prog"><i style="width:'+pct+'%"></i></div>'+
       (d.paused?'<div class="evtbox"><div class="q">'+TEXT.ui_deps_event+'</div><button class="btn warn" data-ev="'+d.id+'">'+TEXT.ui_deps_event_btn+'</button></div>':'')+
       '</div>';
