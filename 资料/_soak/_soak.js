@@ -144,7 +144,7 @@ const driver = `
     for (const d of S.deps) {
       if ((d.done || 0) > d.dur + 0.001) bad('dep-overrun', d.id + ' done=' + d.done + ' dur=' + d.dur);
       if (!d.isDive && d.mode !== 'idle' && d.mode !== 'rush') bad('dep-mode', (d.mode === undefined ? 'undefined(非深潜派遣缺mode)' : d.mode));
-      if (!d.minerIds || d.minerIds.length < 1 || d.minerIds.length > 4) bad('dep-squad', JSON.stringify(d.minerIds));
+      if (!d.minerIds || d.minerIds.length > 4) bad('dep-squad', JSON.stringify(d.minerIds));   /* 0=全员重伤入院中间态（hurt() L2436 移除），合法 */
     }
   }
 

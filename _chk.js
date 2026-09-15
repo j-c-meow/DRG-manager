@@ -2565,13 +2565,11 @@ function autoPlayStep(){
   if(!S.autoUntil || Date.now() > S.autoUntil) return;
   S.deps.forEach(d => {
     if(d.paused){
-      showEventModal(d);
-      const b = document.querySelector('#modal-box .opt.pri') || document.querySelector('#modal-box .opt');
-      if(b) b.click();
+      autoResolveEvent(d);   /* F2 修复：直接内部决策（事件→稳妥项映射），不再依赖 DOM 弹窗按钮 */
     }
   });
   const idle = S.miners.filter(x => x.state==='idle' && x.morale>=25);
-  if(idle.length >= 2 && S.board.length){
+  if(idle.length >= 1 && S.board.length){   /* F1 修复：单人开局也要自动接单（规格=所有空闲矿工） */
     const m = S.board.slice().sort((a,b)=>a.hazard-b.hazard)[0];
     const capN = hcCap();
     const ids = idle.slice(0, capN).map(x=>x.id);
