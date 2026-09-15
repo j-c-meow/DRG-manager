@@ -169,7 +169,7 @@ h3.sec{font-size:13px; color:var(--amber); margin:10px 0 6px;}
       <div class="sub">LEAN MINING™ 认证终端 · 请勿用本终端申请烧伤理赔</div>
     </div>
     <div class="chip" id="clock">D1 08:00</div>
-    <div class="chip">加速
+    <div class="chip" id="spd-chip">时间
       <button class="btn" data-spd="0">暂停</button>
       <button class="btn" data-spd="1">×1</button>
     </div>
@@ -2946,6 +2946,17 @@ function fmtDur(gm){
   return (gm/60).toFixed(1)+' 游戏小时';
 }
 function renderHeader(){
+  const spdChip = document.getElementById('spd-chip');
+  if(spdChip) spdChip.style.display = (S.mode === 'rush') ? 'none' : '';
+  const autoChip = document.getElementById('auto-chip');
+  if(autoChip){
+    const autoOn = S.autoUntil && Date.now() < S.autoUntil;
+    autoChip.style.display = autoOn ? '' : 'none';
+    if(autoOn){
+      const leftMin = Math.ceil((S.autoUntil - Date.now()) / 60000);
+      document.getElementById('auto-left').textContent = leftMin >= 60 ? (leftMin/60).toFixed(1)+'h' : leftMin+'分';
+    }
+  }
   $('#r-credits').textContent = fmt(S.credits);
   $('#r-nitra').textContent = fmt(S.nitra);
   $('#clock').textContent = clockStr();
@@ -4213,8 +4224,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   if ('serviceWorker' in navigator && location.protocol !== 'file:' && !/MicroMessenger/i.test(navigator.userAgent))
     navigator.serviceWorker.register('sw.js');
   /* 挂机券：3 小时自动游玩（自动事件决策 + 自动派遣空闲矿工） */
-  const autoBtn = document.getElementById('btn-auto');
-  if(autoBtn) autoBtn.onclick = () => {
+  const toggleAuto = () => {
     if(S.autoUntil && Date.now() < S.autoUntil){
       S.autoUntil = 0;
       log('挂机模式已手动取消。', 'sys');
@@ -4224,6 +4234,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     renderAll(); save();
   };
+  const autoBtn = document.getElementById('btn-auto');
+  if(autoBtn) autoBtn.onclick = toggleAuto;
+  const autoChipBtn = document.getElementById('auto-chip');
+  if(autoChipBtn) autoChipBtn.onclick = toggleAuto;
   /* B-8：音乐开关 */
   const bgmBtn = document.getElementById('btn-bgm');
   if(bgmBtn) bgmBtn.onclick = () => {

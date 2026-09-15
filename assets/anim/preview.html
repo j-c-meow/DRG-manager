@@ -59,6 +59,8 @@ h2{font-size:13px;color:var(--teal);margin:16px 0 8px}
 .badge.red{background:var(--red);color:#fff}
 .logline{display:flex;align-items:center;gap:6px;padding:3px 6px;font-size:12px;border-bottom:1px dashed #22303c}
 .logline i{flex:none;width:3px;height:14px;display:inline-block}
+.nitra-tag{display:inline-block;margin-left:8px;padding:0 5px;font-size:10px;background:#331309;border:1px solid var(--amber);border-radius:2px;color:var(--amber);vertical-align:1px}
+#msw-label b{color:var(--teal)}
 .dstage{height:76px;display:flex;align-items:flex-end;justify-content:center;background:#0a0e12;border:1px solid var(--line);border-radius:3px;margin-top:6px;overflow:hidden}
 .dstage .spr{width:72px;height:72px;image-rendering:pixelated;background-repeat:no-repeat}
 .row{display:flex;gap:6px;margin-top:8px;align-items:center;flex-wrap:wrap}
@@ -227,6 +229,48 @@ footer{margin-top:14px;color:#55656f;font-size:11px;line-height:1.8}
   <div class="note" style="margin-top:6px">↑ 实际渲染效果。A 贴这段即可（footer 原 div 整块替换，名单逐字未动）。</div>
 </div>
 
+<h2>★ 双模式 mockup（挂机 ⇄ 急行 · 方案 §四/§五，C 三件套）</h2>
+<div class="panel">
+  <div class="sub">Header 切换器组件 + 收益面板 + 急行硝石角标。挂机=teal / 急行=amber（方案 §四）。模式名"急行"待用户确认（备选：掘进/冲刺/开罗）。</div>
+
+  <h3 style="color:var(--teal);margin:8px 0 4px">① Header 模式切换器（双态像素组件 mode_switch.png）</h3>
+  <div class="row" style="align-items:center">
+    <div class="spr" id="msw" style="width:192px;height:48px;image-rendering:pixelated;background-repeat:no-repeat"></div>
+    <button class="btn" id="msw-toggle" style="padding:8px 14px">切换模式</button>
+    <span class="note" id="msw-label">当前：挂机模式（现实时间流速 · 托管券可用 · 深潜开放）</span>
+  </div>
+  <div class="note" style="margin-top:4px">A 接线：img 帧切换 + label 变色（挂机 teal / 急行 amber）；急行态下整组时间控制隐藏（spd-chip 钩子已预埋）、深潜按钮置灰。</div>
+
+  <h3 style="color:var(--teal);margin:12px 0 4px">② 收益面板（离队简报 · 托管累计 ≥60 游戏分触发）</h3>
+  <div style="max-width:460px;border:1px solid var(--amber);background:var(--panel);padding:10px">
+    <div style="text-align:center">
+      <div class="note">离队收益 · 托管 2 小时 15 分</div>
+      <div style="font-size:26px;color:var(--gold);margin:4px 0"><b>+4,280</b> <span style="font-size:13px;color:var(--dim)">代币</span></div>
+    </div>
+    <div class="loot"><img src="../icons/res_morkite.png">完成任务 <b>6 次</b></div>
+    <div class="loot"><img src="../icons/res_morkite.png">墨菱石 <b>+412</b>　<img src="../icons/res_morkite.png" style="width:14px">墨菱油 <b>+96</b></div>
+    <div class="loot"><img src="../icons/res_nitra.png">硝石 <b>+288</b></div>
+    <div class="loot"><img src="../trinkets/tr_dragon.png" style="width:14px">稀有掉落：玉石+18 · 铜矿+9 · 蜂母石+6</div>
+    <div class="loot" style="animation-delay:.3s"><span style="color:var(--amber)">⚡</span>托管自动处理事件 <b>4 起</b>（死守×2 / 救援×1 / 绕行×1）</div>
+    <div class="loot" style="animation-delay:.5s"><span style="color:var(--red)">✚</span>伤员 1 名（医疗支出 -180）</div>
+    <div class="loot" style="animation-delay:.7s"><span style="color:var(--teal)">📋</span>KPI 460→872 · 战役 5/10→7/10</div>
+    <div class="note" style="margin-top:6px;text-align:center">"集团对你的 absence 表示 absolutement 满意。"</div>
+  </div>
+
+  <h3 style="color:var(--teal);margin:12px 0 4px">③ 急行模式 · 事件选项硝石角标（costChip 变体）</h3>
+  <div style="max-width:460px;border:1px dashed var(--amber);padding:8px;background:var(--panel2)">
+    <div class="note">急行模式事件选项附加硝石（价目表：stay120 / bunker100 / save80 / slow80）：</div>
+    <div style="margin-top:6px">
+      <button class="opt btn pri" style="margin-bottom:4px">延时开采（主矿物 ×1.6，时长 +30%）
+        <span class="nitra-tag">硝石 +120</span></button>
+      <button class="opt btn" style="margin-bottom:4px">固守矿骡（时长 +25%）
+        <span class="nitra-tag">硝石 +100</span></button>
+      <button class="opt btn warn">带故障作业（时长 +20%）
+        <span class="nitra-tag">硝石 +80</span></button>
+    </div>
+  </div>
+</div>
+
 <h2>全部精灵动画（26 个 · 含事件头图与节日横幅）</h2>
 <div class="grid" id="grid"></div>
 <footer>深岩银河 · 17号钻台管理终端 ｜ 粉丝非商用二创 ｜ 素材版权归 Ghost Ship Games 所有。</footer>
@@ -364,6 +408,23 @@ const mgrid = document.getElementById('mgrid');
   d.innerHTML = '<img src="../trinkets/'+f+'.png" title="'+nm+'"><span class="nm">'+nm+'</span>';
   mgrid.appendChild(d);
 });
+
+/* ===== 双模式切换器 demo ===== */
+const msw = document.getElementById('msw');
+const mswLabel = document.getElementById('msw-label');
+let mswMode = 0;
+if(msw){
+  msw.style.backgroundImage = 'url(mode_switch.png)';
+  msw.style.backgroundSize = '192px 48px';
+  msw.style.backgroundPosition = '0 0';
+  document.getElementById('msw-toggle').onclick = () => {
+    mswMode = 1 - mswMode;
+    msw.style.backgroundPosition = (-mswMode * 192) + 'px 0';
+    mswLabel.innerHTML = mswMode
+      ? '当前：<b style="color:var(--amber)">急行模式</b>（时长÷30 · 产出×0.35 · 硝石×4 · 深潜禁用 · 时间控制隐藏）'
+      : '当前：挂机模式（现实时间流速 · 托管券可用 · 深潜开放）';
+  };
+}
 </script>
 </body>
 </html>
