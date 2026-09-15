@@ -155,6 +155,10 @@ h3.sec{font-size:13px; color:var(--amber); margin:10px 0 6px;}
 #log .l.bad{border-left-color:var(--red)}
 #log .l.gold{border-left-color:var(--gold)}
 #log .l.sys{border-left-color:var(--teal)}
+  /* 九项之⑤：Tab 角标 */
+  .tabs .tab{position:relative;}
+  .tab .tb{position:absolute;top:-5px;right:-4px;background:var(--red);color:#fff;font-size:10px;min-width:15px;height:15px;line-height:15px;border-radius:8px;text-align:center;padding:0 3px;font-weight:bold;display:none;}
+  .tab .tb.on{display:block;}
 </style>
 </head>
 <body>
@@ -2187,26 +2191,26 @@ function startEvent(d, id){
     const ct = (d.modEff && d.modEff.checkT) || 0;
     const p = clamp(p0 + es/100 + ct, 0.05, 0.98);
     d.paused.p = p;
-    html = animDiv('swarm_banner', 240, 80) + animDiv('evt_swarm', 288, 96) + '任务指挥：'+biome+'的地面在震动——虫潮来了！死守还是撤，管理层，给个话。';
-    opts = '<button class="opt btn pri" data-c="hold">死守（成功概率 '+(p*100).toFixed(0)+'%：奖励 +20%，士气 +10；失败：1 人重伤入院，任务继续）</button>'+
-           '<button class="opt btn" data-c="bunker">固守矿骡（无风险，任务时长 +25%）</button>';
+    html = animDiv('swarm_banner', 240, 80) + animDiv('evt_swarm', 288, 96) + TEXT.ev_swarm_desc;
+    opts = '<button class="opt btn pri" data-c="hold">'+TEXT.ev_swarm_a_btn+'（成功概率 '+(p*100).toFixed(0)+'%：奖励 +20%，士气 +10；失败：1 人重伤入院，任务继续）</button>'+
+           '<button class="opt btn" data-c="bunker">'+TEXT.ev_swarm_b_btn+'（无风险，任务时长 +25%）</button>';
   } else if(id === 'rich'){
-    html = animDiv('evt_rich', 288, 96) + '侦察兵在支洞发现一条富矿脉！追加驻留可以多挖一倍，但要多待 30% 的时间。';
-    opts = '<button class="opt btn pri" data-c="stay">延时开采（主矿物 ×1.6，稀有掉落 +50%，时长 +30%）</button>'+
-           '<button class="opt btn" data-c="leave">放弃矿脉（额外 +30 代币勘测报偿）</button>';
+    html = animDiv('evt_rich', 288, 96) + TEXT.ev_richvein_desc;
+    opts = '<button class="opt btn pri" data-c="stay">'+TEXT.ev_richvein_a_btn+'（主矿物 ×1.6，稀有掉落 +50%，时长 +30%）</button>'+
+           '<button class="opt btn" data-c="leave">'+TEXT.ev_richvein_b_btn+'（额外 +30 代币勘测报偿）</button>';
   } else if(id === 'leech'){
     const victim = pick(d.minerIds);
     d.paused.victim = victim;
     const HZv = CFG.HAZ[d.m.hazard-1];
     d.paused.bill = Math.round(250*HZv);
     d.paused.heal = Math.round(90*HZv);
-    html = animDiv('evt_leech', 288, 96) + '洞穴水蛭！'+minerName(S.miners.find(x=>x.id===victim))+' 被拖上了洞顶。立即救援只需花费时间，暂缓处置则要付医疗账单。';
-    opts = '<button class="opt btn pri" data-c="save">立即救援（任务时长 +20%，无伤归队，全队士气 +5）</button>'+
-           '<button class="opt btn warn" data-c="delay">暂缓处置（重伤入院：账单 '+d.paused.bill+' 代币 + 休养 '+d.paused.heal+' 游戏小时；全队士气 -15；任务继续）</button>';
+    html = animDiv('evt_leech', 288, 96) + TEXT.ev_leech_desc.replace('{miner}', minerName(S.miners.find(x=>x.id===victim)));
+    opts = '<button class="opt btn pri" data-c="save">'+TEXT.ev_leech_a_btn+'（任务时长 +20%，无伤归队，全队士气 +5）</button>'+
+           '<button class="opt btn warn" data-c="delay">'+TEXT.ev_leech_b_btn+'（重伤入院：账单 '+d.paused.bill+' 代币 + 休养 '+d.paused.heal+' 游戏小时；全队士气 -15；任务继续）</button>';
   } else if(id === 'break'){
-    html = animDiv('evt_break', 288, 96) + '钻机的液压管炸了。工程师表示能修，问的是多快修好。';
-    opts = '<button class="opt btn pri" data-c="fast">紧急维修（-'+Math.round(80*HZ)+' 代币，时长 +5%）</button>'+
-           '<button class="opt btn warn" data-c="slow">带故障作业（免费，时长 +20%，'+[10,15,20,25,30][d.m.hazard-1]+'% 概率 1 人轻伤）</button>';
+    html = animDiv('evt_break', 288, 96) + TEXT.ev_breakdown_desc;
+    opts = '<button class="opt btn pri" data-c="fast">'+TEXT.ev_breakdown_a_btn+'（-'+Math.round(80*HZ)+' 代币，时长 +5%）</button>'+
+           '<button class="opt btn warn" data-c="slow">'+TEXT.ev_breakdown_b_btn+'（免费，时长 +20%，'+[10,15,20,25,30][d.m.hazard-1]+'% 概率 1 人轻伤）</button>';
   } else if(id === 'elite'){
     const p0 = clamp(teamPower(d) / (teamPower(d) + 2.0*HZ), 0.05, 0.98);
     const es = ((d.modEff && d.modEff.eventSuccess) || 0) + eliteEB + eliteCB;
@@ -2214,9 +2218,9 @@ function startEvent(d, id){
     const ct = (d.modEff && d.modEff.checkT) || 0;
     const p = clamp(p0 + es/100 + ct, 0.05, 0.98);
     d.paused.p = p;
-    html = animDiv('evt_elite', 288, 96) + '前方出现一只精英异虫，个头跟朵蕾妲差不多。打，还是绕？';
-    opts = '<button class="opt btn pri" data-c="fight">猎杀（成功概率 '+(p*100).toFixed(0)+'%：黄金 ×2 + 大量稀有矿物；失败：1 人轻伤，时长 +10%）</button>'+
-           '<button class="opt btn" data-c="avoid">绕行（无事发生）</button>';
+    html = animDiv('evt_elite', 288, 96) + TEXT.ev_elite_desc;
+    opts = '<button class="opt btn pri" data-c="fight">'+TEXT.ev_elite_a_btn+'（成功概率 '+(p*100).toFixed(0)+'%：黄金 ×2 + 大量稀有矿物；失败：1 人轻伤，时长 +10%）</button>'+
+           '<button class="opt btn" data-c="avoid">'+TEXT.ev_elite_b_btn+'（无事发生）</button>';
   } else if(id === 'cat'){
     /* 黑脸小猫参上（B 设计 ev_cat）：A 讨好 / B 绕道走（记仇值系统） */
     const g = S.catGrudge || 0;
@@ -2240,11 +2244,12 @@ function startEvent(d, id){
     }
   }
   d.paused.html = html; d.paused.opts = opts;
+  const evTitle5 = {swarm:'ev_swarm_title', rich:'ev_richvein_title', leech:'ev_leech_title', break:'ev_breakdown_title', elite:'ev_elite_title'}[id];
   if(id === 'cat' || id === 'lcyf166'){
     const evT = {cat:'ev_cat', lcyf166:'ev_lcyf'}[id];
     log('【'+(TEXT[evT+'_title']||'社区彩蛋')+'】'+String(html).replace(/<[^>]+>/g,''), '');
   } else {
-    log('【警报】派遣事件【'+biome+'】：'+html.replace(/<[^>]+>/g,''), 'bad');
+    log('【警报】'+(evTitle5 ? TEXT[evTitle5] : '派遣事件')+'【'+biome+'】：'+html.replace(/<[^>]+>/g,''), 'bad');
   }
   if($('#modal').style.display === 'flex' && $('#modal-box').dataset.dep === d.id) return;
   showEventModal(d);
@@ -2301,49 +2306,49 @@ function resolveEvent(d, c){
         } else {
           d.rewardBonus = (d.rewardBonus||1) * 1.2;
           team.forEach(m => { m.morale = clamp(m.morale+10,0,100); m.xp += 10; });   /* 事件成功 +10 XP */
-          log('虫潮被顶回去了！矮人们喊着一号口号继续挖矿。报酬 +20%。', 'good');
+          log(TEXT.ev_swarm_a_win.replace('{miner}', minerName(pick(team))), 'good');
         }
       } else {
         const v = pick(d.minerIds); if(v) hurt(v, HZ);
         team.forEach(m => m.morale = clamp(m.morale-15,0,100));
         if(!d.minerIds.length) d.bonus = (d.bonus||1) * 0.3;
-        log('虫潮冲破了防线，一名矿工被抬走，任务继续。', 'bad');
+        log(TEXT.ev_swarm_a_fail, 'bad');
       }
     } else {
       d.dur += Math.round(d.dur * 0.25);
-      log('全队缩回矿骡固守，稳字当头。任务时长 +25%。', '');
+      log(TEXT.ev_swarm_b_result, '');
     }
   } else if(p.id === 'rich'){
     if(c === 'stay'){
       d.mineralMul = (d.mineralMul||1) * 1.6;
       d.rareBoost = (d.rareBoost||0) + 0.5;
       d.dur += Math.round(d.dur * 0.3);
-      log('追加驻留！主矿物 ×1.6，稀有掉落 +50%。', 'good');
+      log(TEXT.ev_richvein_a_win, 'good');
     } else {
       S.credits += 30;
-      log('放弃矿脉，集团汇来 30 代币勘测报偿。信息也是钱。', '');
+      log(TEXT.ev_richvein_b_result, '');
     }
   } else if(p.id === 'leech'){
     if(c === 'save'){
       d.dur += Math.round(d.dur * 0.2);
       team.forEach(m => m.morale = clamp(m.morale+5,0,100));
-      log('全队停下来把人弄了下来，无伤归队，任务时长 +20%。', 'good');
+      log(TEXT.ev_leech_a_win.replace('{miner}', minerName(S.miners.find(x=>x.id===p.victim))), 'good');
     } else {
       hurt(p.victim, HZ);
       team.forEach(m => m.morale = clamp(m.morale-15,0,100));
       if(!d.minerIds.length) d.bonus = (d.bonus||1) * 0.5;
-      log('矿骡自动接管了他的份额。全队士气 -15。', 'bad');
+      log(TEXT.ev_leech_b_result.replace('{miner}', minerName(S.miners.find(x=>x.id===p.victim))), 'bad');
     }
   } else if(p.id === 'break'){
     if(c === 'fast'){
       const fee = Math.round(80*HZ); S.credits -= fee;
       d.dur += Math.round(d.dur * 0.05);
-      log('紧急维修，花费 '+fee+' 代币，任务时长 +5%。', '');
+      log(TEXT.ev_breakdown_a_result, '');
     } else {
       d.dur += Math.round(d.dur * 0.2);
       const hcChance = [10,15,20,25,30][d.m.hazard-1] || 20;
       if(Math.random()*100 < hcChance){ const v = pick(d.minerIds); if(v) hurt(v, HZ); }
-      log('带故障作业，任务时长 +20%。', '');
+      log(TEXT.ev_breakdown_b_result, '');
     }
   } else if(p.id === 'elite'){
     if(c === 'fight'){
@@ -2355,14 +2360,14 @@ function resolveEvent(d, c){
         campProgress('elite', '', 1);
         holidayProgress('elite', 1);
         S.merit = (S.merit||0) + 1;
-        log('精英异虫被拆成了标本！黄金 ×2，稀有矿物大丰收，功绩点 +1。', 'gold');
+        log(TEXT.ev_elite_a_win, 'gold');
       } else {
         const v = pick(d.minerIds); if(v) hurt(v, HZ);
         d.dur += Math.round(d.dur * 0.1);
-        log('打输了……任务时长 +10%，就当交学费。', 'bad');
+        log(TEXT.ev_elite_a_fail, 'bad');
       }
     } else {
-      log('绕行成功。有一名侦察兵表示不屑，被记录在绩效考核里。', '');
+      log(TEXT.ev_elite_b_result, '');
     }
   } else if(p.id === 'cat'){
     /* 黑脸小猫参上（B 设计 ev_cat）：A 讨好 / B 记仇 */
@@ -2610,12 +2615,6 @@ function showLootToast(rows){
   t.style.display = 'block';
   clearTimeout(showLootToast._tm);
   showLootToast._tm = setTimeout(()=>{ t.style.display = 'none'; }, 4500);
-}
-function renderFullLog(){
-  const lg = document.getElementById('log');
-  if(lg) lg.innerHTML = S.log.map(l=>'<div class="l '+l.c+'">['+l.t+'] '+l.m+'</div>').join('');
-  const more = document.getElementById('log-more');
-  if(more) more.remove();
 }
 function renderFullLog(){
   const lg = document.getElementById('log');
@@ -3477,6 +3476,7 @@ function renderSide(){
   ({roster:renderRoster, gear:renderGear, bar:renderBar, med:renderMed, market:renderMarket, dive:renderDive, rig:renderRig, help:renderHelp, sys:renderSys})[curTab]();
 }
 function renderAll(){
+  if(typeof updateTabBadges === 'function') try{ updateTabBadges(); }catch(e){}
   renderHeader(); renderBoard(); renderDeps(); renderSide(); renderCampaign();
   /* 虫潮预警条：任一派遣悬挂虫潮事件时在主界面顶部示警 */
   const sa = document.getElementById('swarmalert');
@@ -3789,10 +3789,10 @@ function renderMarket(){
     html += '<div class="mcard"><div class="t"><span class="nm">'+t.name+'</span><span>'+
       p+' 代币 <span style="color:'+chgColor+'">'+(chg>0?'+':'')+chg.toFixed(1)+'%</span></span></div>'+
       '<div class="meta">'+TEXT.ui_market_hold.replace('{n}', held).replace('{v}', Math.round(held*p))+'</div>'+
-      '<div class="row"><button class="btn" data-mb="'+t.k+':10">买 10（'+Math.ceil(p*10*1.05)+'）</button>'+
+      '<div class="row"><button class="btn" data-mb="'+t.k+':10">'+TEXT.ui_market_buy10.replace('{cost}', Math.ceil(p*10*1.05))+'</button>'+
       '<button class="btn" data-mb="'+t.k+':50">'+TEXT.ui_market_buy50.replace('{cost}', Math.ceil(p*50*1.05))+'</button>'+
       '<button class="btn" data-mb="'+t.k+':max">买 max（'+Math.max(0,Math.floor(S.credits/Math.ceil(p*1.05)))+'）</button>'+
-      '<button class="btn" data-ms="'+t.k+':10">卖 10（'+TEXT.ui_market_sell10.replace('{gain}', Math.floor(p*10*0.95))+'）</button>'+
+      '<button class="btn" data-ms="'+t.k+':10">'+TEXT.ui_market_sell10.replace('{gain}', Math.floor(p*10*0.95))+'</button>'+
       '<button class="btn" data-ms="'+t.k+':all">'+TEXT.ui_market_sellall+'</button></div></div>';
   });
   $('#side').innerHTML = html;
@@ -3878,6 +3878,25 @@ function renderCampaign(){
   el.innerHTML = '<div class="foldbox'+(FOLD.camp?' folded':'')+'">'+
     '<div class="fold-head" data-fold="camp"><span style="color:var(--dim);font-size:11px;">'+summary+'</span><span class="arrow">▼</span></div>'+
     '<div class="fold-body">'+chLine+html+'</div></div>';
+}
+function updateTabBadges(){
+  const set = (name, n) => {
+    const tab = document.querySelector('.tab[data-tab="'+name+'"]'); if(!tab) return;
+    let b = tab.querySelector('.tb');
+    if(!b){ b = document.createElement('span'); b.className = 'tb'; tab.appendChild(b); }
+    if(n > 0){ b.textContent = n > 99 ? '99+' : String(n); b.classList.add('on'); }
+    else b.classList.remove('on');
+  };
+  set('med', S.miners.filter(m => m.state === 'med').length);
+  set('gear', S.blanks || 0);
+  let diveN = 0;
+  try{
+    ensureDiveWeek();
+    const bs = bestStars();
+    if(bs >= 1 && !S.dive.normal.done) diveN = 1;
+    if(bs >= 3 && !S.dive.elite.done) diveN = 1;
+  }catch(e){}
+  set('dive', diveN);
 }
 function renderIfChanged(){
   const sig = stateSig();

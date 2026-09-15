@@ -1,0 +1,6 @@
+const fs = require('fs');
+const g = fs.readFileSync('游戏.html', 'utf8');
+['ui_settle_title','ui_settle_sub','ui_settle_sub_fail','ui_settle_btn','kpi_issue_1','kpi_issue_2','kpi_success_1','kpi_fail_1','ui_roster_title','ui_roster_sub','ui_bar_title','ui_bar_sub','ui_med_title','ui_med_sub','ui_gear_title','ui_gear_sub','ui_gear_note','ui_rig_title','ui_rig_sub','ui_elite_title','ui_elite_sub','ui_elite_btn_hire','ui_elite_locked','ui_kpi_title','ui_kpi_sub','ui_deploy_title','ui_deploy_sub','ui_deploy_btn_cancel','ui_offline_title','ui_offline_sub','ui_offline_btn','ui_recall_title','ui_recall_btn','ui_recall_confirm','ui_save_ok','ui_save_warn','ui_settings_sub','ui_settings_btn_reset','ui_bar_btn_close','ui_med_btn','ui_gear_btn','ui_elite_btn','ui_market_buy10','ui_camp_fold','log_camp_empty','log_elite_all','tr_slot_full','tr_linktree_buy','tr_equip_msg','med_psa','med_pain','med_discharge','ui_mission_btn_refresh','ui_mission_hazard','ui_main_title','ui_main_sub','ui_ticker_default','egg_rig_1','egg_bar_1','karl_bar_toast','karl_record','ui_morale_label','ui_morale_low','ui_morale_high','ev_leech_title','ev_breakdown_title','ev_richvein_title'].forEach(k => {
+  const m = g.match(new RegExp('\\n\\s*' + k + ':\\s*"((?:[^"\\\\]|\\\\.)*)"'));
+  console.log(k, '=', m ? m[1] : '(NF)');
+});
