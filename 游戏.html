@@ -159,6 +159,12 @@ h3.sec{font-size:13px; color:var(--amber); margin:10px 0 6px;}
   .tabs .tab{position:relative;}
   .tab .tb{position:absolute;top:-5px;right:-4px;background:var(--red);color:#fff;font-size:10px;min-width:15px;height:15px;line-height:15px;border-radius:8px;text-align:center;padding:0 3px;font-weight:bold;display:none;}
   .tab .tb.on{display:block;}
+  /* 双模式：Header 切换器 + 急行硝石角标 */
+  #mode-chip{display:flex;align-items:center;gap:6px;cursor:pointer;padding:2px 6px;border:1px solid var(--teal);border-radius:3px;}
+  #mode-chip .mspr{width:96px;height:24px;background:url('assets/anim/mode_switch.png') no-repeat 0 0 / 192px 48px;image-rendering:pixelated;}
+  #mode-chip.rush .mspr{background-position:-96px 0;}
+  #mode-chip .mlabel{font-size:12px;font-weight:bold;}
+  .nitra-tag{display:inline-block;margin-left:6px;padding:1px 6px;border:1px solid var(--amber);border-radius:3px;font-size:11px;color:var(--amber);}
 </style>
 </head>
 <body>
@@ -173,8 +179,12 @@ h3.sec{font-size:13px; color:var(--amber); margin:10px 0 6px;}
       <button class="btn" data-spd="0">暂停</button>
       <button class="btn" data-spd="1">×1</button>
     </div>
+    <div class="chip" id="mode-chip" title="点击切换：挂机=正常流速全额收益 / 急行=任务10秒级·产出×0.35·硝石×4·事件手动·禁深潜与暂停">
+      <div class="mspr"></div><b class="mlabel" id="mode-label">挂机</b>
+    </div>
     <div class="chip" id="auto-chip" style="display:none;cursor:pointer;" title="挂机模式运行中，点击取消">🤖 <b id="auto-left">--</b></div>
     <div class="chip"><button class="btn" id="btn-auto" style="padding:3px 8px;font-size:12px;" title="挂机券：3 小时内自动派遣、自动处理事件">🤖 挂机券</button></div>
+    <div class="chip"><button class="btn" id="btn-idle-report" style="padding:3px 8px;font-size:12px;" title="托管期间的收益汇总面板">📊 收益</button></div>
     <button class="btn" id="btn-bgm" style="padding:3px 8px;font-size:12px;" title="音乐开关">🎵</button>
     <div class="chip"><b>◈</b> 代币 <b id="r-credits">0</b></div>
     <div class="chip"><img class="cicon" src="assets/icons/res_nitra.png">硝石 <b id="r-nitra">0</b></div>
@@ -521,9 +531,9 @@ function campProgress(kind, match, amount){
       if(rw.recruit){
         S.recruited[rw.recruit] = true;
         if(S.miners.some(m=>m.cls===rw.recruit)){
-          S.credits += 500;
-          parts.push('重复招募折算 500 代币');
-          log('该职业已有在册员工，集团把招募奖金折成了 500 代币——感谢你帮财务省了一笔。', 'sys');
+          S.credits += 300;
+          parts.push('重复招募折算 300 代币');
+          log('该职业已有在册员工，集团把招募奖金折成了 300 代币——感谢你帮财务省了一笔。', 'sys');
         } else {
           const m = newMiner(rw.recruit); S.miners.push(m);
           parts.push('免费招募 '+minerName(m));
@@ -572,13 +582,56 @@ function campProgress(kind, match, amount){
 }
 
 /* 酒吧 v1.6 改版（B 退回项④，数值表 §3.5）：士气制 → 原作功能性 buff 制；一次派遣带 1 款，后饮覆盖 */
-const DRINKS = [
-  {name:'油头精酿',     lv:1, price:40,  mor:10, rig:2, icon:'beer_oilyoaf', buff:{yield:10},              btxt:'全队产出 +10%（下一次派遣）'},
-  {name:'叶子情人特调', lv:1, price:90,  mor:10, rig:2, icon:'beer_leaflover', buff:{healNow:true, medBill:-30}, btxt:'全队轻伤立即痊愈 + 医疗账单 -30%（下一次派遣）'},
-  {name:'红岩爆破手',   lv:2, price:160, mor:10, rig:4, icon:'beer_redrock', buff:{shield:1},              btxt:'免除 1 例重伤判定（下一次派遣）'},
-  {name:'黑墨菱酒',     lv:2, price:300, mor:15, rig:6, icon:'beer_darkmorkite', buff:{morkite:25},            btxt:'主矿物产出 +25%（下一次派遣）'},
+/* ---------------- 酒吧 v2：抽酒制（执行单 §一，用户拍板） ---------------- */
+const DRINK_POOL = [
+  {name:'油头精酿',        en:'Oily Oaf Brew',        rarity:'常见', w:50, icon:'beer_oilyoaf',     buff:{yield:10},                txt:'全队产出 +10%'},
+  {name:'叶子情人特调',    en:"Leaf Lover's Special", rarity:'常见', w:50, icon:'beer_leaflover',   buff:{healNow:1, medBill:-30},  txt:'轻伤全愈 + 账单 -30%'},
+  {name:'隧道老鼠',        en:'Tunnel Rat',           rarity:'常见', w:50, icon:'beer_oilyoaf',     buff:{durMul:0.9},              txt:'任务时长 -10%'},
+  {name:'亚肯黑啤',        en:'Arken Blackout',       rarity:'常见', w:50, icon:'beer_darkmorkite', buff:{moraleHit:-5},            txt:'士气 -5%（喝多了）', bad:1},
+  {name:'红岩爆破手',      en:'Red Rock Blaster',     rarity:'少见', w:30, icon:'beer_redrock',     buff:{shield:1},                txt:'重伤判定免除 1 例'},
+  {name:'昏迷黑啤',        en:'Blackout Stout',       rarity:'少见', w:30, icon:'beer_darkmorkite', buff:{autoEvents:1},            txt:'本次派遣无法手动操作（喝倒了，自动接管）', bad:1},
+  {name:'虫洞特酿',        en:'Wormhole Special',     rarity:'少见', w:30, icon:'beer_leaflover',   buff:{evSucc:10},               txt:'事件成功率 +10%'},
+  {name:'氧气助推',        en:'Oxygen Boost',         rarity:'少见', w:30, icon:'beer_oilyoaf',     buff:{rareBoost:8},             txt:'稀有掉落 +8%'},
+  {name:'碎颅者麦酒',      en:'Skull Crusher Ale',    rarity:'精英', w:15, icon:'beer_redrock',     buff:{checkT:15},               txt:'事件检定 +15%'},
+  {name:'杀手黑啤',        en:'Slayer Stout',         rarity:'精英', w:15, icon:'beer_darkmorkite', buff:{yield:20},                txt:'全队产出 +20%'},
+  {name:'仲裁者黑啤',      en:'Arbitrator',           rarity:'精英', w:15, icon:'beer_leaflover',   buff:{medBill:-40},             txt:'医疗账单 -40%'},
+  {name:'岩石甜心',        en:'Rocky Mountain',       rarity:'精英', w:15, icon:'beer_oilyoaf',     buff:{xpPer:20},                txt:'全队 XP +20/任务'},
+  {name:'麦芽星果特调',    en:'Malt Star',            rarity:'精英', w:15, icon:'beer_leaflover',   buff:{xpPer:30},                txt:'全队 XP +30/任务'},
+  {name:'昏迷黑啤·特浓',   en:'Blackout Stout ×',     rarity:'传说', w:5,  icon:'beer_darkmorkite', buff:{autoEvents:1, durMul:1.2}, txt:'无法操作 + 时长 +20%（彻底喝倒了）', bad:1},
+  {name:'🎰 神秘特调',     en:'Mystery Special',      rarity:'传说', w:5,  icon:'beer_redrock',     buff:{mystery:1},               txt:'随机复制本池任一效果'},
 ];
-let drinkArm = -1, drinkArmAt = 0;   /* ⑨ 大额两击确认状态 */
+const REROLL_COST = 150;   /* 酒吧「再抽一轮」价格 */
+function rollDrink(){
+  const tot = DRINK_POOL.reduce((a, x) => a + x.w, 0);
+  let r = Math.random() * tot, pickD = DRINK_POOL[0];
+  for(const x of DRINK_POOL){ r -= x.w; if(r <= 0){ pickD = x; break; } }
+  let eff = pickD.buff;
+  if(eff.mystery){
+    const pool2 = DRINK_POOL.filter(x => !x.buff.mystery);
+    pickD = pool2[Math.floor(Math.random() * pool2.length)];
+    eff = pickD.buff;
+    log('🎰 神秘特调开出了「' + pickD.name + '」的效果！', 'sys');
+  }
+  return Object.assign({ dname: pickD.name, rarity: pickD.rarity, icon: pickD.icon, bad: pickD.bad || 0, txt: pickD.txt }, eff);
+}
+function applyDrinkImmediate(db){
+  if(db.healNow){
+    let healed = 0;
+    S.miners.forEach(m => { if(m.state === 'med'){ m.state = 'idle'; m.medUntil = 0; healed++; } });
+    if(healed) log('叶子情人特调下肚，' + healed + ' 名伤员当场满血归队。', 'good');
+  }
+  if(db.moraleHit) S.miners.forEach(m => m.morale = clamp(m.morale + db.moraleHit, 0, 100));
+}
+function rerollDrink(){
+  if(S.fac.bar < 1) return;
+  if(S.credits < REROLL_COST){ log('再抽一轮要 ' + REROLL_COST + ' 代币，财务部拒绝预支。', 'bad'); return; }
+  S.credits -= REROLL_COST;
+  S.activeDrinkBuff = rollDrink();
+  const db = S.activeDrinkBuff;
+  log('🍻 再抽一轮：「' + db.dname + '」（' + db.rarity + '）' + db.txt + '。', db.bad ? 'bad' : 'gold');
+  applyDrinkImmediate(db);
+  renderAll(); save();
+}
 
 const RARES = ['玉石','乌玛石','铜矿','妙绝珠','吸铁石','蜂母石','容和石'];
 
@@ -1802,7 +1855,7 @@ function newGame(){
     trinkets:{}, trinketEq:null,
     blanks:0, modsOwned:{}, equipped:{}, drawSinceT1:0, rerolled:false,
     dive:{week:'', normal:{stage:0, done:false}, elite:{locked:true, stage:0, done:false}, modifiers:[]},
-    log:[], flags:{}, speed:1, stats:{missions:0, inj:0},
+    log:[], flags:{}, speed:1, stats:{missions:0, inj:0}, mode:'idle', idleReport:null,
     recruited:{scout:true, engineer:false, gunner:false, driller:false},
   };
   S.miners.push(newMiner('scout'));
@@ -1835,6 +1888,8 @@ function load(){
     if(!S.market){ S.market = {day:0, prices:{}, prev:{}}; S.lastDay = 1; S.dayStats = {missions:0, credits:0, morkite:0, injured:0}; }
     if(typeof S.gm !== 'number') S.gm = 480;
     if(typeof S.lastReal !== 'number') S.lastReal = Date.now();
+    if(!S.mode) S.mode = 'idle';
+    if(S.idleReport === undefined) S.idleReport = null;
     if(!S.flags) S.flags = {};
     if(!S.rare) S.rare = {};
     if(!S.nextNum) S.nextNum = {};
@@ -2070,19 +2125,34 @@ function openDispatch(mid){
 function doDispatch(m, ids, fitN, loanStr){
   const hc = ids.length;
   const modEff = squadModEffects(ids);
-  /* 酒吧 buff（一次派遣一款，派遣开始即消耗） */
-  let drinkShield = 0, morkiteBuff = 1;
+  /* 酒吧 v2 抽酒制：派遣出发前白送一轮酒；「再抽一轮」的结果也在本派遣生效 */
+  if(!S.activeDrinkBuff){
+    S.activeDrinkBuff = rollDrink();
+    const db0 = S.activeDrinkBuff;
+    log('🍻 出发酒：「' + db0.dname + '」（' + db0.rarity + '）' + db0.txt + '。', db0.bad ? 'bad' : 'sys');
+    applyDrinkImmediate(db0);
+  }
+  let drinkShield = 0, morkiteBuff = 1, durMulD = 1, evSuccD = 0, rareBoostD = 0, checkTD = 0, xpPerD = 0, autoEventsD = false;
   const db = S.activeDrinkBuff;
   if(db){
     if(db.yield) modEff.yield = (modEff.yield||0) + db.yield;
     if(db.medBill) modEff.medBill = (modEff.medBill||0) + db.medBill;
     if(db.shield) drinkShield = db.shield;
     if(db.morkite) morkiteBuff = 1 + db.morkite/100;
+    if(db.durMul) durMulD = db.durMul;
+    if(db.evSucc) modEff.eventSuccess = (modEff.eventSuccess||0) + db.evSucc;
+    if(db.rareBoost) rareBoostD = db.rareBoost / 100;
+    if(db.checkT) modEff.checkT = (modEff.checkT||0) + db.checkT;
+    if(db.xpPer) xpPerD = db.xpPer;
+    if(db.autoEvents) autoEventsD = true;
     S.activeDrinkBuff = null;
   }
   let dur = missionDur(m, hc, modEff);
   if(S.nextDurMul){ dur = Math.max(60, Math.round(dur * S.nextDurMul)); S.nextDurMul = null; }   /* 黑脸小猫 A 选项：下次派遣 -10% */
-  const cost = dispatchCost(m, hc, modEff, dur);
+  if(durMulD !== 1){ dur = Math.max(60, Math.round(dur * durMulD)); }   /* 酒吧：隧道老鼠 -10% / 特浓黑啤 +20% */
+  if(S.mode === 'rush'){ dur = Math.max(6, Math.round(dur / 30)); }   /* 急行：时长 ÷30，10 秒级 */
+  let cost = dispatchCost(m, hc, modEff, dur);
+  if(S.mode === 'rush'){ cost = Math.round(cost * 4); }   /* 急行：硝石 ×4（节奏限制器） */
   if(S.nitra >= cost){
     S.nitra -= cost;
   } else {
@@ -2097,7 +2167,8 @@ function doDispatch(m, ids, fitN, loanStr){
   const names = ids.map(id => minerName(S.miners.find(x=>x.id===id))).join('、');
   S.deps.push({id:'d'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),
     mid:m.id, m, cls:'mixed', fitN:fitN||0, hc, minerIds:ids, modEff, drinkShield, morkiteBuff,
-    start:S.gm, dur, done:0, evt1:false, evt2:false, paused:null, bonus:1});
+    start:S.gm, dur, done:0, evt1:false, evt2:false, paused:null, bonus:1,
+    rareBoost:(rareBoostD||0), xpPer:(xpPerD||0), autoEvents:autoEventsD, mode:(S.mode||'idle'), nitraSpent:cost});
   S.board = S.board.filter(x=>x.id!==m.id);
   log(mtypeById(m.type).name+'【'+biomeById(m.biome).name+'】派遣 '+hc+' 人小队（'+names+'），预计 '+fmtDur(dur)+'。', '');
   /* 社区彩蛋（B 设计 ev_lcyf166）：执勤护送（非深潜）派遣开始时 30% 概率到访 */
@@ -2164,6 +2235,28 @@ function startMemeEvent(d, id){
   if($('#modal').style.display === 'flex' && $('#modal-box').dataset.dep === d.id) return;
   showEventModal(d);
 }
+function nitroTag(n){ return (S.mode||'idle') === 'rush' ? ' <span class="nitra-tag">硝石 +' + n + '</span>' : ''; }
+function nitroDis(n){ return ((S.mode||'idle') === 'rush' && S.nitra < n) ? ' disabled' : ''; }
+function eventNitroAdjust(d, base){
+  /* 时长类选项的硝石调整：急行=按价目付费；挂机=返还派遣硝石 50% */
+  if(d.mode === 'rush'){
+    S.nitra = Math.max(0, S.nitra - base);
+    return '（急行：额外消耗 ' + base + ' 硝石）';
+  }
+  const refund = Math.round((d.nitraSpent || 0) * 0.5);
+  if(refund > 0){ S.nitra += refund; return '（挂机：返还派遣硝石 ' + refund + '）'; }
+  return '';
+}
+function autoResolveEvent(d){
+  if(!d.paused) return;
+  const p = d.paused;
+  const c = p.meme ? 'memeA' : ({swarm:'hold', rich:'stay', leech:'save', break:'fast', elite:'fight', cat:'catA', lcyf166:'lcyfA'})[p.id];
+  if(S.autoUntil && Date.now() < S.autoUntil){
+    const R = S.idleReport || (S.idleReport = {credits:0, missions:0, morkite:0, moil:0, nitra:0, rare:{}, events:0, med:0});
+    R.events++;
+  }
+  if(c) resolveEvent(d, c);
+}
 function rollEvent(d, idx){
   const evW = (d.modEff && d.modEff.evW) || null;   /* 深潜修正器：事件权重修正（B 退回项） */
   const deck = [
@@ -2193,10 +2286,10 @@ function startEvent(d, id){
     d.paused.p = p;
     html = animDiv('swarm_banner', 240, 80) + animDiv('evt_swarm', 288, 96) + TEXT.ev_swarm_desc;
     opts = '<button class="opt btn pri" data-c="hold">'+TEXT.ev_swarm_a_btn+'（成功概率 '+(p*100).toFixed(0)+'%：奖励 +20%，士气 +10；失败：1 人重伤入院，任务继续）</button>'+
-           '<button class="opt btn" data-c="bunker">'+TEXT.ev_swarm_b_btn+'（无风险，任务时长 +25%）</button>';
+           '<button class="opt btn" data-c="bunker"'+nitroDis(100)+'>'+TEXT.ev_swarm_b_btn+'（无风险，任务时长 +25%）'+nitroTag(100)+'</button>';
   } else if(id === 'rich'){
     html = animDiv('evt_rich', 288, 96) + TEXT.ev_richvein_desc;
-    opts = '<button class="opt btn pri" data-c="stay">'+TEXT.ev_richvein_a_btn+'（主矿物 ×1.6，稀有掉落 +50%，时长 +30%）</button>'+
+    opts = '<button class="opt btn pri" data-c="stay"'+nitroDis(120)+'>'+TEXT.ev_richvein_a_btn+'（主矿物 ×1.6，稀有掉落 +50%，时长 +30%）'+nitroTag(120)+'</button>'+
            '<button class="opt btn" data-c="leave">'+TEXT.ev_richvein_b_btn+'（额外 +30 代币勘测报偿）</button>';
   } else if(id === 'leech'){
     const victim = pick(d.minerIds);
@@ -2205,12 +2298,12 @@ function startEvent(d, id){
     d.paused.bill = Math.round(250*HZv);
     d.paused.heal = Math.round(90*HZv);
     html = animDiv('evt_leech', 288, 96) + TEXT.ev_leech_desc.replace('{miner}', minerName(S.miners.find(x=>x.id===victim)));
-    opts = '<button class="opt btn pri" data-c="save">'+TEXT.ev_leech_a_btn+'（任务时长 +20%，无伤归队，全队士气 +5）</button>'+
+    opts = '<button class="opt btn pri" data-c="save"'+nitroDis(80)+'>'+TEXT.ev_leech_a_btn+'（任务时长 +20%，无伤归队，全队士气 +5）'+nitroTag(80)+'</button>'+
            '<button class="opt btn warn" data-c="delay">'+TEXT.ev_leech_b_btn+'（重伤入院：账单 '+d.paused.bill+' 代币 + 休养 '+d.paused.heal+' 游戏小时；全队士气 -15；任务继续）</button>';
   } else if(id === 'break'){
     html = animDiv('evt_break', 288, 96) + TEXT.ev_breakdown_desc;
     opts = '<button class="opt btn pri" data-c="fast">'+TEXT.ev_breakdown_a_btn+'（-'+Math.round(80*HZ)+' 代币，时长 +5%）</button>'+
-           '<button class="opt btn warn" data-c="slow">'+TEXT.ev_breakdown_b_btn+'（免费，时长 +20%，'+[10,15,20,25,30][d.m.hazard-1]+'% 概率 1 人轻伤）</button>';
+           '<button class="opt btn warn" data-c="slow"'+nitroDis(80)+'>'+TEXT.ev_breakdown_b_btn+'（免费，时长 +20%，'+[10,15,20,25,30][d.m.hazard-1]+'% 概率 1 人轻伤）</button>';
   } else if(id === 'elite'){
     const p0 = clamp(teamPower(d) / (teamPower(d) + 2.0*HZ), 0.05, 0.98);
     const es = ((d.modEff && d.modEff.eventSuccess) || 0) + eliteEB + eliteCB;
@@ -2301,11 +2394,11 @@ function resolveEvent(d, c){
         if(blessOn){
           d.rewardBonus = (d.rewardBonus||1) * 2;
           S.nitra = Math.max(0, S.nitra - 80);
-          team.forEach(m => { m.morale = clamp(m.morale+10,0,100); m.xp += 10; });
+          team.forEach(m => { m.morale = clamp(m.morale+10,0,100); m.xp += 10 + (m.lv||1) * 2; });
           log('虫潮被顶回去了——lcyf166 的连锁核弹洗了地，报酬 ×2！代价：补给多烧掉 80 硝石。', 'gold');
         } else {
           d.rewardBonus = (d.rewardBonus||1) * 1.2;
-          team.forEach(m => { m.morale = clamp(m.morale+10,0,100); m.xp += 10; });   /* 事件成功 +10 XP */
+          team.forEach(m => { m.morale = clamp(m.morale+10,0,100); m.xp += 10 + (m.lv||1) * 2; });   /* 事件成功 +10 XP */
           log(TEXT.ev_swarm_a_win.replace('{miner}', minerName(pick(team))), 'good');
         }
       } else {
@@ -2316,14 +2409,14 @@ function resolveEvent(d, c){
       }
     } else {
       d.dur += Math.round(d.dur * 0.25);
-      log(TEXT.ev_swarm_b_result, '');
+      log(TEXT.ev_swarm_b_result + eventNitroAdjust(d, 100), '');
     }
   } else if(p.id === 'rich'){
     if(c === 'stay'){
       d.mineralMul = (d.mineralMul||1) * 1.6;
       d.rareBoost = (d.rareBoost||0) + 0.5;
       d.dur += Math.round(d.dur * 0.3);
-      log(TEXT.ev_richvein_a_win, 'good');
+      log(TEXT.ev_richvein_a_win + eventNitroAdjust(d, 120), 'good');
     } else {
       S.credits += 30;
       log(TEXT.ev_richvein_b_result, '');
@@ -2332,7 +2425,7 @@ function resolveEvent(d, c){
     if(c === 'save'){
       d.dur += Math.round(d.dur * 0.2);
       team.forEach(m => m.morale = clamp(m.morale+5,0,100));
-      log(TEXT.ev_leech_a_win.replace('{miner}', minerName(S.miners.find(x=>x.id===p.victim))), 'good');
+      log(TEXT.ev_leech_a_win.replace('{miner}', minerName(S.miners.find(x=>x.id===p.victim))) + eventNitroAdjust(d, 80), 'good');
     } else {
       hurt(p.victim, HZ);
       team.forEach(m => m.morale = clamp(m.morale-15,0,100));
@@ -2348,7 +2441,7 @@ function resolveEvent(d, c){
       d.dur += Math.round(d.dur * 0.2);
       const hcChance = [10,15,20,25,30][d.m.hazard-1] || 20;
       if(Math.random()*100 < hcChance){ const v = pick(d.minerIds); if(v) hurt(v, HZ); }
-      log(TEXT.ev_breakdown_b_result, '');
+      log(TEXT.ev_breakdown_b_result + eventNitroAdjust(d, 80), '');
     }
   } else if(p.id === 'elite'){
     if(c === 'fight'){
@@ -2356,7 +2449,7 @@ function resolveEvent(d, c){
         d.goldX2 = true;
         d.rareBonus = true;
         S.credits += Math.round(100*HZ);
-        team.forEach(m => { m.morale = clamp(m.morale+10,0,100); m.xp += 10; });   /* 事件成功 +10 XP */
+        team.forEach(m => { m.morale = clamp(m.morale+10,0,100); m.xp += 10 + (m.lv||1) * 2; });   /* 事件成功 +10 XP */
         campProgress('elite', '', 1);
         holidayProgress('elite', 1);
         S.merit = (S.merit||0) + 1;
@@ -2483,8 +2576,8 @@ function settle(d, offline, forceMul){
   if(d.isDive){
     team.forEach(mn=>{
       mn.missions++;
-      mn.xp += 50 * m.hazard;   /* B 设计：深潜双倍 XP */
-      while(mn.xp >= mn.lv*60 && mn.lv < 25){ mn.xp -= mn.lv*60; mn.lv++; }
+      mn.xp += 60 + m.hazard * 15 + mn.lv * 2;   /* 执行单：深潜 60+h×15+lv×2 */
+      while(mn.xp >= mn.lv*30 && mn.lv < 25){ mn.xp -= mn.lv*30; mn.lv++; }
       mn.morale = clamp(mn.morale + 4, 0, 100);
       mn.state = 'idle';
     });
@@ -2506,6 +2599,12 @@ function settle(d, offline, forceMul){
   const me = d.modEff || {};
   const yMul = 1 + (me.yield||0)/100;
   ['morkite','moil','gold'].forEach(k => { if(gain[k]) gain[k] = Math.round(gain[k]*yMul); });
+  if(d.mode === 'rush'){
+    gain.credits = Math.round(gain.credits * 0.35);
+    gain.morkite = Math.round(gain.morkite * 0.35);
+    if(gain.moil) gain.moil = Math.round(gain.moil * 0.35);
+    if(gain.gold) gain.gold = Math.round(gain.gold * 0.35);
+  }
   /* 战役钩子（修复：原在此处与下方各计一次，导致一次任务双计战役进度——只保留下方完整版） */
   S.credits += gain.credits; S.nitra += gain.nitra||0;
   S.morkite += gain.morkite; S.moil += gain.moil||0; S.gold += gain.gold||0;
@@ -2518,7 +2617,7 @@ function settle(d, offline, forceMul){
   const avgStars = team.length ? team.reduce((a,x)=>a+(x.stars||0),0)/team.length : 0;
   const scoutN = team.filter(x=>x.cls==='scout').length;
   const falconerB = (S.elite && S.elite.carry === 'falconer') ? 0.15 : 0;
-  const dropP = clamp(0.45 + 0.04*avgLv + 0.08*(avgLic-1) + 0.06*avgStars + 0.1*scoutN + (me.rareDrop||0)/100 + falconerB + (d.rareBoost||0), 0, 0.95);
+  const dropP = clamp((0.45 + 0.04*avgLv + 0.08*(avgLic-1) + 0.06*avgStars + 0.1*scoutN + (me.rareDrop||0)/100 + falconerB + (d.rareBoost||0)) * (d.mode === 'rush' ? 0.6 : 1), 0, 0.95);
   const drops = [];
   let dropTotal = 0;
   if(d.rareBonus || Math.random() < dropP){
@@ -2552,13 +2651,21 @@ function settle(d, offline, forceMul){
   /* 经验与士气 */
   team.forEach(mn=>{
     mn.missions++;
-    mn.xp += 25 * m.hazard;   /* B 设计：25×危险 */
-    while(mn.xp >= mn.lv*60 && mn.lv < 25){ mn.xp -= mn.lv*60; mn.lv++; }
+    mn.xp += 30 + m.hazard * 15 + mn.lv * 2;   /* 执行单：30+h×15+lv×2 */
+    while(mn.xp >= mn.lv*30 && mn.lv < 25){ mn.xp -= mn.lv*30; mn.lv++; }
     mn.morale = clamp(mn.morale + 6, 0, 100);
     mn.state = 'idle';
   });
   if(me.morale) team.forEach(m => m.morale = clamp(m.morale + me.morale, 10, 100));
   S.stats.missions = (S.stats.missions||0) + 1;
+  /* 托管收益面板：挂机券生效期间自动累计 */
+  if(S.autoUntil && Date.now() < S.autoUntil){
+    const R = S.idleReport || (S.idleReport = {credits:0, missions:0, morkite:0, moil:0, nitra:0, rare:{}, events:0, med:0});
+    R.credits += gain.credits; R.missions++;
+    R.morkite += gain.morkite||0; R.moil += gain.moil||0; R.nitra += gain.nitra||0;
+    (drops||[]).forEach(x => R.rare[x] = (R.rare[x]||0) + 1);
+    R.med += d.medBillsPaid || 0;
+  }
   log((offline?'【离线结算】':'✅ ')+'任务完成：'+mtypeById(m.type).name+'【'+b.name+'】 代币+'+gain.credits+
       '，墨菱石+'+(gain.morkite||0)+(gain.moil?('，墨菱油+'+gain.moil):'')+(gain.gold?('，黄金+'+gain.gold):'')+
       (drops.length?('，稀有矿物：'+drops.join('、')):''), 'good');
@@ -2635,7 +2742,29 @@ const BGM = {
 };
 
 /* 挂机模式（用户方案：挂机券 3 小时自动游玩）：自动事件决策 + 自动派遣空闲矿工 */
+function showIdleReport(){
+  const R = S.idleReport;
+  let rows = '';
+  if(!R || !R.missions){
+    rows = '<div class="note">暂无托管收益——挂机券生效期间完成的任务会自动累计到这里。</div>';
+  } else {
+    rows = lootRowHTML('', '完成任务', R.missions + ' 次') +
+      lootRowHTML('', '代币净收', '+' + fmt(R.credits)) +
+      (R.morkite ? lootRowHTML('res_morkite', '墨菱石', '+' + fmt(R.morkite)) : '') +
+      (R.moil ? lootRowHTML('res_morkite', '墨菱油', '+' + fmt(R.moil)) : '') +
+      (R.nitra ? lootRowHTML('res_nitra', '硝石', '+' + fmt(R.nitra)) : '') +
+      Object.keys(R.rare).slice(0, 12).map(k => lootRowHTML('', k, '×' + R.rare[k])).join('') +
+      (R.med ? lootRowHTML('', '医疗支出', '-' + fmt(R.med)) : '') +
+      lootRowHTML('', '托管自动决策事件', R.events + ' 次');
+  }
+  showModal('<h3 style="color:var(--amber)">📊 托管收益面板</h3><div style="display:flex;flex-direction:column;gap:6px;margin:10px 0;">' + rows + '</div><div class="note">统计范围：挂机券生效期间的自动派遣与决策。</div><button class="btn pri" style="width:100%" onclick="closeModal(true)">签收</button>', false);
+}
 function autoPlayStep(){
+  if(S.autoUntil && Date.now() > S.autoUntil && !S._idleReportShown){
+    S._idleReportShown = true;
+    log('🤖 挂机券到期——收益面板已生成，点 📊 可随时查看。', 'sys');
+    showIdleReport();
+  }
   if(!S.autoUntil || Date.now() > S.autoUntil) return;
   S.deps.forEach(d => {
     if(d.paused){
@@ -2671,6 +2800,7 @@ function worldAdvanceBody(gm, offline){
     for(const d of S.deps){
       if(d.finished) continue;   /* 防嵌套推进后重复结算 */
       if(d.paused){
+        if(d.autoEvents){ autoResolveEvent(d); continue; }
         if(!offline){
           const md = document.getElementById('modal');
           if(!(md.style.display === 'flex' && document.getElementById('modal-box').dataset.dep === d.id)) showEventModal(d);   /* 防每秒重建弹窗（卡死元凶） */
@@ -2884,42 +3014,28 @@ function hire(){
   log(TEXT.log_recruit.replace('{name}', minerName(m)).replace('{cls}', CLASSES[cls].name), '');
   renderAll(); save();
 }
-function buyDrink(i){
-  const d = DRINKS[i];
-  if(S.fac.bar < d.lv) return;
-  if(S.rigLv < d.rig){ log('这款酒要钻井平台 Lv.'+d.rig+' 才供应。', 'bad'); return; }
-  const total = d.price * S.miners.length;
-  if(S.credits < total) return;
-  if(total >= 160 && (drinkArm !== i || Date.now()-drinkArmAt > 4000)){
-    drinkArm = i; drinkArmAt = Date.now();
-    renderBar();
-    log('大额消费确认：'+d.name+' 全员一轮共 '+total+' 代币——再点一次按钮下单。', 'sys');
-    return;
-  }
-  drinkArm = -1;
-  S.credits -= total;
-  S.miners.forEach(m => m.morale = clamp(m.morale + d.mor, 0, 100));
-  if(d.buff.healNow){
-    let healed = 0;
-    S.miners.forEach(m => { if(m.state==='med'){ m.state='idle'; m.medUntil=0; healed++; } });
-    if(healed) log('医疗站的伤员们瞬间痊愈，面面相觑。叶子情人特调，效果拔群。', 'good');
-  }
-  S.activeDrinkBuff = Object.assign({dname: d.name}, d.buff);
-  log(TEXT.log_bar_round.replace('{drink}', d.name)+' 共 '+total+' 代币。buff 已挂上下一次派遣。', 'good');
-  renderAll(); save();
-}
+/* 旧 buyDrink（四酒单版）已随酒吧 v2 抽酒制移除 */
 function gainMerit(n, why){
   S.merit = (S.merit||0) + n;
   log(TEXT.log_merit.replace('{n}', n)+'（'+why+'）。当前：'+S.merit, 'gold');
 }
 function claimKPI(){
   if(S.kpi.done < S.kpi.quota) return;
-  const bonus = Math.round(CFG.KPI_BONUS * S.kpi.term);
+  const bonus = Math.round(1500 * S.kpi.term);   /* 执行单：800→1500×term */
+  const rarePick = RARES[Math.floor(Math.random() * RARES.length)];
+  S.rare[rarePick] = (S.rare[rarePick] || 0) + 10;
   S.credits += bonus;
+  let overTxt = '';
+  if(S.kpi.done > S.kpi.quota * 1.5){
+    S.credits += 500;
+    S.blanks = (S.blanks || 0) + 1;
+    overTxt = ' 超额完成！追加 500 代币 + 空白模组×1。';
+  }
+  log('季度分红稀有矿物：' + rarePick + '×10。', 'gold');
   campProgress('kpi', '', 1);
   gainMerit(5, '季度 KPI 达成');
   const rep = t => t.replace('{reward}', fmt(bonus)).replace('{quota}', fmt(S.kpi.quota));
-  log(rep(TEXT['kpi_success_'+(1+Math.floor(Math.random()*3))]), 'gold');
+  log(rep(TEXT['kpi_success_'+(1+Math.floor(Math.random()*3))]) + overTxt, 'gold');
   S.kpi.term++; S.kpi.quota = Math.round(S.kpi.quota * CFG.KPI_MUL); S.kpi.done = 0;
   const nBonus = Math.round(CFG.KPI_BONUS * S.kpi.term);
   const rep2 = t => t.replace('{quota}', fmt(S.kpi.quota)).replace('{reward}', fmt(nBonus));
@@ -2948,6 +3064,14 @@ function fmtDur(gm){
 function renderHeader(){
   const spdChip = document.getElementById('spd-chip');
   if(spdChip) spdChip.style.display = (S.mode === 'rush') ? 'none' : '';
+  const modeChip = document.getElementById('mode-chip');
+  if(modeChip){
+    const rush = S.mode === 'rush';
+    modeChip.classList.toggle('rush', rush);
+    const ml = modeChip.querySelector('.mlabel');
+    if(ml) ml.textContent = rush ? '急行' : '挂机';
+    modeChip.style.borderColor = rush ? 'var(--amber)' : 'var(--teal)';
+  }
   const autoChip = document.getElementById('auto-chip');
   if(autoChip){
     const autoOn = S.autoUntil && Date.now() < S.autoUntil;
@@ -3070,8 +3194,8 @@ function renderRoster(){
       html += '<div class="miner"><div class="mtop"><div style="display:flex;align-items:center;gap:6px;">'+
         avatarHtml(m.cls, m.state)+
         '<div>'+frameHtml(m.stars)+'<b>'+minerName(m)+'</b> Lv.'+(m.lv>=25?'25(MAX)':m.lv)+' '+st+'</div></div>'+promo+'</div>'+
-        '<div class="note">XP '+(m.lv>=25?'MAX':Math.floor(m.xp)+'/'+(m.lv*60))+'｜任务 '+m.missions+' 次'+(m.stars?('｜晋升加成 +'+(m.stars*8)+'%'):'')+'</div>'+
-        '<div class="bar" style="margin-bottom:4px;"><i style="width:'+clamp(m.xp/(m.lv*60)*100,0,100)+'%;background:linear-gradient(90deg,var(--green),var(--gold))"></i></div>'+
+        '<div class="note">XP '+(m.lv>=25?'MAX':Math.floor(m.xp)+'/'+(m.lv*30))+'｜任务 '+m.missions+' 次'+(m.stars?('｜晋升加成 +'+(m.stars*8)+'%'):'')+'</div>'+
+        '<div class="bar" style="margin-bottom:4px;"><i style="width:'+clamp(m.xp/(m.lv*30)*100,0,100)+'%;background:linear-gradient(90deg,var(--green),var(--gold))"></i></div>'+
         '<div class="mrow"><span class="mb"><span class="mbar"><i data-mid="'+m.id+'" style="width:'+m.morale+'%;background:'+
         (m.morale>=60?'var(--green)':m.morale>=30?'var(--amber)':'var(--red)')+'"></i></span></span><span class="note">士气</span></div>'+
         '<div class="dstage"><div class="spr anim-spr" data-anim="dwarf_'+m.cls+'_'+(m.state==='mission'?'walk':m.state==='med'?'med':'idle')+'"></div></div></div>';
@@ -3314,22 +3438,22 @@ function renderBar(){
   let html = '<div style="display:flex;gap:8px;align-items:center;">'+animDiv('lloyd_pour', 48, 48)+
     '<span class="note">酒吧 Lv.'+S.fac.bar+'</span></div>'+
     '<div class="meta">待生效酒 buff：'+(S.activeDrinkBuff ? S.activeDrinkBuff.dname+'（下一次派遣消耗）' : '无——请客喝酒后自动挂上。')+'</div>';
-  DRINKS.forEach((d,i)=>{
-    const total = d.price * S.miners.length;
-    const lock0 = S.fac.bar < d.lv;
-    const rigLock = S.rigLv < d.rig;
-    const lock = lock0 || rigLock;
-    html += '<div class="mcard"><div class="t"><span class="nm"><img src="assets/bar/'+d.icon+'.png" style="width:24px;height:32px;image-rendering:pixelated;vertical-align:middle;margin-right:5px;">'+d.name+(lock0?TEXT.ui_bar_locked.replace('{lv}', d.lv):rigLock?' 🔒 需钻井平台 Lv.'+d.rig:'')+'</span><span>'+total+' 代币</span></div>'+
-      '<div class="meta">'+d.btxt+'　士气 +'+d.mor+'</div>'+
-      '<button class="btn pri" data-drink="'+i+'" '+(lock||rigLock||S.credits<total?'disabled':'')+'>'+(drinkArm===i?'⚠ 确认 · 再点一次':TEXT.ui_bar_btn_treat)+'</button></div>';
-  });
+    const db = S.activeDrinkBuff;
+  const RCOL = {'常见':'var(--dim)','少见':'var(--green)','精英':'var(--amber)','传说':'var(--gold)'};
+  html += '<div class="meta">待生效酒：' + (db
+      ? ('<b style="color:'+(RCOL[db.rarity]||'var(--txt)')+'">「'+db.dname+'」</b>（'+db.rarity+'）'+db.txt+' —— 下一次派遣消耗')
+      : '下一次派遣出发时自动白送一轮') + '</div>';
+  html += '<div class="row"><button class="btn pri" id="btn-reroll" style="flex:1" '+(S.fac.bar<1||S.credits<REROLL_COST?'disabled':'')+'>🎲 再抽一轮（'+REROLL_COST+' 代币）</button></div>';
+  html += '<div class="meta" style="margin-top:4px;">酒池 '+DRINK_POOL.length+' 款：' + DRINK_POOL.map(d =>
+    '<span style="color:'+(RCOL[d.rarity]||'var(--txt)')+'">'+d.name+'</span>'
+  ).join('、') + '。</div>';
   if(S.fac.bar < 4){
     const c = barCost();
     html += '<div class="row"><span style="flex:1">扩建酒吧至 Lv.'+(S.fac.bar+1)+'：'+c.c+' 代币 + 蜂母石×'+c.bismor+'</span>'+
       '<button class="btn" id="btn-bar" '+(S.credits>=c.c&&S.rare['蜂母石']>=c.bismor?'':'disabled')+'>扩建</button></div>';
   }
   $('#side').innerHTML = html;
-  $('#side').querySelectorAll('[data-drink]').forEach(el=>{ el.onclick = () => buyDrink(parseInt(el.dataset.drink)); });
+  const rr = $('#btn-reroll'); if(rr) rr.onclick = rerollDrink;
   const bb = $('#btn-bar'); if(bb) bb.onclick = upgradeBar;
 }
 function renderMed(){
@@ -3744,9 +3868,13 @@ function renderDive(){
     });
   });
   html += '<div class="note">每周一 0 点刷新；跨周未通关作废。深潜产出全额结算并计入 KPI。</div>';
+  if(S.mode === 'rush') html = '<div class="note" style="color:var(--amber)">⚡ 急行模式不开放深潜。切回挂机模式后可正常下潜。</div>' + html;
   $('#side').innerHTML = html;
   $('#side').querySelectorAll('[data-dive]').forEach(el=>{
-    el.onclick = () => startDiveStage(...el.dataset.dive.split(':').map((v,i)=> i===1 ? parseInt(v) : v));
+    el.onclick = () => {
+      if(S.mode === 'rush'){ log('深潜是周常大单，急行模式不开放——切回挂机模式再下潜。', 'bad'); return; }
+      startDiveStage(...el.dataset.dive.split(':').map((v,i)=> i===1 ? parseInt(v) : v));
+    };
   });
 }
 function renderHelp(){
@@ -4229,6 +4357,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       log('挂机模式已手动取消。', 'sys');
     } else {
       S.autoUntil = Date.now() + 3*3600*1000;
+      S.idleReport = null; S._idleReportShown = false;
       log('🤖 挂机券激活：未来 3 小时自动派遣与决策。休眠舱仍可叠加使用。', 'gold');
     }
     renderAll(); save();
@@ -4237,6 +4366,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   if(autoBtn) autoBtn.onclick = toggleAuto;
   const autoChipBtn = document.getElementById('auto-chip');
   if(autoChipBtn) autoChipBtn.onclick = toggleAuto;
+  const modeChipBtn = document.getElementById('mode-chip');
+  if(modeChipBtn) modeChipBtn.onclick = () => {
+    S.mode = (S.mode === 'rush') ? 'idle' : 'rush';
+    log(S.mode === 'rush'
+      ? '⚡ 急行模式：任务时长 ÷30（10 秒级）、产出 ×0.35、硝石 ×4、时间延长选项付费、深潜与时间控制停用。'
+      : '🛌 挂机模式：正常流速，任务收益全额，时间延长选项返还硝石。', 'sys');
+    renderAll(); save();
+  };
+  const irBtn = document.getElementById('btn-idle-report');
+  if(irBtn) irBtn.onclick = showIdleReport;
   /* B-8：音乐开关 */
   const bgmBtn = document.getElementById('btn-bgm');
   if(bgmBtn) bgmBtn.onclick = () => {
