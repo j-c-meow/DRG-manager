@@ -3130,9 +3130,7 @@ function renderGear(){
   html += '<h3 class="sec">锻造台 · 模组抽卡</h3>'+animDiv('forge_card_flip', 64, 88)+'<div class="row"><span style="flex:1">空白模组：<b>'+(S.blanks||0)+'</b> 个</span>'+
     '<button class="btn pri" id="btn-draw" '+((S.blanks||0) >= 1 ? '' : 'disabled')+'>插入空白模组（3 选 1）</button></div>'+
     '<div class="note">完成任务板上的三提石任务（✦ 标记）获取空白模组。抽到重复模组自动折算 30% 造价的代币。</div>';
-  if(S.modsOwned && Object.keys(S.modsOwned).length){
-    html += '<div class="note">仓库模组：'+Object.keys(S.modsOwned).map(id => (MOD_INDEX[id]?MOD_INDEX[id].name_zh:id)+'×'+S.modsOwned[id]).join('、')+'</div>';
-  }
+  /* 仓库模组清单文字墙已删（用户 09-15 拍板）：模组一览去📦仓库看 */
   Object.keys(CLASSES).forEach(c=>{
     ensureWeaponV2();
     const t = S.licenses[c], c2 = licenseCost(c);
@@ -4141,6 +4139,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   window.__initErr = null;
   try{
   loadFold();
+  BGM.init();   /* 修复：此前 init 从未调用，BGM 默认无声（首次任意点击即响） */
   if(!load()) newGame();
   else {
     /* 离线结算 */
