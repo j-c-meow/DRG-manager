@@ -165,6 +165,11 @@ h3.sec{font-size:13px; color:var(--amber); margin:10px 0 6px;}
   #mode-chip.rush .mspr{background-position:-96px 0;}
   #mode-chip .mlabel{font-size:12px;font-weight:bold;}
   .nitra-tag{display:inline-block;margin-left:6px;padding:1px 6px;border:1px solid var(--amber);border-radius:3px;font-size:11px;color:var(--amber);}
+  /* 数值详情弹窗 */
+  .drow{display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid var(--line);}
+  .dlabel{flex:1;color:var(--dim);font-size:12px;}
+  .dvalue{font-weight:bold;color:var(--amber);}
+  [data-minfo]{cursor:pointer;}
 </style>
 </head>
 <body>
@@ -172,7 +177,6 @@ h3.sec{font-size:13px; color:var(--amber); margin:10px 0 6px;}
   <header>
     <div>
       <h1>深岩银河集团 · 17号钻台管理终端</h1>
-      <div class="sub">LEAN MINING™ 认证终端 · 请勿用本终端申请烧伤理赔</div>
     </div>
     <div class="chip" id="clock">D1 08:00</div>
     <div class="chip" id="spd-chip">时间
@@ -186,8 +190,8 @@ h3.sec{font-size:13px; color:var(--amber); margin:10px 0 6px;}
     <div class="chip"><button class="btn" id="btn-auto" style="padding:3px 8px;font-size:12px;" title="挂机券：3 小时内自动派遣、自动处理事件">🤖 挂机券</button></div>
     <div class="chip"><button class="btn" id="btn-idle-report" style="padding:3px 8px;font-size:12px;" title="托管期间的收益汇总面板">📊 收益</button></div>
     <button class="btn" id="btn-bgm" style="padding:3px 8px;font-size:12px;" title="音乐开关">🎵</button>
-    <div class="chip"><b>◈</b> 代币 <b id="r-credits">0</b></div>
-    <div class="chip"><img class="cicon" src="assets/icons/res_nitra.png">硝石 <b id="r-nitra">0</b></div>
+    <div class="chip" id="chip-credits" style="cursor:pointer" title="代币"><b>◈</b> <b id="r-credits">0</b></div>
+    <div class="chip" id="chip-nitra" style="cursor:pointer" title="硝石"><img class="cicon" src="assets/icons/res_nitra.png"> <b id="r-nitra">0</b></div>
     <div class="chip"><button class="btn" id="btn-res-overview" style="padding:2px 8px;font-size:12px;">资源总览</button></div>
     <div class="kpiwrap">
       <div class="note">季度 KPI：<span id="kpi-txt"></span> <button class="btn pri" id="btn-kpi" style="display:none;padding:2px 8px;font-size:12px;">领取季度奖金</button></div>
@@ -584,21 +588,22 @@ function campProgress(kind, match, amount){
 /* 酒吧 v1.6 改版（B 退回项④，数值表 §3.5）：士气制 → 原作功能性 buff 制；一次派遣带 1 款，后饮覆盖 */
 /* ---------------- 酒吧 v2：抽酒制（执行单 §一，用户拍板） ---------------- */
 const DRINK_POOL = [
-  {name:'油头精酿',        en:'Oily Oaf Brew',        rarity:'常见', w:50, icon:'beer_oilyoaf',     buff:{yield:10},                txt:'全队产出 +10%'},
-  {name:'叶子情人特调',    en:"Leaf Lover's Special", rarity:'常见', w:50, icon:'beer_leaflover',   buff:{healNow:1, medBill:-30},  txt:'轻伤全愈 + 账单 -30%'},
-  {name:'隧道老鼠',        en:'Tunnel Rat',           rarity:'常见', w:50, icon:'beer_oilyoaf',     buff:{durMul:0.9},              txt:'任务时长 -10%'},
-  {name:'亚肯黑啤',        en:'Arken Blackout',       rarity:'常见', w:50, icon:'beer_darkmorkite', buff:{moraleHit:-5},            txt:'士气 -5%（喝多了）', bad:1},
-  {name:'红岩爆破手',      en:'Red Rock Blaster',     rarity:'少见', w:30, icon:'beer_redrock',     buff:{shield:1},                txt:'重伤判定免除 1 例'},
-  {name:'昏迷黑啤',        en:'Blackout Stout',       rarity:'少见', w:30, icon:'beer_darkmorkite', buff:{autoEvents:1},            txt:'本次派遣无法手动操作（喝倒了，自动接管）', bad:1},
-  {name:'虫洞特酿',        en:'Wormhole Special',     rarity:'少见', w:30, icon:'beer_leaflover',   buff:{evSucc:10},               txt:'事件成功率 +10%'},
-  {name:'氧气助推',        en:'Oxygen Boost',         rarity:'少见', w:30, icon:'beer_oilyoaf',     buff:{rareBoost:8},             txt:'稀有掉落 +8%'},
-  {name:'碎颅者麦酒',      en:'Skull Crusher Ale',    rarity:'精英', w:15, icon:'beer_redrock',     buff:{checkT:15},               txt:'事件检定 +15%'},
-  {name:'杀手黑啤',        en:'Slayer Stout',         rarity:'精英', w:15, icon:'beer_darkmorkite', buff:{yield:20},                txt:'全队产出 +20%'},
-  {name:'仲裁者黑啤',      en:'Arbitrator',           rarity:'精英', w:15, icon:'beer_leaflover',   buff:{medBill:-40},             txt:'医疗账单 -40%'},
-  {name:'岩石甜心',        en:'Rocky Mountain',       rarity:'精英', w:15, icon:'beer_oilyoaf',     buff:{xpPer:20},                txt:'全队 XP +20/任务'},
-  {name:'麦芽星果特调',    en:'Malt Star',            rarity:'精英', w:15, icon:'beer_leaflover',   buff:{xpPer:30},                txt:'全队 XP +30/任务'},
-  {name:'昏迷黑啤·特浓',   en:'Blackout Stout ×',     rarity:'传说', w:5,  icon:'beer_darkmorkite', buff:{autoEvents:1, durMul:1.2}, txt:'无法操作 + 时长 +20%（彻底喝倒了）', bad:1},
-  {name:'🎰 神秘特调',     en:'Mystery Special',      rarity:'传说', w:5,  icon:'beer_redrock',     buff:{mystery:1},               txt:'随机复制本池任一效果'},
+  {name:'油头精酿',        en:'Oily Oaf Brew',        rarity:'常见', w:50, icon:'assets/anim/drinks/drink_01.png',     buff:{yield:10},                txt:'全队产出 +10%'},
+  {name:'叶子情人特调',    en:"Leaf Lover's Special", rarity:'常见', w:50, icon:'assets/anim/drinks/drink_02.png',   buff:{healNow:1, medBill:-30},  txt:'轻伤全愈 + 账单 -30%'},
+  {name:'黑墨菱酒',        en:'Dark Morkite Ale',     rarity:'少见', w:30, icon:'assets/anim/drinks/drink_04.png', buff:{morkite:25},              txt:'主矿物产出 +25%'},
+  {name:'隧道老鼠',        en:'Tunnel Rat',           rarity:'常见', w:50, icon:'assets/anim/drinks/drink_05.png',     buff:{durMul:0.9},              txt:'任务时长 -10%'},
+  {name:'亚肯黑啤',        en:'Arken Blackout',       rarity:'常见', w:50, icon:'assets/anim/drinks/drink_06.png', buff:{moraleHit:-5},            txt:'士气 -5%（喝多了）', bad:1},
+  {name:'红岩爆破手',      en:'Red Rock Blaster',     rarity:'少见', w:30, icon:'assets/anim/drinks/drink_03.png',     buff:{shield:1},                txt:'重伤判定免除 1 例'},
+  {name:'昏迷黑啤',        en:'Blackout Stout',       rarity:'少见', w:30, icon:'assets/anim/drinks/drink_07.png', buff:{autoEvents:1},            txt:'本次派遣无法手动操作（喝倒了，自动接管）', bad:1},
+  {name:'虫洞特酿',        en:'Wormhole Special',     rarity:'少见', w:30, icon:'assets/anim/drinks/drink_08.png',   buff:{evSucc:10},               txt:'事件成功率 +10%'},
+  {name:'氧气助推',        en:'Oxygen Boost',         rarity:'少见', w:30, icon:'assets/anim/drinks/drink_09.png',     buff:{rareBoost:8},             txt:'稀有掉落 +8%'},
+  {name:'碎颅者麦酒',      en:'Skull Crusher Ale',    rarity:'精英', w:15, icon:'assets/anim/drinks/drink_10.png',     buff:{checkT:15},               txt:'事件检定 +15%'},
+  {name:'杀手黑啤',        en:'Slayer Stout',         rarity:'精英', w:15, icon:'assets/anim/drinks/drink_11.png', buff:{yield:20},                txt:'全队产出 +20%'},
+  {name:'仲裁者黑啤',      en:'Arbitrator',           rarity:'精英', w:15, icon:'assets/anim/drinks/drink_12.png',   buff:{medBill:-40},             txt:'医疗账单 -40%'},
+  {name:'岩石甜心',        en:'Rocky Mountain',       rarity:'精英', w:15, icon:'assets/anim/drinks/drink_13.png',     buff:{xpPer:20},                txt:'全队 XP +20/任务'},
+  {name:'麦芽星果特调',    en:'Malt Star',            rarity:'精英', w:15, icon:'assets/anim/drinks/drink_14.png',   buff:{xpPer:30},                txt:'全队 XP +30/任务'},
+  {name:'昏迷黑啤·特浓',   en:'Blackout Stout ×',     rarity:'传说', w:5,  icon:'assets/anim/drinks/drink_15.png', buff:{autoEvents:1, durMul:1.2}, txt:'无法操作 + 时长 +20%（彻底喝倒了）', bad:1},
+  {name:'🎰 神秘特调',     en:'Mystery Special',      rarity:'传说', w:5,  icon:'assets/anim/drinks/drink_16.png',     buff:{mystery:1},               txt:'随机复制本池任一效果'},
 ];
 const REROLL_COST = 150;   /* 酒吧「再抽一轮」价格 */
 function rollDrink(){
@@ -630,6 +635,9 @@ function rerollDrink(){
   const db = S.activeDrinkBuff;
   log('🍻 再抽一轮：「' + db.dname + '」（' + db.rarity + '）' + db.txt + '。', db.bad ? 'bad' : 'gold');
   applyDrinkImmediate(db);
+  showModal('<h3 style="color:var(--amber)">🎲 再抽一轮</h3>' + animDiv('drink_draw', 96, 132) +
+    '<div class="meta">「<b style="color:var(--amber)">' + db.dname + '</b>」（' + db.rarity + '）' + db.txt + '</div>' +
+    '<button class="btn pri" style="width:100%;margin-top:6px" onclick="closeModal(true)">干杯</button>', false);
   renderAll(); save();
 }
 
@@ -1212,7 +1220,8 @@ const ANIM = {
 
   /* 社区彩蛋事件头图（B 设计 × C 绘制：lcyf166 到访=静态单帧；黑脸小猫=6 帧循环） */
   lcyf166_avatar:       { src:'assets/anim/lcyf166_avatar.png',       frameW:96,  frameH:96, frames:1, fps:1, loop:false, anchor:'center' },
-  cat_face:             { src:'assets/anim/cat_face.png',             frameW:96,  frameH:96, frames:6, fps:4, loop:true,  anchor:'center' }
+  cat_face:             { src:'assets/anim/cat_face.png',             frameW:96,  frameH:96, frames:6, fps:4, loop:true,  anchor:'center' },
+  drink_draw:           { src:'assets/anim/drink_draw.png',           frameW:96,  frameH:132, frames:8, fps:8, loop:true, anchor:'center' }
 };
 
 
@@ -1538,7 +1547,7 @@ const TEXT = {
   /* ================= 9. ui_* v1.3 缺口键（21 条，配合 TEXT 接线映射表） ================= */
   /* 来源：资料\TEXT接线映射表.md 标"缺"的条目；占位符新增 {done}/{quota2}/{cur}/{lv}/{mul}/{depth}/{slots}/{cap}/{hours} */
 
-  ui_kpi_progress: "本季墨菱石：{done}/{quota2}。配额不会自己长，但财报会。", // 仿写自PSA体
+  ui_kpi_progress: "本季墨菱石：{done}/{quota2}", // 减字二期：幽默尾句移入帮助页
   ui_kpi_claimable: "奖金已到账可领！集团从不拖欠——除了工资、报销和这份。", // 仿写
   ui_rares_label: "稀有矿物", // 直替
   ui_rares_tip: "任务概率掉落，用于凭证与矿工成长。", // 直替
@@ -1823,6 +1832,40 @@ ev_cat_avatar_alt: "一只超大的黑脸小猫，正在写笔记。",
 
 }); /* 彩蛋事件 17 键结束 */
 
+/* =========================================================
+ * 双模式 TEXT 键块（B 交付 · 2026-09-16）dm_* 共 23 键
+ * A 注入方式：整块粘贴到 游戏.html 的 TEXT 常量定义之后
+ *（与 ch_* 、tr_* 的 Object.assign 并入方式相同），注入后全库 371 键。
+ * node --check 通过；dm_ 前缀与现有 348 键零冲突；雷区自查 0 命中。
+ * ========================================================= */
+Object.assign(TEXT, {
+  dm_mode_idle: "挂机",
+  dm_mode_rush: "急行",
+  dm_toast_rush: "⚡ 急行模式：任务时长 ÷30（10 秒级）、产出 ×0.35、硝石 ×4、时间延长选项付费、深潜与时间控制停用。",
+  dm_toast_idle: "🛌 挂机模式：正常流速，任务收益全额，时间延长选项返还硝石。",
+  dm_rush_dive_lock: "⚠ 急行模式不开放深潜。切回挂机模式后可正常下潜。",
+  dm_nitra_tag: "硝石 +{n}",
+  dm_nitra_short: "（急行：额外消耗 {n} 硝石）",
+  dm_idle_refund: "（挂机：返还派遣硝石 {n}）",
+  dm_auto_on: "🤖 挂机券激活：未来 3 小时自动派遣与决策。休眠舱仍可叠加使用。",
+  dm_auto_off: "挂机模式已手动取消。",
+  dm_auto_rush_lock: "挂机券只在挂机模式可用——急行没有托管，决策请亲自来。",
+  dm_report_title: "📊 托管收益面板",
+  dm_report_empty: "暂无托管收益——挂机券生效期间完成的任务会自动累计到这里。",
+  dm_report_scope: "统计范围：挂机券生效期间的自动派遣与决策。",
+  dm_report_sign: "签收",
+  dm_report_missions: "完成任务",
+  dm_report_credits: "代币净收",
+  dm_report_morkite: "墨菱石",
+  dm_report_moil: "墨菱油",
+  dm_report_nitra: "硝石",
+  dm_report_med: "医疗支出",
+  dm_report_events: "托管自动决策事件",
+  dm_report_expire: "🤖 挂机券到期——收益面板已生成，点 📊 可随时查看。"
+});
+
+
+
 
 /* ---------------- STATE ---------------- */
 let S = null;
@@ -2065,7 +2108,7 @@ function openDispatch(mid){
   const idle = S.miners.filter(x=>x.state==='idle' && x.morale>=25);
   let html = '<h3 style="color:var(--amber)">'+t.name+' · '+biomeById(m.biome).name+'</h3>';
   html += '<div class="note">危险等级 '+'★'.repeat(m.hazard)+'　报酬系数 ×'+CFG.HAZ[m.hazard-1]+'</div>';
-  html += '<div class="meta">产出：'+Object.entries(m.r).map(([k,v])=>resName(k)+'×'+v).join('　')+(m.clause?('　'+TEXT.ui_board_clause_wrap.replace('{name}', m.clause.name).replace('{desc}', m.clause.d)):'')+'</div>';
+  html += '<div class="meta">产出：'+Object.entries(m.r).map(([k,v])=>'<span class="costchip">'+(resIcon(k)==='◈'?'◈':resIcon(k))+'<b>'+v+'</b></span>').join('')+(m.clause?'<span class="costchip" title="'+m.clause.name+'：'+m.clause.d+'">⚠ '+m.clause.name+'</span>':'')+'</div>';
   html += '<h3 class="sec">选择出勤矿工（可多选；简单单人即可，困难单建议满编协作）</h3>';
   if(!idle.length){
     html += '<div class="note">没有可派遣的矿工（都在任务中/医疗站/闹情绪）。</div>';
@@ -2235,16 +2278,16 @@ function startMemeEvent(d, id){
   if($('#modal').style.display === 'flex' && $('#modal-box').dataset.dep === d.id) return;
   showEventModal(d);
 }
-function nitroTag(n){ return (S.mode||'idle') === 'rush' ? ' <span class="nitra-tag">硝石 +' + n + '</span>' : ''; }
+function nitroTag(n){ return (S.mode||'idle') === 'rush' ? ' <span class="nitra-tag">' + TEXT.dm_nitra_tag.replace('{n}', n) + '</span>' : ''; }
 function nitroDis(n){ return ((S.mode||'idle') === 'rush' && S.nitra < n) ? ' disabled' : ''; }
 function eventNitroAdjust(d, base){
   /* 时长类选项的硝石调整：急行=按价目付费；挂机=返还派遣硝石 50% */
   if(d.mode === 'rush'){
     S.nitra = Math.max(0, S.nitra - base);
-    return '（急行：额外消耗 ' + base + ' 硝石）';
+    return TEXT.dm_nitra_short.replace('{n}', base);
   }
   const refund = Math.round((d.nitraSpent || 0) * 0.5);
-  if(refund > 0){ S.nitra += refund; return '（挂机：返还派遣硝石 ' + refund + '）'; }
+  if(refund > 0){ S.nitra += refund; return TEXT.dm_idle_refund.replace('{n}', refund); }
   return '';
 }
 function autoResolveEvent(d){
@@ -2746,23 +2789,23 @@ function showIdleReport(){
   const R = S.idleReport;
   let rows = '';
   if(!R || !R.missions){
-    rows = '<div class="note">暂无托管收益——挂机券生效期间完成的任务会自动累计到这里。</div>';
+    rows = '<div class="note">' + TEXT.dm_report_empty + '</div>';
   } else {
-    rows = lootRowHTML('', '完成任务', R.missions + ' 次') +
-      lootRowHTML('', '代币净收', '+' + fmt(R.credits)) +
-      (R.morkite ? lootRowHTML('res_morkite', '墨菱石', '+' + fmt(R.morkite)) : '') +
-      (R.moil ? lootRowHTML('res_morkite', '墨菱油', '+' + fmt(R.moil)) : '') +
-      (R.nitra ? lootRowHTML('res_nitra', '硝石', '+' + fmt(R.nitra)) : '') +
+    rows = lootRowHTML('', TEXT.dm_report_missions, R.missions + ' 次') +
+      lootRowHTML('', TEXT.dm_report_credits, '+' + fmt(R.credits)) +
+      (R.morkite ? lootRowHTML('res_morkite', TEXT.dm_report_morkite, '+' + fmt(R.morkite)) : '') +
+      (R.moil ? lootRowHTML('res_morkite', TEXT.dm_report_moil, '+' + fmt(R.moil)) : '') +
+      (R.nitra ? lootRowHTML('res_nitra', TEXT.dm_report_nitra, '+' + fmt(R.nitra)) : '') +
       Object.keys(R.rare).slice(0, 12).map(k => lootRowHTML('', k, '×' + R.rare[k])).join('') +
-      (R.med ? lootRowHTML('', '医疗支出', '-' + fmt(R.med)) : '') +
-      lootRowHTML('', '托管自动决策事件', R.events + ' 次');
+      (R.med ? lootRowHTML('', TEXT.dm_report_med, '-' + fmt(R.med)) : '') +
+      lootRowHTML('', TEXT.dm_report_events, R.events + ' 次');
   }
-  showModal('<h3 style="color:var(--amber)">📊 托管收益面板</h3><div style="display:flex;flex-direction:column;gap:6px;margin:10px 0;">' + rows + '</div><div class="note">统计范围：挂机券生效期间的自动派遣与决策。</div><button class="btn pri" style="width:100%" onclick="closeModal(true)">签收</button>', false);
+  showModal('<h3 style="color:var(--amber)">' + TEXT.dm_report_title + '</h3><div style="display:flex;flex-direction:column;gap:6px;margin:10px 0;">' + rows + '</div><div class="note">' + TEXT.dm_report_scope + '</div><button class="btn pri" style="width:100%" onclick="closeModal(true)">' + TEXT.dm_report_sign + '</button>', false);
 }
 function autoPlayStep(){
   if(S.autoUntil && Date.now() > S.autoUntil && !S._idleReportShown){
     S._idleReportShown = true;
-    log('🤖 挂机券到期——收益面板已生成，点 📊 可随时查看。', 'sys');
+    log(TEXT.dm_report_expire, 'sys');
     showIdleReport();
   }
   if(!S.autoUntil || Date.now() > S.autoUntil) return;
@@ -3069,7 +3112,7 @@ function renderHeader(){
     const rush = S.mode === 'rush';
     modeChip.classList.toggle('rush', rush);
     const ml = modeChip.querySelector('.mlabel');
-    if(ml) ml.textContent = rush ? '急行' : '挂机';
+    if(ml) ml.textContent = rush ? TEXT.dm_mode_rush : TEXT.dm_mode_idle;
     modeChip.style.borderColor = rush ? 'var(--amber)' : 'var(--teal)';
   }
   const autoChip = document.getElementById('auto-chip');
@@ -3172,7 +3215,7 @@ function renderDeps(){
   });
 }
 function renderRoster(){
-  let html = '<div class="note">'+TEXT.ui_roster_cap.replace('{cur}', S.miners.length)+'</div>';
+  let html = '';
   Object.keys(CLASSES).forEach(c=>{
     const C = CLASSES[c];
     const hired = S.miners.some(m=>m.cls===c);
@@ -3193,9 +3236,8 @@ function renderRoster(){
         '<button class="btn pri" data-promo="'+m.id+'" style="padding:3px 8px;font-size:12px;">晋升 '+frameOf(m.stars+1)+'（'+promoteCost(m)+' 代币）</button>' : '';
       html += '<div class="miner"><div class="mtop"><div style="display:flex;align-items:center;gap:6px;">'+
         avatarHtml(m.cls, m.state)+
-        '<div>'+frameHtml(m.stars)+'<b>'+minerName(m)+'</b> Lv.'+(m.lv>=25?'25(MAX)':m.lv)+' '+st+'</div></div>'+promo+'</div>'+
-        '<div class="note">XP '+(m.lv>=25?'MAX':Math.floor(m.xp)+'/'+(m.lv*30))+'｜任务 '+m.missions+' 次'+(m.stars?('｜晋升加成 +'+(m.stars*8)+'%'):'')+'</div>'+
-        '<div class="bar" style="margin-bottom:4px;"><i style="width:'+clamp(m.xp/(m.lv*30)*100,0,100)+'%;background:linear-gradient(90deg,var(--green),var(--gold))"></i></div>'+
+        '<div data-minfo="'+m.id+'">'+frameHtml(m.stars)+'<b>'+minerName(m)+'</b> Lv.'+(m.lv>=25?'25(MAX)':m.lv)+' '+st+'</div></div>'+promo+'</div>'+
+        '<div class="bar" style="margin-bottom:4px;" title="XP '+Math.floor(m.xp)+'/'+(m.lv*30)+'｜任务 '+m.missions+' 次'+(m.stars?('｜晋升加成 +'+(m.stars*8)+'%'):'')+'"><i style="width:'+clamp(m.xp/(m.lv*30)*100,0,100)+'%;background:linear-gradient(90deg,var(--green),var(--gold))"></i></div>'+
         '<div class="mrow"><span class="mb"><span class="mbar"><i data-mid="'+m.id+'" style="width:'+m.morale+'%;background:'+
         (m.morale>=60?'var(--green)':m.morale>=30?'var(--amber)':'var(--red)')+'"></i></span></span><span class="note">士气</span></div>'+
         '<div class="dstage"><div class="spr anim-spr" data-anim="dwarf_'+m.cls+'_'+(m.state==='mission'?'walk':m.state==='med'?'med':'idle')+'"></div></div></div>';
@@ -3205,6 +3247,9 @@ function renderRoster(){
   $('#side').innerHTML = html;
   $('#side').querySelectorAll('[data-promo]').forEach(el=>{
     el.onclick = () => promoteMiner(el.dataset.promo);
+  });
+  $('#side').querySelectorAll('[data-minfo]').forEach(el=>{
+    el.onclick = () => { const mm = S.miners.find(x=>x.id===el.dataset.minfo); if(mm) minerDetail(mm); };
   });
   $('#side').querySelectorAll('[data-recruit]').forEach(el=>{
     el.onclick = () => recruit(el.dataset.recruit);
@@ -3441,11 +3486,11 @@ function renderBar(){
     const db = S.activeDrinkBuff;
   const RCOL = {'常见':'var(--dim)','少见':'var(--green)','精英':'var(--amber)','传说':'var(--gold)'};
   html += '<div class="meta">待生效酒：' + (db
-      ? ('<b style="color:'+(RCOL[db.rarity]||'var(--txt)')+'">「'+db.dname+'」</b>（'+db.rarity+'）'+db.txt+' —— 下一次派遣消耗')
+      ? ('<img src="'+db.icon+'" style="width:20px;height:28px;image-rendering:pixelated;vertical-align:-8px;margin-right:4px;"><b style="color:'+(RCOL[db.rarity]||'var(--txt)')+'">「'+db.dname+'」</b>（'+db.rarity+'）'+db.txt+' —— 下一次派遣消耗')
       : '下一次派遣出发时自动白送一轮') + '</div>';
   html += '<div class="row"><button class="btn pri" id="btn-reroll" style="flex:1" '+(S.fac.bar<1||S.credits<REROLL_COST?'disabled':'')+'>🎲 再抽一轮（'+REROLL_COST+' 代币）</button></div>';
   html += '<div class="meta" style="margin-top:4px;">酒池 '+DRINK_POOL.length+' 款：' + DRINK_POOL.map(d =>
-    '<span style="color:'+(RCOL[d.rarity]||'var(--txt)')+'">'+d.name+'</span>'
+    '<span style="color:'+(RCOL[d.rarity]||'var(--txt)')+'"><img src="'+d.icon+'" style="width:14px;height:20px;image-rendering:pixelated;vertical-align:-5px;">'+d.name+'</span>'
   ).join('、') + '。</div>';
   if(S.fac.bar < 4){
     const c = barCost();
@@ -3867,12 +3912,12 @@ function renderDive(){
         '</div><div class="note">奖励：空白模组×'+st.rewards.blankMod+' + '+st.rewards.credits+' 代币 + 功绩点×'+st.rewards.merit+'</div></div>';
     });
   });
-  html += '<div class="note">每周一 0 点刷新；跨周未通关作废。深潜产出全额结算并计入 KPI。</div>';
-  if(S.mode === 'rush') html = '<div class="note" style="color:var(--amber)">⚡ 急行模式不开放深潜。切回挂机模式后可正常下潜。</div>' + html;
+  html += '<div class="note">每周一 0 点刷新。</div>';
+  if(S.mode === 'rush') html = '<div class="note" style="color:var(--amber)">' + TEXT.dm_rush_dive_lock + '</div>' + html;
   $('#side').innerHTML = html;
   $('#side').querySelectorAll('[data-dive]').forEach(el=>{
     el.onclick = () => {
-      if(S.mode === 'rush'){ log('深潜是周常大单，急行模式不开放——切回挂机模式再下潜。', 'bad'); return; }
+      if(S.mode === 'rush'){ log(TEXT.dm_rush_dive_lock, 'bad'); return; }
       startDiveStage(...el.dataset.dive.split(':').map((v,i)=> i===1 ? parseInt(v) : v));
     };
   });
@@ -4067,6 +4112,37 @@ function animDiv(animId, w, h){
   return '<div class="anim-spr" data-anim="'+animId+'" style="width:'+w+'px;height:'+h+'px;'+
     'image-rendering:pixelated;background-repeat:no-repeat;background:#0a0e12;'+
     'border:1px solid var(--line);border-radius:3px;flex:none;"></div>';
+}
+
+/* ---------------- 数值详情弹窗（减字二期 · B 设计） ---------------- */
+function showDetail(title, rows){
+  let html = '<h3 style="color:var(--amber)">' + title + '</h3>';
+  (rows || []).forEach(r => {
+    html += '<div class="drow">'
+      + (r.icon ? '<img class="cicon" src="assets/icons/' + r.icon + '.png">' : '')
+      + '<span class="dlabel">' + r.label + '</span>'
+      + '<span class="dvalue">' + r.value + '</span></div>';
+  });
+  html += '<button class="btn pri" style="width:100%;margin-top:8px" onclick="closeModal(true)">关闭</button>';
+  showModal(html, false);
+}
+function minerDetail(m){
+  const need = m.lv * 30;
+  const st = m.state === 'idle' ? '空闲'
+    : m.state === 'mission' ? '任务中'
+    : '医疗站（剩余 ' + Math.max(0, Math.ceil(m.medUntil - S.gm)) + ' 游戏分钟）';
+  const dep = S.deps.find(x => x.minerIds.includes(m.id));
+  const depTxt = dep ? (mtypeById(dep.m.type).name + '【' + biomeById(dep.m.biome).name + '】剩余 ' + Math.ceil(Math.max(0, dep.dur - dep.done)) + ' 游戏分') : '—';
+  const cls = CLASSES[m.cls];
+  showDetail(minerName(m), [
+    {label:'等级', value:'Lv.' + m.lv + '（XP ' + Math.floor(m.xp) + '/' + need + '）'},
+    {label:'职业 / 凭证', value:cls.name + ' · Lv.' + S.licenses[m.cls]},
+    {label:'任务次数', value:m.missions + ' 次'},
+    {label:'晋升', value:frameOf(m.stars) + '（产出加成 +' + (m.stars*8) + '%）'},
+    {label:'士气', value:m.morale + '/100'},
+    {label:'状态', value:st},
+    {label:'当前派遣', value:depTxt},
+  ]);
 }
 
 /* ---------------- MODAL ---------------- */
@@ -4352,13 +4428,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     navigator.serviceWorker.register('sw.js');
   /* 挂机券：3 小时自动游玩（自动事件决策 + 自动派遣空闲矿工） */
   const toggleAuto = () => {
+    if(S.mode === 'rush'){ log(TEXT.dm_auto_rush_lock, 'bad'); return; }
     if(S.autoUntil && Date.now() < S.autoUntil){
       S.autoUntil = 0;
-      log('挂机模式已手动取消。', 'sys');
+      log(TEXT.dm_auto_off, 'sys');
     } else {
       S.autoUntil = Date.now() + 3*3600*1000;
       S.idleReport = null; S._idleReportShown = false;
-      log('🤖 挂机券激活：未来 3 小时自动派遣与决策。休眠舱仍可叠加使用。', 'gold');
+      log(TEXT.dm_auto_on, 'gold');
     }
     renderAll(); save();
   };
@@ -4369,13 +4446,25 @@ document.addEventListener('DOMContentLoaded', async () => {
   const modeChipBtn = document.getElementById('mode-chip');
   if(modeChipBtn) modeChipBtn.onclick = () => {
     S.mode = (S.mode === 'rush') ? 'idle' : 'rush';
-    log(S.mode === 'rush'
-      ? '⚡ 急行模式：任务时长 ÷30（10 秒级）、产出 ×0.35、硝石 ×4、时间延长选项付费、深潜与时间控制停用。'
-      : '🛌 挂机模式：正常流速，任务收益全额，时间延长选项返还硝石。', 'sys');
+    if(S.mode === 'rush' && S.autoUntil && Date.now() < S.autoUntil){ S.autoUntil = 0; log(TEXT.dm_auto_off, 'sys'); }   /* R1：券激活中切急行 → 自动取消 */
+    log(S.mode === 'rush' ? TEXT.dm_toast_rush : TEXT.dm_toast_idle, 'sys');
     renderAll(); save();
   };
   const irBtn = document.getElementById('btn-idle-report');
   if(irBtn) irBtn.onclick = showIdleReport;
+  const chipCr = document.getElementById('chip-credits');
+  if(chipCr) chipCr.onclick = () => showDetail('代币', [
+    {label:'当前存量', value:fmt(S.credits)},
+    {label:'下季 KPI 奖金', value:fmt(Math.round(1500 * (S.kpi.term + 1)))},
+    {label:'重复招募折算', value:'300 代币'},
+  ]);
+  const chipNi = document.getElementById('chip-nitra');
+  if(chipNi) chipNi.onclick = () => showDetail('硝石', [
+    {label:'当前存量', value:fmt(S.nitra)},
+    {label:'每日产出', value:'+25'},
+    {label:'派遣消耗', value:'60×人数×时长系数' + (S.mode === 'rush' ? '（急行 ×4）' : '')},
+    {label:'集团关怀', value:(S.credits < 100 && S.nitra < 60) ? '生效中' : '未触发'},
+  ]);
   /* B-8：音乐开关 */
   const bgmBtn = document.getElementById('btn-bgm');
   if(bgmBtn) bgmBtn.onclick = () => {
