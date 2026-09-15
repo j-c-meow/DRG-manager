@@ -1,7 +1,0 @@
-{"kind":"info","msg":"game booted","day":1,"gm":480,"mode":"idle"}
-{"kind":"info","msg":"doCheat applied → full phase","day":7,"missions":0}
-{"kind":"snapshot","step":500,"day":26,"gm":35977,"mode":"rush","credits":101230,"nitra":10719,"missions":0,"miners":"s:m1,e:i1,g:i1,d:i1","deps":1,"errs":0}
-{"kind":"snapshot","step":1000,"day":53,"gm":74715,"mode":"rush","credits":101230,"nitra":11394,"missions":0,"miners":"s:m1,e:i1,g:i1,d:i1","deps":1,"errs":0}
-{"kind":"info","msg":"mode→rush","day":77,"nitra":11876}
-{"kind":"snapshot","step":1500,"day":80,"gm":113993,"mode":"rush","credits":101513,"nitra":11951,"missions":1,"miners":"s:m1,e:m2,g:m2,d:m2","deps":2,"errs":0}
-{"kind":"fatal","where":"finish","detail":"{\"ended\":\"2026-09-15T19:03:41.153Z\",\"reason\":\"deadline\",\"totalErrs\":0,\"errKeys\":{},\"saveBytes\":13552,\"final\":{\"steps\":1553,\"day\":82,\"gm\":117174,\"mode\":\"rush\",\"credits\":101513,\"nitra\":12001,\"missions\":1,\"miners\":4,\"deps\":2,\"rigLv\":10,\"blanks\":30,\"diveNormal\":0,\"kpiTerm\":1}}"}
