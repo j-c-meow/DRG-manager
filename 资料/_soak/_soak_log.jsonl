@@ -639,3 +639,5 @@
 {"kind":"snapshot","step":111500,"day":8403,"gm":12099137,"mode":"idle","credits":9601539,"nitra":1972722,"missions":20891,"miners":"s:i25,e:i25,g:i25,d:i25","deps":0,"errs":0}
 {"kind":"info","msg":"mode→rush","day":8409,"nitra":1974287}
 {"kind":"info","msg":"mode→rush","day":8426,"nitra":1978760}
+{"kind":"snapshot","step":112000,"day":8429,"gm":12136279,"mode":"rush","credits":9628160,"nitra":1981056,"missions":20969,"miners":"s:i25,e:i25,g:i25,d:i25","deps":0,"errs":0}
+{"kind":"info","msg":"mode→rush","day":8431,"nitra":1981745}
