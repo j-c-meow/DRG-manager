@@ -3542,7 +3542,7 @@ function renderDeps(){
       '<span class="hz">'+'★'.repeat(d.m.hazard)+'</span></div>'+
       '<div class="meta">'+team+'　剩余 '+remainTxt+'</div>'+
       '<div class="prog"><i style="width:'+pct+'%"></i>'+
-      '<span class="digger anim-spr" data-anim="dwarf_'+cls0+'_dig" style="left:'+pct+'%;width:24px;height:24px;"></span></div>'+
+      (window.innerWidth<=700 ? '<span class="digger anim-spr" data-anim="dwarf_'+cls0+'_dig" style="left:'+pct+'%;width:24px;height:24px;"></span>' : '')+'</div>'+
       (d.paused?'<div class="evtbox"><div class="q">'+TEXT.ui_deps_event+'</div><button class="btn warn" data-ev="'+d.id+'">'+TEXT.ui_deps_event_btn+'</button></div>':'')+
       '</div>';
   });
