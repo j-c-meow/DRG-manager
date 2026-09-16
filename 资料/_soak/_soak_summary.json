@@ -1,25 +1,23 @@
 {
-  "ended": "2026-09-15T19:08:44.791Z",
+  "ended": "2026-09-15T23:45:00.047Z",
   "reason": "deadline",
-  "totalErrs": 23,
-  "errKeys": {
-    "dep-squad": 23
-  },
-  "saveBytes": 14268,
+  "totalErrs": 0,
+  "errKeys": {},
+  "saveBytes": 18848,
   "final": {
-    "steps": 1553,
-    "day": 1354,
-    "gm": 1949032,
-    "mode": "rush",
-    "credits": 468911,
-    "nitra": 98996,
-    "missions": 304,
+    "steps": 257833,
+    "day": 17651,
+    "gm": 25416941,
+    "mode": "idle",
+    "credits": 21214768,
+    "nitra": 4434208,
+    "missions": 47869,
     "miners": 4,
-    "deps": 0,
+    "deps": 4,
     "rigLv": 10,
-    "blanks": 118,
-    "kpiTerm": 11,
-    "kpiDone": 4413,
+    "blanks": 10283,
+    "kpiTerm": 22,
+    "kpiDone": 108856,
     "loop": 0
   }
 }
