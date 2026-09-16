@@ -55,8 +55,25 @@ main{display:grid; grid-template-columns:340px 1fr 360px; gap:10px; margin-top:1
   .dep{padding:6px 8px; margin-bottom:6px;}
   .mcard .btn{width:100%;}
   .mcard .chip{white-space:normal;}
-  #log{height:200px;}
+  #log{height:96px;}   /* 手机端日志减半（可滚动+放大兜底） */
+  /* 手机端底部 Tab 栏（App 导航式） */
+  .tabs{position:fixed; bottom:0; left:0; right:0; z-index:40; margin:0;
+        background:var(--panel); border-top:1px solid var(--line);
+        overflow-x:auto; -webkit-overflow-scrolling:touch;}
+  .tabs .tab{padding:12px 6px; min-width:60px; font-size:12px;}
+  body{padding-bottom:52px;}   /* 给固定 Tab 栏让位 */
   .bthumb{width:60px; height:44px;}
+  /* 派遣通道：矿道进度条 + 挖掘小人 */
+  .dep .prog{position:relative; height:20px; background:#141019; border:1px solid #241c14; border-radius:2px; overflow:visible;}
+  .dep .prog>i{background:repeating-linear-gradient(90deg,#3a2c1a 0 6px,#241c14 6px 12px); position:relative;}
+  .dep .prog>i::after{content:''; position:absolute; inset:0;
+      background:repeating-linear-gradient(90deg,rgba(87,215,196,.25) 0 4px,transparent 4px 12px);}
+  .dep .digger{position:absolute; bottom:-2px; width:24px; height:24px; image-rendering:pixelated;
+      background-repeat:no-repeat; transform:translateX(-50%); z-index:2;}
+  /* 任务板折叠摘要条 */
+  #board.folded{display:none;}
+  #boardFoldSummary{display:none; padding:6px 10px; color:var(--dim); font-size:12px; cursor:pointer;}
+  #boardFoldSummary.on{display:block;}
   .modal .box{width:96vw; max-height:90vh; overflow-y:auto;}
 }
 .panel{border:1px solid var(--line); background:var(--panel);}
@@ -1851,6 +1868,67 @@ ev_cat_avatar_alt: "一只超大的黑脸小猫，正在写笔记。",
 }); /* 彩蛋事件 17 键结束 */
 
 /* =========================================================
+ * B-9 开局剧情与解锁机制 TEXT 键块（B 交付 · 2026-09-16）共 34 键
+ * 配套设计文档：资料\开局剧情与解锁机制设计.md
+ * A 注入方式：整块粘贴到 游戏.html 的 TEXT 定义之后（与其他并入块相同）；
+ *   FACILITIES 常量单独声明，供设施锁定门读取。
+ * 注入后全库 371+34=405 键。node --check 通过；st_/karl_/un_ 前缀无冲突；雷区自查 0 命中。
+ * ========================================================= */
+Object.assign(TEXT, {
+  /* —— 序章三屏（st_*）—— */
+  st_note_title: "储物柜里的便签",
+  st_note_body: "接手的兄弟：吧台第二层有我私藏的叶子情人，别让劳埃德知道。五级任务的钱有五级的道理——等我回来一起喝。\n——前任职员 卡尔",
+  st_brief_title: "集团人事简报 · 第 4471 号",
+  st_brief_body: "五级风险任务【藤络树洞 · 深层】执行小队于任务周期内失去联络。按集团惯例，暂定性为失踪，薪资照发至下季度。集团欢迎新任管理层上任 17 号钻台，并预祝工作顺利。",
+  st_takeover_title: "新任管理层上任",
+  st_takeover_body: "17 号钻台现有资产：一座钻井平台、一份没人敢接的危5 遗单，和一群等着开饭的合同。重建产能，顺便查清楚卡尔遇到了什么——顺序随你。",
+  st_start_btn: "把钻台重新开起来",
+  st_skip: "跳过序章 ≫",
+  /* —— 演出派遣（卡尔的遗单）—— */
+  st_mission_name: "卡尔的遗单",
+  st_mission_tag: "危5 · 藤络树洞 · 剧情单（仅限卡尔）",
+  st_comms_title: "最后一次通讯",
+  st_comms_body: "藤络树洞 620 米层，通讯开始断续。卡尔的声音很稳：「管理层，测得矿脉异常——你说，集团会给我们这种小队发抚恤金吗？」",
+  st_comms_a: "「卡尔，立刻回撤！」",
+  st_comms_b: "「保持静默，保存氧气。」",
+  st_lost_title: "通讯中断",
+  st_lost_body: "【任务周期结束】卡尔的遗单（危5 · 藤络树洞）：无信号返回。集团已将其状态更新为：失联（暂定）。薪资账户冻结，私藏的酒由劳埃德代为保管。",
+  st_prologue_done_log: "序章结束。目标：把产能重建起来——顺便，查清楚卡尔到底遇到了什么。",
+  /* —— 卡尔踪迹线（karl_*）—— */
+  karl_bar_clue: "吧台底面有一行刻字：「K 在此喝过最后一杯。劳埃德，账挂卡尔名下。」——他打算回来的。",
+  karl_gear_clue: "储物柜最深处压着一只旧空白模组，标签是卡尔的字迹：「给接盘的新管理层。别浪费在 PGL 上。」（空白模组 ×1 已放入你的库存）",
+  karl_dive_clue: "深潜声呐档案新增一条：深层岩壁有周期性敲击信号，摩斯码翻译过来是——「ROCK AND STONE」。",
+  karl_help_title: "寻找卡尔（线索 {n}/3）",
+  karl_finale_title: "清账行动 · 尾声",
+  karl_finale_body: "你在藤络树洞最深处找到一台还在录制的终端。最后一条日志：「下面还有更深处。这里的矿脉会唱歌，虫子居然会排队。我继续往下看看，别找我——找也找不到。Rock and Stone，替我把酒喝完。」签名：卡尔",
+  karl_endless_signal: "周年深夜，声呐又录到那段敲击声。这次多了半句：「……酒不错。」",
+  /* —— 解锁机制（un_*）—— */
+  un_locked_toast: "{name} 尚未解锁。条件：{cond}",
+  un_need_campaign: "完成战役【{name}】",
+  un_need_rig: "钻井平台 Lv.{n}",
+  un_need_credits: "代币不足（还差 {n}）",
+  un_buy_btn: "重建 · {cost} 代币",
+  un_lic_btn: "办理牌照 · {cost} 代币",
+  un_done_toast: "【{name}】解锁：{gift}",
+  un_market_gift: "牌照生效——集团为新客户准备了每种矿物 ×10 的起始仓",
+  un_kpi_toast: "集团财务部：鉴于钻台重建进度达标，季度 KPI 考核自本季起生效。配额不会自己长，但财报会。",
+  un_karl_count_log: "【寻找卡尔】线索 {n}/3 已记录。"
+});
+
+/* 设施解锁配置（B-9 §二总表的机器可读版，A 的锁定门读这里）
+   rig=平台门槛 campaign=战役门槛 cost=一次性购买费（0=免费）
+   gift=解锁赠品 key（A 实装时按 key 发放） */
+const FACILITIES = {
+  kpi:    { name: "季度 KPI 考核", rig: 2, campaign: "c1", cost: 0,   gift: null },
+  bar:    { name: "深渊酒吧",       rig: 2, campaign: "c2", cost: 600, gift: "karl_bar" },
+  market: { name: "交易站",         rig: 3, campaign: "c3", cost: 500, gift: "market_starter" },
+  med:    { name: "医疗站",         rig: 2, campaign: "c3", cost: 600, gift: null },
+  gear:   { name: "装备终端",       rig: 4, campaign: "c5", cost: 0,   gift: "karl_gear" }
+};
+
+
+
+/* =========================================================
  * 双模式 TEXT 键块（B 交付 · 2026-09-16）dm_* 共 23 键
  * A 注入方式：整块粘贴到 游戏.html 的 TEXT 常量定义之后
  *（与 ch_* 、tr_* 的 Object.assign 并入方式相同），注入后全库 371 键。
@@ -1917,6 +1995,7 @@ function newGame(){
     blanks:0, modsOwned:{}, equipped:{}, drawSinceT1:0, rerolled:false,
     dive:{week:'', normal:{stage:0, done:false}, elite:{locked:true, stage:0, done:false}, modifiers:[]},
     log:[], flags:{}, speed:1, stats:{missions:0, inj:0}, mode:'idle', idleReport:null, muleLv:1,
+    unlocked:{kpi:false, bar:false, market:false, med:false, gear:false},
     recruited:{scout:true, engineer:false, gunner:false, driller:false},
   };
   S.miners.push(newMiner('scout'));
@@ -1951,6 +2030,12 @@ function load(){
     if(typeof S.lastReal !== 'number') S.lastReal = Date.now();
     if(!S.mode) S.mode = 'idle';
     if(!S.muleLv) S.muleLv = 1;
+    /* B-9 旧档兼容：无 unlocked 字段视为旧档 → 按现有进度自动补齐解锁 */
+    if(!S.unlocked){
+      S.unlocked = {kpi:true, bar:true, market:true, med:true, gear:true};
+      if(S.fac.bar >= 1 || S.flags.prologueDone) {} /* 保持 */
+    }
+    if(S.flags.prologueDone === undefined) S.flags.prologueDone = (S.stats.missions > 0);
     if(!S.difficulty) S.difficulty = {hz:1, nitra:1, ev:1, morale:1, yield:1, market:1};
     if(S.memorialTab === undefined) S.memorialTab = 0;
     if(S.idleReport === undefined) S.idleReport = null;
@@ -2878,6 +2963,32 @@ function worldAdvanceBody(gm, offline){
         }
         continue;
       }
+      if(d.kind === 'prologue'){
+        d.done = Math.min(d.dur, (d.done||0) + adv);
+        if(!d.karlEventFired && d.done / d.dur >= 0.55){
+          d.karlEventFired = true;
+          showModal('<h3 style="color:var(--amber)">'+TEXT.st_comms_title+'</h3><div class="note" style="margin:10px 0">'+TEXT.st_comms_body+'</div>'+
+            '<div class="row" style="gap:6px"><button class="btn" style="flex:1" id="pg-a">'+TEXT.st_comms_a+'</button>'+
+            '<button class="btn" style="flex:1" id="pg-b">'+TEXT.st_comms_b+'</button></div>', true);
+          $('#pg-a').onclick = $('#pg-b').onclick = () => {
+            showModal('<h3 style="color:var(--red)">'+TEXT.st_lost_title+'</h3><div class="note" style="margin:10px 0">'+TEXT.st_lost_body+'</div>'+
+              '<button class="btn pri" style="width:100%" id="pg-fin">接班</button>', true);
+            $('#pg-fin').onclick = () => {
+              S.flags.prologueDone = true;
+              S.deps = S.deps.filter(x => x !== d);
+              closeModal(true);
+              log(TEXT.st_prologue_done_log, 'gold');
+              renderAll(); save();
+            };
+          };
+          continue;
+        }
+        if(d.done >= d.dur && !d.karlEventFired){
+          S.deps = S.deps.filter(x=>x!==d);
+          endPrologue();
+        }
+        continue;
+      }
       d.done = Math.min(d.dur, (d.done || 0) + adv);   /* 封顶防浮点残差卡死 */
       if(d.done >= d.dur){
         d.finished = true;   /* 先标记防嵌套重复结算 */
@@ -3191,6 +3302,35 @@ const ACHIEVEMENTS = [
   {id:'ach_blackout',   name:'断片初体验', grp:'隐藏', rw:{credits:100}, ck:()=>!!S.flags.blackoutDrunk},
   {id:'ach_mystery',    name:'神秘莫测',   grp:'隐藏', rw:{credits:150}, ck:()=>!!S.flags.mysteryDrunk},
 ];
+function facUnlocked(key){ return !!(S.unlocked && S.unlocked[key]); }
+function facCondText(key){
+  const f = FACILITIES[key]; if(!f) return '';
+  const conds = [];
+  conds.push(TEXT.un_need_rig.replace('{n}', f.rig));
+  const ci = CAMPAIGNS.findIndex(x => x.id === f.campaign);
+  if(ci >= 0){
+    const done = S.campaign.ci > ci;
+    conds.push(done ? '✅ ' + CAMPAIGNS[ci].name : TEXT.un_need_campaign.replace('{name}', CAMPAIGNS[ci].name));
+  }
+  if(f.cost > 0) conds.push(S.credits >= f.cost ? TEXT.un_buy_btn.replace('{cost}', f.cost) : TEXT.un_need_credits.replace('{n}', f.cost - S.credits));
+  return conds.join('　');
+}
+function tryUnlockFacility(key){
+  const f = FACILITIES[key]; if(!f) return false;
+  if(S.rigLv < f.rig) return false;
+  const ci = CAMPAIGNS.findIndex(x => x.id === f.campaign);
+  if(ci >= 0 && S.campaign.ci <= ci) return false;
+  if(S.credits < f.cost) return false;
+  S.credits -= f.cost;
+  S.unlocked[key] = true;
+  const gifts = [];
+  if(key === 'market'){ RARES.forEach(rr => S.rare[rr] = (S.rare[rr]||0) + 10); gifts.push(TEXT.un_market_gift); }
+  if(f.gift === 'karl_gear'){ S.blanks = (S.blanks||0) + 1; S.flags.karlCount = (S.flags.karlCount||0) + 1; gifts.push(TEXT.karl_gear_clue); }
+  if(f.gift === 'karl_bar'){ S.flags.karlCount = (S.flags.karlCount||0) + 1; gifts.push(TEXT.karl_bar_clue); }
+  log('【' + f.name + '】解锁！' + gifts.join(' '), 'gold');
+  return true;
+}
+
 function allWeaponsMax(){
   return Object.keys(WEAPON_SET).every(cls => WEAPON_SET[cls].main.concat(WEAPON_SET[cls].off).every(wid => ((S.wlv[cls]||{})[wid]||0) >= 5));
 }
@@ -3260,6 +3400,15 @@ function renderHeader(){
 }
 function renderBoard(){
   let html = '';
+  /* B-9 序章剧情卡：卡尔的遗单（未完成序章时置顶显示） */
+  if(!S.flags.prologueDone){
+    html += '<div class="mcard" style="border-color:var(--gold)">'+
+      '<div style="position:relative;margin:0 0 6px;">'+
+      '<div class="wrow" style="margin:0 0 4px;"><div style="flex:1;min-width:0;"><b style="color:var(--gold)">'+TEXT.st_mission_name+'</b> <span class="note">'+TEXT.st_mission_tag+'</span></div></div>'+
+      '<div class="note">只有卡尔能接这单。点【派遣】见证他的最后一次出征。</div>'+
+      '<button class="btn pri" style="width:100%;margin-top:5px;" id="btn-karl-dispatch">派遣（卡尔 · 剧情单）</button>'+
+      '</div></div>';
+  }
   if(!S.board.length) html = '<div style="text-align:center;padding:10px 0;"><img src="assets/icons/misc_bosco.png" alt="" style="width:96px;image-rendering:pixelated;opacity:.85"><div class="note">'+TEXT.ui_mission_empty+'</div></div>';
   /* 新手引导：战役需要特定任务类型但钻井平台等级不够时提示 */
   if(S.campaign && CAMPAIGNS[S.campaign.ci]){
@@ -3297,6 +3446,18 @@ function renderBoard(){
       '<button class="btn pri" data-disp="'+m.id+'">'+TEXT.ui_deploy_btn+'</button></div>';
   });
   $('#board').innerHTML = html;
+  const kb = $('#btn-karl-dispatch');
+  if(kb) kb.onclick = () => {
+    if(S.deps.some(d=>d.kind==='prologue')) return;
+    const km = S.board.find(x=>x.kind==='prologue'); if(!km) return;
+    S.board = S.board.filter(x=>x!==km);
+    S.deps.push({id:'karl'+Date.now().toString(36), mid:km.id, m:{type:'exp', biome:km.biome, hazard:5, r:{}},
+      cls:'mixed', fitN:0, hc:1, minerIds:[], modEff:{}, drinkShield:0, morkiteBuff:1,
+      start:S.gm, dur:240, done:0, evt1:false, evt2:false, paused:null, bonus:1, mode:'idle',
+      kind:'prologue', karlEventFired:false});
+    log('卡尔背起行囊：「帮我把遗单清了，管理层。」——他一个人走进了电梯。', '');
+    renderAll(); save();
+  };
   $('#board').querySelectorAll('[data-detbtn]').forEach(el=>{
     el.onclick = () => {
       const det = el.closest('.mcard').querySelector('.det');
@@ -4022,6 +4183,7 @@ function diveSettle(d){
     if(dv.stage === d.diveStage) dv.stage++;
     if(dv.stage >= 3 && !dv.done){
       dv.done = true;
+      if(!S.flags.karlDiveClue){ S.flags.karlDiveClue = true; S.flags.karlCount = (S.flags.karlCount||0) + 1; log(TEXT.karl_dive_clue, 'gold'); }
       const cb = WEEKLY_DIVE.completionBonus[d.diveVariant];
       if(cb){
         const cp = [];
@@ -4096,6 +4258,7 @@ function renderDive(){
 }
 function renderHelp(){
   let html = '<div class="note">管理层速查手册。所有规则详情都在这里，面板里不再重复解释。</div>';
+  html += '<div class="note" style="color:var(--gold)">🔍 ' + TEXT.karl_help_title.replace('{n}', Math.min(3, S.flags.karlCount||0)) + '</div>';
   html += '<h3 class="sec">核心循环</h3><div class="note">任务板接单 → 选职业派 1~4 人 → 途中处理事件 → 结算收益 → 升级钻井平台/装备/矿工 → 接更贵的单。</div>';
   html += '<h3 class="sec">双层经济</h3><div class="note"><b style="color:var(--amber)">墨菱石/墨菱油</b>（任务主产物）只喂钻井平台升级线，提升产量/深度/派遣位。<br>'+
     '<b style="color:var(--gold)">稀有矿物</b>（玉石/乌玛石/铜矿/妙绝珠/吸铁石/蜂母石/容和石）任务概率掉落，喂矿工成长与武器凭证。矿工越强掉落越多。</div>';
@@ -4303,6 +4466,30 @@ function animDiv(animId, w, h){
 }
 
 /* ---------------- 数值详情弹窗（减字二期 · B 设计） ---------------- */
+function playPrologue(){
+  const scr1 = '<h3 style="color:var(--amber)">' + TEXT.st_note_title + '</h3><div class="note" style="white-space:pre-line;margin:10px 0">' + TEXT.st_note_body + '</div>' +
+    '<div class="row" style="gap:6px"><button class="btn" style="flex:1" id="pg-next">下一页</button><button class="btn" id="pg-skip" style="flex:none">' + TEXT.st_skip + '</button></div>';
+  const scr2 = '<h3 style="color:var(--red)">' + TEXT.st_brief_title + '</h3><div class="note" style="white-space:pre-line;margin:10px 0">' + TEXT.st_brief_body + '</div>' +
+    '<div class="row" style="gap:6px"><button class="btn" style="flex:1" id="pg-next">' + TEXT.st_start_btn + '</button><button class="btn" id="pg-skip" style="flex:none">' + TEXT.st_skip + '</button></div>';
+  showModal(scr1, true);
+  const go2 = () => { showModal(scr2, true);
+    $('#pg-next').onclick = () => endPrologue();
+    $('#pg-skip').onclick = () => endPrologue(); };
+  $('#pg-next').onclick = go2;
+  $('#pg-skip').onclick = () => endPrologue();
+  function spawnKarlMission(){
+    const km = {id:'karl0', biome: S.board.length && S.board[0] ? S.board[0].biome : 'crystal', hazard:5, r:{}, kind:'prologue'};
+    S.board.unshift(km);
+  }
+  window._spawnKarlMission = spawnKarlMission;
+}
+function endPrologue(){
+  closeModal(true);
+  S.flags.prologueDone = true;
+  log(TEXT.st_prologue_done_log, 'gold');
+  renderAll(); save();
+}
+
 function showMemorial(){
   const tabs = ['编年史档案','武器图鉴','饰品陈列柜','成就墙'];
   const tab = S.memorialTab || 0;
@@ -4610,7 +4797,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   try{
   loadFold();
   BGM.init();   /* 修复：此前 init 从未调用，BGM 默认无声（首次任意点击即响） */
-  if(!load()) newGame();
+  if(!load()){
+    newGame();
+    playPrologue();
+  }
   else {
     /* 离线结算 */
     const dt = Math.min((Date.now() - S.lastReal)/1000, 48*3600);
@@ -4675,6 +4865,19 @@ document.addEventListener('DOMContentLoaded', async () => {
   $('#logMini').onclick = () => { FOLD.log = false; saveFold(); applyLogFold(); };
   document.querySelectorAll('#tabs .tab').forEach(t=>{
     t.onclick = () => {
+      const facKey = {bar:'bar', market:'market', med:'med', gear:'gear'}[t.dataset.tab];
+      if(facKey && !facUnlocked(facKey)){
+        const f = FACILITIES[facKey];
+        const canBuy = S.rigLv>=f.rig && S.campaign.ci > CAMPAIGNS.findIndex(x=>x.id===f.campaign) && S.credits>=f.cost;
+        showModal('<h3 style="color:var(--amber)">🔒 '+f.name+'</h3><div class="note" style="margin:10px 0">'+facCondText(facKey)+'</div>'+
+          '<button class="btn pri" style="width:100%" id="fac-buy" '+(canBuy?'':'disabled')+'>重建 · '+f.cost+' 代币</button>'+
+          '<button class="btn" style="width:100%;margin-top:4px" onclick="closeModal(true)">稍后再说</button>', false);
+        $('#fac-buy').onclick = () => {
+          if(tryUnlockFacility(facKey)){ closeModal(true); renderAll(); }
+          else log(TEXT.un_locked_toast.replace('{name}', f.name).replace('{cond}', facCondText(facKey)), 'bad');
+        };
+        return;
+      }
       document.querySelectorAll('#tabs .tab').forEach(x=>x.classList.remove('on'));
       t.classList.add('on'); curTab = t.dataset.tab; renderSide();
     };

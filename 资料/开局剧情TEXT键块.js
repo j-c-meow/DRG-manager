@@ -53,6 +53,9 @@ const FACILITIES = {
   kpi:    { name: "季度 KPI 考核", rig: 2, campaign: "c1", cost: 0,   gift: null },
   bar:    { name: "深渊酒吧",       rig: 2, campaign: "c2", cost: 600, gift: "karl_bar" },
   market: { name: "交易站",         rig: 3, campaign: "c3", cost: 500, gift: "market_starter" },
-  med:    { name: "医疗站",         rig: 2, campaign: "c3", cost: 600, gift: null },
-  gear:   { name: "装备终端",       rig: 4, campaign: "c5", cost: 0,   gift: "karl_gear" }
+  med:    { name: "医疗站",         rig: 3, campaign: "c3", cost: 600, gift: null },
+  gear:   { name: "装备终端",       rig: 4, campaign: "c4", cost: 0,   gift: "karl_gear" }
 };
+/* ⚠ 死锁备忘（B-9 §十）：装备终端不可挂 c5——c5 条件是升级武器凭证，入口就在装备终端内。
+   挂 c4：c4 条件（消灭任务+危2×2）均不依赖装备终端，且战役按链序推进，
+   c4 完成→终端解锁→c5 激活，凭证升级立刻可做，无环。 */
