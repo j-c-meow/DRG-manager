@@ -1748,7 +1748,7 @@ Object.assign(TEXT, {
 
   /* ================= 12. ch_* 编年史（8 条，B-7 产出） ================= */
   ch_ui_title: "编年史", // 直替
-  ch_ui_sub: "第 {day} 天 · {date}。深岩银河集团的历史，一页一页由你挖出来。", // 仿写
+  ch_ui_sub: "第 {day} 天 · {date}", // 减字二期：口号移帮助页
   ch_node_season: "【编年史】{name} 上线。当季武器与战役已同步集团数据库。", // 仿写
   ch_node_anniv: "【编年史】深岩银河 {years} 周年。周年庆战役开放——奖杯按年份编号，集齐是一种执念。", // 仿写
   ch_jump_brief: "季度简报：本季度波澜不惊，集团很满意。时间快进 {days} 天，工资照发。", // 仿写自PSA体
@@ -1902,6 +1902,7 @@ Object.assign(TEXT, {
   karl_finale_title: "清账行动 · 尾声",
   karl_finale_body: "你在藤络树洞最深处找到一台还在录制的终端。最后一条日志：「下面还有更深处。这里的矿脉会唱歌，虫子居然会排队。我继续往下看看，别找我——找也找不到。Rock and Stone，替我把酒喝完。」签名：卡尔",
   karl_endless_signal: "周年深夜，声呐又录到那段敲击声。这次多了半句：「……酒不错。」",
+  log_manager_new: "重置完毕。管理层已换人，钻台重新开张——上一任的遗物已清空。", // 补：重置存档后日志（此前 undefined）
   /* —— 解锁机制（un_*）—— */
   un_locked_toast: "{name} 尚未解锁。条件：{cond}",
   un_need_campaign: "完成战役【{name}】",
@@ -2147,7 +2148,8 @@ const irnd = (a,b) => Math.floor(rnd(a,b+1));
 const pick = arr => arr[Math.floor(Math.random()*arr.length)];
 const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
 function log(msg, cls){
-  S.log.unshift({t:clockStr(), m:msg, c:cls||''});
+  if(msg === undefined || msg === null) msg = '（日志异常，已捕获）';
+  S.log.unshift({t:clockStr(), m:String(msg), c:cls||''});
   if(S.log.length > 80) S.log.length = 80;
 }
 function clockStr(){
@@ -2241,7 +2243,11 @@ function openDispatch(mid){
     const modEff = squadModEffects(ids);
     let dur = missionDur(m, hc, modEff);
     if(S.nextDurMul) dur = Math.max(60, Math.round(dur * S.nextDurMul));   /* 预览含小猫 -10%（实际派遣时消耗） */
-    const cost = dispatchCost(m, hc, modEff, dur);
+    if(S.mode === 'rush'){ dur = Math.max(6, Math.round(dur / 30)); }
+    let pCost = dispatchCost(m, hc, modEff, dur);
+    if(S.mode === 'rush'){ pCost = Math.round(dispatchCost(m, hc, modEff, Math.max(60, Math.round(dur * 30))) * 4); }
+    else { pCost = dispatchCost(m, hc, modEff, dur); }
+    const cost = pCost;
     const fitN = ids.filter(id => { const mm = S.miners.find(x=>x.id===id); return mm && mm.cls===t.best; }).length;
     const fitTxt = fitN ? ('　适配矿工 ×'+fitN+'（产出 +'+(fitN*8)+'%）') : '';
     const modTxt = (modEff.duration || modEff.supplyCost || modEff.yield || modEff.eventSuccess) ?
@@ -2301,8 +2307,9 @@ function doDispatch(m, ids, fitN, loanStr){
   if(durMulD !== 1){ dur = Math.max(60, Math.round(dur * durMulD)); }   /* 酒吧：隧道老鼠 -10% / 特浓黑啤 +20% */
   if(S.mode === 'rush'){ dur = Math.max(6, Math.round(dur / 30)); }   /* 急行：时长 ÷30，10 秒级 */
   let cost = dispatchCost(m, hc, modEff, dur);
+  /* 数值复核：急行派遣费按原始时长算（÷30 前的），否则 ×4 乘在已缩短的时长上=急行免费+倒赚硝石 */
+  if(S.mode === 'rush'){ cost = Math.round(dispatchCost(m, hc, modEff, Math.max(60, Math.round(dur * 30))) * 4); }
   cost = Math.round(cost * (S.difficulty.nitra||1));
-  if(S.mode === 'rush'){ cost = Math.round(cost * 4); }   /* 急行：硝石 ×4（节奏限制器） */
   if(S.nitra >= cost){
     S.nitra -= cost;
   } else {
@@ -2820,7 +2827,7 @@ function settle(d, offline, forceMul){
     const R = S.idleReport || (S.idleReport = {credits:0, missions:0, morkite:0, moil:0, nitra:0, rare:{}, events:0, med:0});
     R.credits += gain.credits; R.missions++;
     R.morkite += gain.morkite||0; R.moil += gain.moil||0; R.nitra += gain.nitra||0;
-    (drops||[]).forEach(x => R.rare[x] = (R.rare[x]||0) + 1);
+    (drops||[]).forEach(x => { const nm = x.split('×')[0]; R.rare[nm] = (R.rare[nm]||0) + parseInt(x.split('×')[1]||1); });
     R.med += d.medBillsPaid || 0;
   }
   log((offline?'【离线结算】':'✅ ')+'任务完成：'+mtypeById(m.type).name+'【'+b.name+'】 代币+'+gain.credits+
@@ -2835,7 +2842,7 @@ function settle(d, offline, forceMul){
     if(gain.moil) rows.push(lootRowHTML('res_morkite', '墨菱油', '+'+fmt(gain.moil)));
     if(gain.gold) rows.push(lootRowHTML('res_gold', '黄金', '+'+fmt(gain.gold)));
     if(gain.nitra) rows.push(lootRowHTML('res_nitra', '硝石', '+'+fmt(gain.nitra)));
-    (drops||[]).forEach(d=>{ const nm=d.split('×')[0]; rows.push(lootRowHTML('res_'+(MKEY[nm]||'hollomite'), d, '+')); });
+    (drops||[]).forEach(d=>{ const nm=d.split('×')[0]; rows.push(lootRowHTML('res_'+(MKEY[nm]||''), d, '+')); });
     showLootToast(rows);
   }
   /* 卡尔彩蛋 */
@@ -4723,7 +4730,7 @@ function showResourceOverview(){
   rows.push('<h3 class="sec">稀有矿物（含市场价）</h3>');
   TRADEABLES.forEach(t=>{
     const p = S.market.prices[t.k] || t.base;
-    rows.push('<div class="row"><span style="flex:1">'+ic('res_'+MKEY[t.name])+' '+t.name+'</span><span>持有 <b>'+fmt(S[t.k]||0)+'</b>　市价 <b>'+p+'</b></span></div>');
+    rows.push('<div class="row"><span style="flex:1">'+(MKEY[t.name] ? ic('res_'+MKEY[t.name]) : '◇')+' '+t.name+'</span><span>持有 <b>'+fmt(S[t.k]||0)+'</b>　市价 <b>'+p+'</b></span></div>');
   });
   showModal('<h3 style="color:var(--amber)">资源总览</h3><div style="margin-top:8px;">'+rows.join('')+'</div>'+
     '<div class="row" style="justify-content:center;margin-top:10px;"><button class="btn" onclick="closeModal(true)">关闭</button></div>', true);
@@ -4924,8 +4931,22 @@ document.addEventListener('DOMContentLoaded', async () => {
   if(autoChipBtn) autoChipBtn.onclick = toggleAuto;
   const modeChipBtn = document.getElementById('mode-chip');
   if(modeChipBtn) modeChipBtn.onclick = () => {
+    const oldMode = S.mode;
     S.mode = (S.mode === 'rush') ? 'idle' : 'rush';
     if(S.mode === 'rush' && S.autoUntil && Date.now() < S.autoUntil){ S.autoUntil = 0; log(TEXT.dm_auto_off, 'sys'); }   /* R1：券激活中切急行 → 自动取消 */
+    /* 急行切换自动恢复时间流动（jiuduo：暂停+切急行=永远冻结） */
+    if(S.mode === 'rush' && speed === 0){ speed = 1; const pb = document.getElementById('btn-pause'); if(pb) pb.innerHTML = '⏸ 暂停'; }
+    /* 在途任务：时长按新模式比例转换（非序章/非深潜） */
+    S.deps.forEach(d => {
+      if(d.kind === 'prologue' || d.isDive || d.paused) return;
+      const oldRush = (d.mode === 'rush');
+      if(oldRush === (S.mode === 'rush')) return;
+      const ratio = (S.mode === 'rush') ? (1/30) : 30;
+      const pct = d.dur > 0 ? (d.done||0) / d.dur : 0;
+      d.dur = Math.max(6, Math.round(d.dur * ratio));
+      d.done = Math.round(d.dur * pct);
+      d.mode = S.mode;
+    });
     log(S.mode === 'rush' ? TEXT.dm_toast_rush : TEXT.dm_toast_idle, 'sys');
     renderAll(); save();
   };

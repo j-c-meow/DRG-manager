@@ -6,6 +6,6 @@ const run = (args) => {
   return r;
 };
 run(['add', '-A']);
-run(['commit', '-m', 'C 手机端布局四条补丁归档（任务板自动展开/矿道挖掘小人/日志减半/底部导航）+ B 数值核算归档 + A 临时文件清理']);
+run(['commit', '-m', 'jiuduo 试玩 bug 修复：急行暂停冻结（切急行自动恢复流动）+ 在途任务时长模式转换 + 急行派遣费按原始时长（修造硝机根因）+ 预览同步 + drops 图标拆名查表 + log_manager_new 补键 + log 消毒 + 编年史口号削减 + 资源总览 icon 兜底 + idleReport rare 纯名']);
 const p = run(['push']);
 process.exit(p.status);
