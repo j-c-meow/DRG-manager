@@ -574,6 +574,7 @@ function campProgress(kind, match, amount){
           const key = k.slice(5);
           const mm = Object.keys(MKEY).find(name => MKEY[name] === key);
           if(mm){ S.rare[mm] += v; parts.push(mm+'×'+v); }
+          else log('【战役】奖励反查失败：rare_'+key+' 不在 MKEY 表，该笔奖励未发放——请核对战役表键名。', 'sys');
         }
       });
       if(camp.id === 'finale'){
@@ -3528,17 +3529,20 @@ function renderBoard(){
 function renderDeps(){
   let html = '';
   if(!S.deps.length) html = '<div style="text-align:center;padding:8px 0;"><img src="assets/icons/misc_bosco.png" alt="" style="width:72px;image-rendering:pixelated;opacity:.8"><div class="note">'+TEXT.ui_deps_empty+'</div></div>';
-  S.deps.forEach(d=>{
-    /* 修复：进度与结算同源（d.done 累加），不再用 S.gm-start——事件挂起/加时不再显示背离 */
+  /* 用户 09-16：进行中置顶（暂停事件最前），渲染副本排序不动 S.deps 本体 */
+  const depsSorted = S.deps.slice().sort((a,b)=>(b.paused?1:0)-(a.paused?1:0));
+  depsSorted.forEach(d=>{
     const done = clamp(d.done || 0, 0, d.dur);
-    const pct = (done/d.dur*100).toFixed(0);
+    const pct = clamp(done/d.dur*100, 0, 100).toFixed(1);
     const team = d.minerIds.map(id=>minerName(S.miners.find(x=>x.id===id))).join('、');
     const remainTxt = d.paused ? '待管理层决策' : fmtDur(Math.ceil(Math.max(0, d.dur-done)));
+    const cls0 = d.minerIds.length ? ((S.miners.find(x=>x.id===d.minerIds[0])||{}).cls || 'scout') : 'scout';
     html += '<div class="dep'+(d.paused?' evt':'')+'">'+
       '<div class="t"><span class="nm">'+mtypeById(d.m.type).name+' · '+biomeById(d.m.biome).name+'</span>'+
       '<span class="hz">'+'★'.repeat(d.m.hazard)+'</span></div>'+
       '<div class="meta">'+team+'　剩余 '+remainTxt+'</div>'+
-      '<div class="prog"><i style="width:'+pct+'%"></i></div>'+
+      '<div class="prog"><i style="width:'+pct+'%"></i>'+
+      '<span class="digger anim-spr" data-anim="dwarf_'+cls0+'_dig" style="left:'+pct+'%;width:24px;height:24px;"></span></div>'+
       (d.paused?'<div class="evtbox"><div class="q">'+TEXT.ui_deps_event+'</div><button class="btn warn" data-ev="'+d.id+'">'+TEXT.ui_deps_event_btn+'</button></div>':'')+
       '</div>';
   });
@@ -4574,10 +4578,16 @@ function showMemorial(){
         WEAPON_SET[cls][pool].forEach((wid,i)=>{
           const unlocked = i < S.licenses[cls];
           const lv = unlocked ? (S.wlv[cls][wid]||0) : 0;
+          let modTxt = '';
+          if(unlocked){
+            const eq = pool === 'main' ? equippedModFor(cls) : equippedOffModFor(cls);
+            const slotIdx = pool === 'main' ? S.slot[cls].main : S.slot[cls].off;
+            if(eq && slotIdx === i) modTxt = ' ·【'+eq.name_zh+' '+(eq.tier||'')+'】';
+          }
           body += '<div class="drow"'+(unlocked?'':' style="opacity:.45"')+'>'+
             '<img class="cicon" src="'+WICONS[cls][pool][i]+'">'+
             '<span class="dlabel">'+(unlocked?weaponZh(wid):'🔒 '+weaponZh(wid))+'</span>'+
-            '<span class="dvalue">'+(unlocked ? 'Lv.'+lv+'/5' : '未解锁')+'</span></div>';
+            '<span class="dvalue">'+(unlocked ? 'Lv.'+lv+'/5'+modTxt : '未解锁')+'</span></div>';
         });
       });
     });
@@ -4947,6 +4957,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
       document.querySelectorAll('#tabs .tab').forEach(x=>x.classList.remove('on'));
       t.classList.add('on'); curTab = t.dataset.tab; renderSide();
+      /* B-8 场景切换（B 施工单）：酒吧 tab / 节日档期 = 酒吧曲，其余 = 主界面曲 */
+      BGM.play((curTab === 'bar' || holidayForNow()) ? 'bar' : 'main');
     };
   });
   /* 手机修复单·修5：微信内置浏览器提示（PWA"添加到主屏幕"在微信内不可用） */
