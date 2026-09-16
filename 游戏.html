@@ -1923,8 +1923,8 @@ const FACILITIES = {
   kpi:    { name: "季度 KPI 考核", rig: 2, campaign: "c1", cost: 0,   gift: null },
   bar:    { name: "深渊酒吧",       rig: 2, campaign: "c2", cost: 600, gift: "karl_bar" },
   market: { name: "交易站",         rig: 3, campaign: "c3", cost: 500, gift: "market_starter" },
-  med:    { name: "医疗站",         rig: 2, campaign: "c3", cost: 600, gift: null },
-  gear:   { name: "装备终端",       rig: 4, campaign: "c5", cost: 0,   gift: "karl_gear" }
+  med:    { name: "医疗站",         rig: 3, campaign: "c3", cost: 600, gift: null },
+  gear:   { name: "装备终端",       rig: 4, campaign: "c4", cost: 0,   gift: "karl_gear" }
 };
 
 
@@ -2353,6 +2353,7 @@ function maybeEvent(d, ratio){
   if(S.difficulty && (S.difficulty.ev||1) !== 1 && Math.random() > (S.difficulty.ev||1)) return;
   if(ratio >= 0.4 && !d.evt1){ d.evt1 = true; rollEvent(d, 1); }
   else if(ratio >= 0.7 && !d.evt2){ d.evt2 = true; rollEvent(d, 2); }
+  else if(ratio >= 0.85 && !d.evt3 && d.finaleBoss){ d.evt3 = true; rollEvent(d, 3); }
   /* 社区梗事件槽：35% 概率独立追加（确定性二选一） */
   if(ratio >= 0.55 && !d.memeDone && Math.random() < MEME_EVENTS.slotChance){
     d.memeDone = true;
@@ -2820,6 +2821,26 @@ function settle(d, offline, forceMul){
   });
   if(me.morale) team.forEach(m => m.morale = clamp(m.morale + me.morale, 10, 100));
   S.stats.missions = (S.stats.missions||0) + 1;
+  /* 终局 Boss：卡尔结局 */
+  if(d.finaleBoss){
+    if(S.campaign && CAMPAIGNS[S.campaign.ci] && CAMPAIGNS[S.campaign.ci].id === 'finale'){
+      S.campaign.prog = 1;
+      S.campaign.si++;
+      S.campaign.prog = 0;
+      if(S.campaign.si >= CAMPAIGNS[S.campaign.ci].steps.length){
+        log('🏆 清账行动全部完成。编年史收官。', 'gold');
+        S.campaign.ci++; S.campaign.si = 0;
+        S.flags.finaleDone = true;
+      }
+    }
+    showModal('<h3 style="color:var(--gold)">🏆 清账行动 · 完成</h3>'+
+      '<div style="display:flex;gap:8px;align-items:flex-start;margin:10px 0">'+
+      '<div class="wcell epic" style="width:60px;height:60px;"><img src="assets/anim/karl_silhouette.png" style="width:48px;height:48px;"></div>'+
+      '<div class="note" style="flex:1;white-space:pre-line;line-height:1.7">'+TEXT.karl_finale_body+'</div></div>'+
+      '<div class="note" style="margin:6px 0">Rock and Stone，管理层。17 号钻台的账本，从今天起是干净的。</div>'+
+      '<button class="btn pri" style="width:100%" onclick="closeModal(true);renderAll()">Rock and Stone</button>', true);
+    log('🏆 清账行动完成。编年史收官——Day 2316 之后，无尽模式开启。', 'gold');
+  }
   if(!d.hurtIds || d.hurtIds.length === 0){ S.flags.streak = (S.flags.streak||0) + 1; }
   else { S.flags.streak = 0; }
   /* 托管收益面板：挂机券生效期间自动累计 */
@@ -2875,11 +2896,23 @@ function renderFullLog(){
 const BGM = {
   audio: null, ctx: null, vol: 0.25, muted: false,
   tracks: { main: 'assets/audio/bgm_main.mp3', bar: 'assets/audio/bgm_bar.mp3' },
+  icon(){ return this.muted ? '\u{1F507}' : '\u{1F3B5}'; },
   init(){
+    try{ this.muted = localStorage.getItem('drg_bgm_muted') === '1'; }catch(e){}
     this.audio = new Audio();
     this.audio.loop = true;
     this.audio.volume = this.vol;
     document.addEventListener('click', () => { if(!this.ctx) this.play('main'); }, { once: true });
+    /* 多标签同步：别的标签改了静音，本页跟随（storage 事件只在非改动标签触发） */
+    window.addEventListener('storage', e => {
+      if(e.key !== 'drg_bgm_muted') return;
+      const m = e.newValue === '1';
+      if(m === this.muted) return;
+      this.muted = m;
+      if(m){ if(this.audio) this.audio.pause(); }
+      else { this.ctx = null; this.play('main'); }
+      const b = document.getElementById('btn-bgm'); if(b) b.textContent = this.icon();
+    });
   },
   play(ctx){
     if(this.muted) return;
@@ -2902,6 +2935,7 @@ const BGM = {
     this.muted = !this.muted;
     if(this.muted){ if(this.audio) this.audio.pause(); }
     else { this.ctx = null; this.play(this.ctx || 'main'); }
+    try{ localStorage.setItem('drg_bgm_muted', this.muted ? '1' : '0'); }catch(e){}
     return this.muted;
   }
 };
@@ -2983,8 +3017,7 @@ function worldAdvanceBody(gm, offline){
             $('#pg-fin').onclick = () => {
               S.flags.prologueDone = true;
               S.deps = S.deps.filter(x => x !== d);
-              closeModal(true);
-              log(TEXT.st_prologue_done_log, 'gold');
+              closeModal(true);   /* 序章结束日志已由 endPrologue 打过，此处不再重复 */
               renderAll(); save();
             };
           };
@@ -3007,7 +3040,16 @@ function worldAdvanceBody(gm, offline){
         }
         continue;
       }
-      if(!offline) maybeEvent(d, d.done / d.dur);
+      if(!offline){
+        if(d.finaleBoss){
+          /* 终局 Boss：事件密度 ×2 */
+          const extra = 0.3;
+          if(!d.evt1 && d.done/d.dur >= 0.3){ d.evt1 = true; rollEvent(d, 1); }
+          else if(!d.evt2 && d.done/d.dur >= 0.6){ d.evt2 = true; rollEvent(d, 2); }
+          else if(!d.evt3 && d.done/d.dur >= 0.85 && Math.random() < extra + 0.35){ d.evt3 = true; rollEvent(d, 3); }
+        }
+        else maybeEvent(d, d.done / d.dur);
+      }
     }
     if(S.deps.some(d=>d.finished)){
       S.deps = S.deps.filter(d=>!d.finished);
@@ -3414,8 +3456,8 @@ function renderBoard(){
     const btn = $('#btn-board-compact'); if(btn) btn.textContent = '折叠';
   }
   let html = '';
-  /* B-9 序章剧情卡：卡尔的遗单（未完成序章时置顶显示） */
-  if(!S.flags.prologueDone){
+  /* B-9 序章剧情卡：卡尔的遗单（遗单在板上就置顶显示，派走即消失） */
+  if(S.board.some(x=>x.kind==='prologue')){
     html += '<div class="mcard" style="border-color:var(--gold)">'+
       '<div style="position:relative;margin:0 0 6px;">'+
       '<div class="wrow" style="margin:0 0 4px;"><div style="flex:1;min-width:0;"><b style="color:var(--gold)">'+TEXT.st_mission_name+'</b> <span class="note">'+TEXT.st_mission_tag+'</span></div></div>'+
@@ -3435,6 +3477,7 @@ function renderBoard(){
     }
   }
   S.board.forEach(m=>{
+    if(m.kind === 'prologue') return;  /* 遗单无 type，由上方专卡渲染，进 generic 循环会崩 */
     const b = biomeById(m.biome), t = mtypeById(m.type);
     if(FOLD.boardCompact){
       /* 简洁模式：单行卡片，详情进派遣弹窗 */
@@ -4356,6 +4399,10 @@ function renderCampaign(){
   ensureCampaignQueue();
   const camp = CAMPAIGNS[c.ci];
   let html = '';
+  /* 终局突入按钮：清账行动第4步 */
+  if(camp && camp.id === 'finale' && c.si === 3){
+    html += '<div class="row" style="margin-top:4px;"><button class="btn warn" style="width:100%;font-size:13px;font-weight:bold;padding:8px" onclick="showFinaleBoss()">🚨 终局突入 — 深入藤络树洞最深层（4 人满编 · 危5+ · 加固）</button></div>';
+  }
   /* B-7 编年史 UI 行（战役分支用 html= 赋值，故编年史行最后再拼入）；无尽期常驻 fest_roguecore 横幅 */
   const chLine = (isEndless() ? animDiv('fest_roguecore', 288, 96) : '') +
     '<div class="note" style="margin-bottom:4px;"><b style="color:var(--amber)">'+TEXT.ch_ui_title+'</b>　'+
@@ -4480,25 +4527,31 @@ function animDiv(animId, w, h){
 }
 
 /* ---------------- 数值详情弹窗（减字二期 · B 设计） ---------------- */
+function spawnKarlMission(){
+  const km = {id:'karl0', biome: S.board.length && S.board[0] ? S.board[0].biome : 'crystal', hazard:5, r:{}, kind:'prologue'};
+  S.board.unshift(km);
+}
 function playPrologue(){
   const scr1 = '<h3 style="color:var(--amber)">' + TEXT.st_note_title + '</h3><div class="note" style="white-space:pre-line;margin:10px 0">' + TEXT.st_note_body + '</div>' +
     '<div class="row" style="gap:6px"><button class="btn" style="flex:1" id="pg-next">下一页</button><button class="btn" id="pg-skip" style="flex:none">' + TEXT.st_skip + '</button></div>';
   const scr2 = '<h3 style="color:var(--red)">' + TEXT.st_brief_title + '</h3><div class="note" style="white-space:pre-line;margin:10px 0">' + TEXT.st_brief_body + '</div>' +
+    '<div class="row" style="gap:6px"><button class="btn" style="flex:1" id="pg-next">下一页</button><button class="btn" id="pg-skip" style="flex:none">' + TEXT.st_skip + '</button></div>';
+  const scr3 = '<h3 style="color:var(--gold)">' + TEXT.st_takeover_title + '</h3><div class="note" style="white-space:pre-line;margin:10px 0">' + TEXT.st_takeover_body + '</div>' +
     '<div class="row" style="gap:6px"><button class="btn" style="flex:1" id="pg-next">' + TEXT.st_start_btn + '</button><button class="btn" id="pg-skip" style="flex:none">' + TEXT.st_skip + '</button></div>';
   showModal(scr1, true);
+  const goEnd = () => endPrologue();
+  const go3 = () => { showModal(scr3, true);
+    $('#pg-next').onclick = goEnd;
+    $('#pg-skip').onclick = goEnd; };
   const go2 = () => { showModal(scr2, true);
-    $('#pg-next').onclick = () => endPrologue();
-    $('#pg-skip').onclick = () => endPrologue(); };
+    $('#pg-next').onclick = go3;
+    $('#pg-skip').onclick = goEnd; };
   $('#pg-next').onclick = go2;
-  $('#pg-skip').onclick = () => endPrologue();
-  function spawnKarlMission(){
-    const km = {id:'karl0', biome: S.board.length && S.board[0] ? S.board[0].biome : 'crystal', hazard:5, r:{}, kind:'prologue'};
-    S.board.unshift(km);
-  }
-  window._spawnKarlMission = spawnKarlMission;
+  $('#pg-skip').onclick = goEnd;
 }
 function endPrologue(){
   closeModal(true);
+  if(!S.flags.prologueDone) spawnKarlMission();  /* R2：卡尔遗单入板（仅序章首次收尾） */
   S.flags.prologueDone = true;
   log(TEXT.st_prologue_done_log, 'gold');
   renderAll(); save();
@@ -4967,10 +5020,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   ]);
   /* B-8：音乐开关 */
   const bgmBtn = document.getElementById('btn-bgm');
-  if(bgmBtn) bgmBtn.onclick = () => {
-    const muted = BGM.toggleMute();
-    bgmBtn.textContent = muted ? '🔇' : '🎵';
-  };
+  if(bgmBtn){
+    bgmBtn.textContent = BGM.icon();
+    bgmBtn.onclick = () => { BGM.toggleMute(); bgmBtn.textContent = BGM.icon(); };
+  }
   window.addEventListener('beforeunload', save);
   }catch(initErr){ window.__initErr = (initErr.stack || initErr.message); renderAll(); }
 });
