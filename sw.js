@@ -4,7 +4,7 @@
      navigator.serviceWorker.register('sw.js');
    注意：file:// 协议与微信 webview 内不生效（自动跳过，不影响游戏）。
 */
-const CACHE = 'drg-rig-v4';           // F3 修复（09-16）：v2 曾横跨 v1.4~v1.9.1 六版未变，回头玩家被钉死旧版。发版规则：每次打包必 +1
+const CACHE = 'drg-rig-v5';           // F3 修复（09-16）：v2 曾横跨 v1.4~v1.9.1 六版未变，回头玩家被钉死旧版。发版规则：每次打包必 +1
 const ASSETS = [
   './',
   './游戏.html',

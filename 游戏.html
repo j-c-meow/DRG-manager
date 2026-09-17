@@ -74,6 +74,12 @@ main{display:grid; grid-template-columns:340px 1fr 360px; gap:10px; margin-top:1
   #board.folded{display:none;}
   #boardFoldSummary{display:none; padding:6px 10px; color:var(--dim); font-size:12px; cursor:pointer;}
   #boardFoldSummary.on{display:block;}
+  /* F8/F9 手机首屏化：页签整视图切换+页签条收纳 */
+  main > section{display:none;}
+  main > section.m-main, main > section.m-side{display:block;}
+  body[data-mtab="roster"] main > section.m-main{display:block;}
+  body:not([data-mtab="roster"]) main > section.m-main{display:none;}
+  .tabs .tab{min-width:40px; padding:10px 2px; font-size:11px;}
   .modal .box{width:96vw; max-height:90vh; overflow-y:auto;}
 }
 .panel{border:1px solid var(--line); background:var(--panel);}
@@ -232,13 +238,13 @@ h3.sec{font-size:13px; color:var(--amber); margin:10px 0 6px;}
   </div>
 
   <main>
-    <section class="panel">
+    <section class="panel m-main">
       <h2>任务板 <button class="btn" id="btn-refresh">刷新任务板</button> <button class="btn" id="btn-board-compact">简洁</button></h2>
       <div id="boardFoldSummary"></div>
       <div class="bd" id="board"></div>
     </section>
 
-    <section>
+    <section class="m-mid">
       <div class="panel">
         <h2>派遣通道</h2>
         <div class="bd" id="deps"></div>
@@ -251,15 +257,15 @@ h3.sec{font-size:13px; color:var(--amber); margin:10px 0 6px;}
       </div>
     </section>
 
-    <section class="panel">
+    <section class="panel m-side">
       <div class="tabs" id="tabs">
         <div class="tab on" data-tab="roster">名册</div>
-        <div class="tab" data-tab="gear">装备终端</div>
-        <div class="tab" data-tab="bar">深渊酒吧</div>
-        <div class="tab" data-tab="med">医疗站</div>
-        <div class="tab" data-tab="market">交易站</div>
-        <div class="tab" data-tab="dive">深潜终端</div>
-        <div class="tab" data-tab="rig">钻井平台</div>
+        <div class="tab" data-tab="gear">装备</div>
+        <div class="tab" data-tab="bar">酒吧</div>
+        <div class="tab" data-tab="med">医疗</div>
+        <div class="tab" data-tab="market">交易</div>
+        <div class="tab" data-tab="dive">深潜</div>
+        <div class="tab" data-tab="rig">钻井</div>
         <div class="tab" data-tab="help">帮助</div>
         <div class="tab" data-tab="sys">系统</div>
       </div>
@@ -1970,6 +1976,7 @@ let S = null;
 let dirHandle = null;
 let speed = 1;
 let curTab = 'roster';
+document.body.dataset.mtab = 'roster';
 
 function newMiner(cls){
   const n = S.nextNum[cls]++;
@@ -1979,6 +1986,7 @@ function newMiner(cls){
 function newGame(){
   S = {
     v:2, gm:480, lastReal:Date.now(),   // 从 D1 08:00 开始
+    difficulty:{hz:1, nitra:1, ev:1, morale:1, yield:1, market:1},   /* F6：新档必须初始化难度乘区，否则首派 TypeError */
     credits:500, nitra:150, morkite:0, moil:0, gold:0,
     rare:{'玉石':0,'乌玛石':0,'铜矿':0,'妙绝珠':0,'吸铁石':0,'蜂母石':0,'容和石':0},
     rigLv:1,
@@ -2310,7 +2318,7 @@ function doDispatch(m, ids, fitN, loanStr){
   let cost = dispatchCost(m, hc, modEff, dur);
   /* 数值复核：急行派遣费按原始时长算（÷30 前的），否则 ×4 乘在已缩短的时长上=急行免费+倒赚硝石 */
   if(S.mode === 'rush'){ cost = Math.round(dispatchCost(m, hc, modEff, Math.max(60, Math.round(dur * 30))) * 4); }
-  cost = Math.round(cost * (S.difficulty.nitra||1));
+  cost = Math.round(cost * ((S.difficulty && S.difficulty.nitra) || 1));
   if(S.nitra >= cost){
     S.nitra -= cost;
   } else {
@@ -2764,7 +2772,7 @@ function settle(d, offline, forceMul){
   if((S.muleLv||1) >= 2 && gain.morkite){ gain.morkite = Math.round(gain.morkite * 1.2); }   /* 矿骡 Lv2 自动收集 */
   if(d.mode === 'rush'){
     gain.credits = Math.round(gain.credits * 0.35);
-    gain.credits = Math.round(gain.credits * (S.difficulty.yield||1));
+    gain.credits = Math.round(gain.credits * ((S.difficulty && S.difficulty.yield) || 1));
     gain.morkite = Math.round(gain.morkite * 0.35);
     if(gain.moil) gain.moil = Math.round(gain.moil * 0.35);
     if(gain.gold) gain.gold = Math.round(gain.gold * 0.35);
@@ -4114,7 +4122,7 @@ function ensureDiveWeek(){
       });
       S.dive.modifiers[v] = picked;
     });
-    log(TEXT['dd_expire_'+(1+Math.floor(Math.random()*2))], 'sys');
+    log(TEXT['dd_expire_' + (Math.random() < 0.5 ? 'a' : 'b')], 'sys');   /* F7：键名是 dd_expire_a/b，非数字 */
   }
 }
 function diveModifiers(variant){ ensureDiveWeek(); return (S.dive.modifiers||{})[variant] || []; }
@@ -4764,6 +4772,8 @@ function doCheat(code){
   S.dive.week = '';
   S.miners.forEach(m => { m.morale = 100; m.state = (m.state==='med') ? 'idle' : m.state; m.medUntil = 0; m.stars = Math.max(m.stars||0, 24);   /* 红3满（B 退回项①） */ });
   S.campaign = {ci:0, si:0, prog:0};
+  S.unlocked = {kpi:true, bar:true, market:true, med:true, gear:true};   /* F10：测试码=全解锁 */
+  S.flags.prologueDone = true;
   log('【测试协议 '+code+'】权限溢出确认：全模组解锁、资源注满、精英全员到齐、深潜刷新。请勿告诉财务部。', 'gold');
   lastSig = ''; renderAll(); save();
 }
@@ -4957,6 +4967,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
       document.querySelectorAll('#tabs .tab').forEach(x=>x.classList.remove('on'));
       t.classList.add('on'); curTab = t.dataset.tab; renderSide();
+      document.body.dataset.mtab = curTab;   /* F8：手机整视图切换 */
       /* B-8 场景切换（B 施工单）：酒吧 tab / 节日档期 = 酒吧曲，其余 = 主界面曲 */
       BGM.play((curTab === 'bar' || holidayForNow()) ? 'bar' : 'main');
     };
