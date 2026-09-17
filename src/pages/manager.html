@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0c1116">
+<link rel="icon" type="image/png" href="assets/pwa/icon-192.png">
+<link rel="stylesheet" href="styles/manager.css?v=embed1">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="assets/pwa/apple-touch-icon-180.png">
+<title>深岩银河 · 17号钻台管理终端</title>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div>
+      <h1>深岩银河集团 · 17号钻台管理终端</h1>
+    </div>
+    <div class="chip" id="clock">D1 08:00</div>
+    <div class="chip" id="spd-chip">
+      <button class="btn" id="btn-pause" title="暂停 / 继续时间">⏸ 暂停</button>
+    </div>
+    <div class="chip" id="mode-chip" title="点击切换：挂机=正常流速全额收益 / 急行=任务10秒级·产出×0.35·硝石×4·事件手动·禁深潜与暂停">
+      <div class="mspr"></div><b class="mlabel" id="mode-label">挂机</b>
+    </div>
+    <div class="chip" id="auto-chip" style="display:none;cursor:pointer;" title="挂机模式运行中，点击取消">🤖 <b id="auto-left">--</b></div>
+    <div class="chip"><button class="btn" id="btn-auto" style="padding:3px 8px;font-size:12px;" title="挂机券：3 小时内自动派遣、自动处理事件">🤖 挂机券</button></div>
+    <div class="chip"><button class="btn" id="btn-idle-report" style="padding:3px 8px;font-size:12px;" title="托管期间的收益汇总面板">📊 收益</button></div>
+    <button class="btn" id="btn-bgm" style="padding:3px 8px;font-size:12px;" title="音乐开关">🎵</button>
+    <div class="chip" id="chip-credits" style="cursor:pointer" title="代币"><b>◈</b> <b id="r-credits">0</b></div>
+    <div class="chip" id="chip-nitra" style="cursor:pointer" title="硝石"><img class="cicon" src="assets/icons/res_nitra.png"> <b id="r-nitra">0</b></div>
+    <div class="chip"><button class="btn" id="btn-res-overview" style="padding:2px 8px;font-size:12px;">资源总览</button></div>
+    <div class="kpiwrap">
+      <div class="note">季度 KPI：<span id="kpi-txt"></span> <button class="btn pri" id="btn-kpi" style="display:none;padding:2px 8px;font-size:12px;">领取季度奖金</button></div>
+      <div class="bar"><i id="kpi-bar" style="width:0%"></i></div>
+    </div>
+  </header>
+  <div id="campbar" class="panel" style="margin-top:8px; padding:8px 12px;"></div>
+  <div id="rares" class="row" style="margin:8px 0 0;"></div>
+  <div id="swarmalert" style="display:none;margin-top:8px;padding:7px 12px;font-size:13px;background:#331309;border:1px solid var(--amber);border-radius:3px;color:var(--amber);align-items:center;gap:8px;">
+    <span id="swarmalert-ic" style="flex:none;width:32px;height:32px;"></span>
+    <span style="flex:1;">⚠ 洞穴在震动：有队伍正悬挂虫潮事件，等待管理层决策！</span>
+  </div>
+
+  <main>
+    <section class="panel m-main">
+      <h2>任务板 <button class="btn" id="btn-refresh">刷新任务板</button> <button class="btn" id="btn-board-compact">简洁</button></h2>
+      <div id="boardFoldSummary"></div>
+      <div class="bd" id="board"></div>
+    </section>
+
+    <section class="m-mid">
+      <div class="panel">
+        <h2>派遣通道</h2>
+        <div class="bd" id="deps"></div>
+      </div>
+      <div class="panel" id="logPanel" style="margin-top:10px;">
+        <h2><span class="fold-head" data-fold="log" style="flex:1;">管理终端日志 <span class="arrow">▼</span></span>
+          <span class="logbar"><button class="btn btn-log-expand" id="btn-log-modal">放大</button></span></h2>
+        <div id="logMini" data-foldlog="open">▸ 点击展开日志</div>
+        <div class="bd"><div id="log"></div></div>
+      </div>
+    </section>
+
+    <section class="panel m-side">
+      <div class="tabs" id="tabs">
+        <div class="tab on" data-tab="roster">名册</div>
+        <div class="tab" data-tab="gear">装备</div>
+        <div class="tab" data-tab="bar">酒吧</div>
+        <div class="tab" data-tab="med">医疗</div>
+        <div class="tab" data-tab="market">交易</div>
+        <div class="tab" data-tab="dive">深潜</div>
+        <div class="tab" data-tab="rig">钻井</div>
+        <div class="tab" data-tab="help">帮助</div>
+        <div class="tab" data-tab="sys">系统</div>
+      </div>
+      <div class="bd" id="side"></div>
+    </section>
+  </main>
+
+  <footer>
+    深岩银河集团（本地分部）对烧伤、冻伤、虫噬及一切"看起来不至于"的伤害不予理赔。<br>
+    本作为粉丝非商用二创作品，与 Ghost Ship Games 无关；《Deep Rock Galactic》素材版权归 Ghost Ship Games 所有。挖到手软，赚到盆满！
+    <div style="margin-top:10px;padding-top:10px;border-top:1px dashed var(--line);font-size:12px;color:var(--dim);line-height:1.9;">
+      <b style="color:var(--amber)">鸣谢</b>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:2px 18px;margin-top:6px;text-align:left;">
+        <div><span style="color:var(--teal)">创意及开发</span>　j-c-meow</div>
+        <div><span style="color:var(--teal)">部署和技术指导</span>　iriscat</div>
+        <div><span style="color:var(--teal)">技术指导</span>　jiuduo 及深岩银河汉化组</div>
+        <div><span style="color:var(--teal)">测试</span>　iris 群 cat ship games 的群友</div>
+        <div style="grid-column:1/-1"><span style="color:var(--teal)">素材支持特别鸣谢</span>　<img src="assets/anim/pixel_lcyf166.png" alt="lcyf166 像素形象" style="width:20px;height:20px;image-rendering:pixelated;vertical-align:-5px;border:1px solid var(--line);border-radius:2px;background:#0a0e12;"> lcyf166、寒曦月璃、Ghostship</div>
+        <div style="grid-column:1/-1"><span style="color:var(--teal)">内容涉及额外特别鸣谢</span>　灭吟弄月、BGM、自行院长、远藤沙耶、希诺百万、云梦衣、脆脆鲨、稚八方、kevin 等</div>
+      </div>
+    </div>
+  </footer>
+</div>
+
+<div class="modal" id="modal" style="display:none"><div class="box" id="modal-box"></div></div>
+<section class="realtime-shell" id="realtime-shell" hidden aria-hidden="true">
+  <div class="realtime-shell-bar">
+    <div>
+      <span class="realtime-shell-kicker">直接指挥</span>
+      <strong id="realtime-shell-title">实时下矿</strong>
+    </div>
+    <button class="btn realtime-shell-close" id="realtime-shell-close" type="button">返回管理终端</button>
+  </div>
+  <iframe id="realtime-frame" class="realtime-frame" title="实时下矿" src="about:blank" allow="autoplay; fullscreen; gamepad" allowfullscreen></iframe>
+</section>
+
+
+<script src="scripts/manager/game-data.js"></script>
+<script src="scripts/manager/state.js"></script>
+<script src="scripts/manager/missions.js"></script>
+<script src="scripts/manager/realtime-bridge.js?v=embed1"></script>
+<script src="scripts/manager/ui.js?v=embed1"></script>
+<script src="scripts/manager/main.js?v=embed1"></script>
+</body>
+</html>

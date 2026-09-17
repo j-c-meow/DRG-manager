@@ -1,31 +1,21 @@
-# 发布物不入库（走 GitHub Release）
-部署包-*.zip
-深岩银河-*.zip
+# Dependencies and generated output
+node_modules/
+dist/
+.wrangler/
 
-# 内部协作文档（三会话交接/信号板，含内部信息）
-交接文档.md
-SYNC.md
+# Operating-system and editor files
+.DS_Store
+*.swp
+*.tmp
 
-# 本地工作目录与测试产物
-server_log.txt
-_probe.html
-x.k
-部署目录/
-配乐文件/
-tools/
+# Logs and caches
+*.log
+__pycache__/
+*.pyc
 
-# 解包参考原料与生成工具（版权考虑不入公共仓库）
-assets/anim/_refs/
-assets/anim/_tools/
-assets/anim/_preview/
-assets/icons/missions/UI/
-
-# 本地存档
+# Local save exports
 drg_save.json
 drg_save_*.json
 
-# 抓取原始转储与爬虫脚本（中间产物）
-资料/raw/
-
-*/raw/
-__pycache__/
+# Local archives
+*.zip
