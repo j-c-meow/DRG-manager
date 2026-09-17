@@ -2092,7 +2092,7 @@ function importSave(){
     r.onload = () => {
       try{
         const d = JSON.parse(r.result);
-        if(d && d.v === 2){ S = d; log(TEXT.log_save_import_ok, 'good'); renderAll(); }
+        if(d && d.v === 2){ S = d; if(!S.difficulty) S.difficulty = {hz:1, nitra:1, ev:1, morale:1, yield:1, market:1}; if(S.flags.prologueDone === undefined) S.flags.prologueDone = ((S.stats && S.stats.missions) > 0); log(TEXT.log_save_import_ok, 'good'); renderAll(); }
         else log(TEXT.log_save_import_ver, 'bad');
       }catch(e){ log(TEXT.log_save_import_bad, 'bad'); }
     };
@@ -2144,7 +2144,7 @@ async function restoreFolderSave(){
     const fh = await dirHandle.getFileHandle('drg_save.json');
     const t = await fh.getFile();
     const d = JSON.parse(await t.text());
-    if(d && d.v === 2){ S = d; log(TEXT.log_restore_ok, 'good'); renderAll(); }
+    if(d && d.v === 2){ S = d; if(!S.difficulty) S.difficulty = {hz:1, nitra:1, ev:1, morale:1, yield:1, market:1}; if(S.flags.prologueDone === undefined) S.flags.prologueDone = ((S.stats && S.stats.missions) > 0); log(TEXT.log_restore_ok, 'good'); renderAll(); }
     else log(TEXT.log_restore_ver, 'bad');
   }catch(e){ log(TEXT.log_restore_fail, 'bad'); }
 }
