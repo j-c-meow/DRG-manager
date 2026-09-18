@@ -137,7 +137,7 @@ function chronicleTick(){
     } else if(nd.kind === 'finale'){
       log(TEXT.ch_finale_open, 'gold');
     } else if(nd.kind !== 'origin'){
-      log(TEXT.ch_node_season.replace('{name}', nd.name), 'gold');
+      log(TEXT.ch_node_season.replace('{name}', L(nd.name)), 'gold');
     }
   }
   if(!S.flags.chEndless && isEndless()){
@@ -160,10 +160,10 @@ function buildEndlessCampaign(loop){
   const t = ['exp','point','refi','salv','elim','escort'][Math.floor(Math.random()*6)];
   const tn = mtypeById(t) ? mtypeById(t).name : t;
   const c = Math.round(1200*mul), mk = Math.round(500*mul), gd = Math.round(8*mul);
-  return { id:'endless'+loop, name:'无尽委托 · 第 '+(loop+1)+' 轮', endless:true, steps:[
-    {type:'mission', target:t, need:4, txt:'完成 4 次'+tn},
-    {type:'hazard',  target:5, need:2, txt:'完成 2 次危险 5 任务'} ],
-    rw:{credits:c, morkite:mk, gold:gd}, rwTxt: fmt(c)+' 代币 + 墨菱石×'+fmt(mk)+' + 黄金×'+gd };
+  return { id:'endless'+loop, name:'无尽委托 · 第 '+(loop+1)+' 轮', enName:'Endless Contract · Round '+(loop+1), endless:true, steps:[
+    {type:'mission', target:t, need:4, txt:L('完成 4 次')+L(tn)},
+    {type:'hazard',  target:5, need:2, txt:L('完成 2 次危险 5 任务')} ],
+    rw:{credits:c, morkite:mk, gold:gd}, rwTxt: fmt(c)+L(' 代币 + ')+L('墨菱石')+'×'+fmt(mk)+' + '+L('黄金')+'×'+gd };
 }
 function ensureCampaignQueue(){
   const c = S.campaign; if(!c) return;
@@ -245,7 +245,7 @@ function campProgress(kind, match, amount){
   if(camp.fee && !camp.feeCharged){
     const charge = Math.min(camp.fee, S.credits);
     S.credits -= charge; camp.feeCharged = true;
-    log('【清账行动】保证金 '+fmt(charge)+' 代币已冻结。六年旧账，今日清算——完成返还 ×3。', 'sys');
+    log(L('【清账行动】保证金 ')+fmt(charge)+L(' 代币已冻结。六年旧账，今日清算——完成返还 ×3。'), 'sys');
   }
   const st = camp.steps[c.si]; if(!st || st.type !== kind) return;
   if(kind === 'mission' && st.target !== match) return;
@@ -257,26 +257,26 @@ function campProgress(kind, match, amount){
     if(c.si >= camp.steps.length){
       const parts = [];
       const rw = camp.rw||{};
-      if(rw.credits){ S.credits += rw.credits; parts.push(rw.credits+' 代币'); }
-      if(rw.nitra){ S.nitra += rw.nitra; parts.push('硝石×'+rw.nitra); }
-      if(rw.gold){ S.gold += rw.gold; parts.push('黄金×'+rw.gold); }
+      if(rw.credits){ S.credits += rw.credits; parts.push(rw.credits+L(' 代币')); }
+      if(rw.nitra){ S.nitra += rw.nitra; parts.push(L('硝石×')+rw.nitra); }
+      if(rw.gold){ S.gold += rw.gold; parts.push(L('黄金×')+rw.gold); }
       if(rw.recruit){
         S.recruited[rw.recruit] = true;
         if(S.miners.some(m=>m.cls===rw.recruit)){
           S.credits += 300;
-          parts.push('重复招募折算 300 代币');
-          log('该职业已有在册员工，集团把招募奖金折成了 300 代币——感谢你帮财务省了一笔。', 'sys');
+          parts.push(L('重复招募折算 300 代币'));
+          log(L('该职业已有在册员工，集团把招募奖金折成了 300 代币——感谢你帮财务省了一笔。'), 'sys');
         } else {
           const m = newMiner(rw.recruit); S.miners.push(m);
-          parts.push('免费招募 '+minerName(m));
+          parts.push(L('免费招募 ')+minerName(m));
         }
       }
       Object.entries(rw).forEach(([k,v])=>{
         if(k.startsWith('rare_')){
           const key = k.slice(5);
           const mm = Object.keys(MKEY).find(name => MKEY[name] === key);
-          if(mm){ S.rare[mm] += v; parts.push(mm+'×'+v); }
-          else log('【战役】奖励反查失败：rare_'+key+' 不在 MKEY 表，该笔奖励未发放——请核对战役表键名。', 'sys');
+          if(mm){ S.rare[mm] += v; parts.push(L(mm)+'×'+v); }
+          else log(L('【战役】奖励反查失败：rare_')+key+L(' 不在 MKEY 表，该笔奖励未发放——请核对战役表键名。'), 'sys');
         }
       });
       if(camp.id === 'finale'){
@@ -284,11 +284,11 @@ function campProgress(kind, match, amount){
         if(camp.fee && camp.feeCharged){
           const back = Math.round(camp.fee * 3);
           S.credits += back; parts.push('保证金退还 ×3（'+fmt(back)+' 代币）');
-          log('【编年史】账清了。Rock and Stone——17号钻台的账本，从今天起是干净的。', 'gold');
+          log(L('【编年史】账清了。Rock and Stone——17号钻台的账本，从今天起是干净的。'), 'gold');
         }
       }
       if(camp.endless){ S.campaign.loop = (S.campaign.loop||0) + 1; }
-      log(TEXT.log_camp_clear.replace('{name}', camp.name)+' 奖励：'+parts.join('、'), 'gold');
+      log(TEXT.log_camp_clear.replace('{name}', L(camp.name))+L(' 奖励：')+parts.join(L('、')), 'gold');
       c.ci++; c.si = 0; c.prog = 0;
       /* B-7 跳跃机制：完成战役链 → 快进至下一编年史节点（跳过天数按日均折算入账；节日/赛季节点不跳过——跳跃目标即下一节点） */
       if(CHRONICLE.jumpOnCampaignClear && !isEndless()){
@@ -301,15 +301,15 @@ function campProgress(kind, match, amount){
             S.lastReal = Date.now();
             const pkgC = skip * 120, pkgN = skip * 25;
             S.credits += pkgC; S.nitra += pkgN;
-            log(TEXT.ch_jump_brief.replace('{days}', skip)+'（折算入账 '+fmt(pkgC)+' 代币 + '+fmt(pkgN)+' 硝石）', 'sys');
+            log(TEXT.ch_jump_brief.replace('{days}', skip)+L('（折算入账 ')+fmt(pkgC)+L(' 代币 + ')+fmt(pkgN)+L(' 硝石）'), 'sys');
           }
         }
       }
       chronicleTick();
       ensureCampaignQueue();
       const nxt = CAMPAIGNS[c.ci];
-      if(nxt) log(TEXT.log_camp_new.replace('{name}', nxt.name)+' 集团永不满足。', 'sys');
-      else log('战役队列已空。集团正在起草新的大单。', 'sys');
+      if(nxt) log(TEXT.log_camp_new.replace('{name}', L(nxt.name))+L(' 集团永不满足。'), 'sys');
+      else log(L('战役队列已空。集团正在起草新的大单。'), 'sys');
     }
   }
 }
@@ -350,7 +350,7 @@ function rollDrink(){
     const pool2 = DRINK_POOL.filter(x => !x.buff.mystery);
     pickD = pool2[Math.floor(Math.random() * pool2.length)];
     eff = pickD.buff;
-    log('🎰 神秘特调开出了「' + pickD.name + '」的效果！', 'sys');
+    log(L('🎰 神秘特调开出了「') + L(pickD.name) + L('」的效果！'), 'sys');
   }
   return Object.assign({ dname: pickD.name, rarity: pickD.rarity, icon: pickD.icon, bad: pickD.bad || 0, txt: pickD.txt }, eff);
 }
@@ -361,21 +361,21 @@ function applyDrinkImmediate(db){
   if(db.healNow){
     let healed = 0;
     S.miners.forEach(m => { if(m.state === 'med'){ m.state = 'idle'; m.medUntil = 0; healed++; } });
-    if(healed) log('叶子情人特调下肚，' + healed + ' 名伤员当场满血归队。', 'good');
+    if(healed) log(L('叶子情人特调下肚，') + healed + L(' 名伤员当场满血归队。'), 'good');
   }
   if(db.moraleHit) S.miners.forEach(m => m.morale = clamp(m.morale + db.moraleHit, 0, 100));
 }
 function rerollDrink(){
   if(S.fac.bar < 1) return;
-  if(S.credits < REROLL_COST){ log('再抽一轮要 ' + REROLL_COST + ' 代币，财务部拒绝预支。', 'bad'); return; }
+  if(S.credits < REROLL_COST){ log(L('再抽一轮要 ') + REROLL_COST + L(' 代币，财务部拒绝预支。'), 'bad'); return; }
   S.credits -= REROLL_COST;
   S.activeDrinkBuff = rollDrink();
   const db = S.activeDrinkBuff;
-  log('🍻 再抽一轮：「' + db.dname + '」（' + db.rarity + '）' + db.txt + '。', db.bad ? 'bad' : 'gold');
+  log(L('🍻 再抽一轮：「') + L(db.dname) + L('」（') + L(db.rarity) + L('）') + L(db.txt) + L('。'), db.bad ? 'bad' : 'gold');
   applyDrinkImmediate(db);
-  showModal('<h3 style="color:var(--amber)">🎲 再抽一轮</h3>' + animDiv('drink_draw', 96, 132) +
-    '<div class="meta">「<b style="color:var(--amber)">' + db.dname + '</b>」（' + db.rarity + '）' + db.txt + '</div>' +
-    '<button class="btn pri" style="width:100%;margin-top:6px" onclick="closeModal(true)">干杯</button>', false);
+  showModal('<h3 style="color:var(--amber)">'+L('🎲 再抽一轮')+'</h3>' + animDiv('drink_draw', 96, 132) +
+    '<div class="meta">'+L('「')+'<b style="color:var(--amber)">' + L(db.dname) + '</b>'+L('」（') + L(db.rarity) + L('）') + L(db.txt) + '</div>' +
+    '<button class="btn pri" style="width:100%;margin-top:6px" onclick="closeModal(true)">'+L('干杯')+'</button>', false);
   renderAll(); save();
 }
 
@@ -397,7 +397,7 @@ function resIcon(k){
   return MKEY[k] ? '<img class="cicon" src="assets/icons/res_'+MKEY[k]+'.png">' : '◆';
 }
 function costChip(name,n){ return '<span class="costchip"><img src="assets/icons/res_'+MKEY[name]+'.png">'+n+'</span>'; }
-function costHtml(uc){ return costChip(uc.m1,uc.q1)+'<span class="costchip">+</span>'+costChip(uc.m2,uc.q2)+'<span class="costchip"><b>'+uc.c+'</b> 代币</span>'; }
+function costHtml(uc){ return costChip(uc.m1,uc.q1)+'<span class="costchip">+</span>'+costChip(uc.m2,uc.q2)+'<span class="costchip"><b>'+uc.c+'</b>'+L(' 代币')+'</span>'; }
 function ic(key, cls){
   return '<img class="'+(cls||'cicon')+'" src="assets/icons/'+key+'.png" onerror="this.remove()">';
 }
@@ -681,7 +681,7 @@ const WEAPON_ZH = {
 };
 const WEAPON_ZH_ALL = {};
 Object.entries(WEAPON_MODS).forEach(([, ws]) => Object.entries(ws).forEach(([wid, w]) => { WEAPON_ZH_ALL[wid] = w.zh; }));
-function weaponZh(wid){ return WEAPON_ZH_ALL[wid] || WEAPON_ZH[wid] || wid; }
+function weaponZh(wid){ if(currentLang() === 'en' && typeof WEAPON_EN !== 'undefined' && WEAPON_EN[wid]) return WEAPON_EN[wid]; return WEAPON_ZH_ALL[wid] || WEAPON_ZH[wid] || wid; }
 /* 图标路径表（清单 §13.1：21 张 wiki 图标 + 3 张 C 手绘在 assets/weapons/） */
 const WICONS = {
   scout:   { main:['assets/icons/w_scout_1.png','assets/icons/w_scout_2.png','assets/icons/w_scout_3.png'], off:['assets/icons/w_scout_s2.png','assets/icons/w_scout_s1.png','assets/icons/w_scout_s3.png'] },
@@ -712,7 +712,7 @@ function buyWeaponUpgrade(cls, pool, idx){
   if((S.rare[c.m1]||0) < c.q1 || (S.rare[c.m2]||0) < c.q2 || S.credits < c.c) return;
   S.credits -= c.c; S.rare[c.m1] -= c.q1; S.rare[c.m2] -= c.q2;
   S.wlv[cls][wid] = lv + 1;
-  log(weaponZh(wid)+' 升级至 Lv.'+(lv+1)+'/5！', 'gold');
+  log(weaponZh(wid)+L(' 升级至 Lv.')+(lv+1)+L('/5！'), 'gold');
   renderAll(); save();
 }
 /* 武器升级 disabled 时显示具体缺口 */
@@ -720,8 +720,8 @@ function wupDisText(cls, i){
   const L = CLASSES[cls].lic;
   const parts = [];
   const mName = L.m, mNeed = L.q[i] || L.q[L.q.length-1];
-  if((S.rare[mName]||0) < mNeed) parts.push(mName+'×'+(mNeed-(S.rare[mName]||0)));
-  if(S.credits < 250) parts.push('代币不足');
+  if((S.rare[mName]||0) < mNeed) parts.push(L(mName)+'×'+(mNeed-(S.rare[mName]||0)));
+  if(S.credits < 250) parts.push(L('代币不足'));
   return parts.length ? parts.join(' + ') : '';
 }
 const EFF_NAMES = {yield:'产出', duration:'时长', eventSuccess:'事件成功率', rareDrop:'稀有掉落', morale:'士气', supplyCost:'硝石消耗', medBill:'医疗账单'};
@@ -760,8 +760,8 @@ function squadModEffects(minerIds){
 function effectText(eff){
   return Object.entries(eff).map(([k,v]) => {
     const unit = k === 'morale' ? '' : '%';
-    return EFF_NAMES[k] + ' ' + (v>0?'+':'') + v + unit;
-  }).join('，');
+    return L(EFF_NAMES[k]) + ' ' + (v>0?'+':'') + v + unit;
+  }).join(L('，'));
 }
 /* 饰品索引与全队效果（B-5：effectScope squad，同名唯一） */
 const TRINKET_INDEX = {};

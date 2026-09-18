@@ -48,30 +48,30 @@ function openDispatch(mid){
   const t = mtypeById(m.type);
   const idle = S.miners.filter(x=>x.state==='idle' && x.morale>=25);
   const defaultMinerId = idle.length ? idle[0].id : '';
-  let html = '<h3 style="color:var(--amber)">'+t.name+' · '+biomeById(m.biome).name+'</h3>';
-  html += '<div class="note">危险等级 '+'★'.repeat(m.hazard)+'　报酬系数 ×'+CFG.HAZ[m.hazard-1]+'</div>';
-  html += '<div class="meta">产出：'+Object.entries(m.r).map(([k,v])=>'<span class="costchip">'+(resIcon(k)==='◈'?'◈':resIcon(k))+'<b>'+v+'</b></span>').join('')+(m.clause?'<span class="costchip" title="'+m.clause.name+'：'+m.clause.d+'">⚠ '+m.clause.name+'</span>':'')+'</div>';
-  html += '<h3 class="sec">选择出勤矿工</h3>';
+  let html = '<h3 style="color:var(--amber)">'+L(t)+' · '+L(biomeById(m.biome))+'</h3>';
+  html += '<div class="note">'+L('危险等级 ')+'★'.repeat(m.hazard)+L('　报酬系数 ×')+CFG.HAZ[m.hazard-1]+'</div>';
+  html += '<div class="meta">'+L('产出：')+Object.entries(m.r).map(([k,v])=>'<span class="costchip">'+(resIcon(k)==='◈'?'◈':resIcon(k))+'<b>'+v+'</b></span>').join('')+(m.clause?'<span class="costchip" title="'+m.clause.name+'：'+m.clause.d+'">⚠ '+m.clause.name+'</span>':'')+'</div>';
+  html += '<h3 class="sec">'+L('选择出勤矿工')+'</h3>';
   if(!S.miners.length){
-    html += '<div class="note">名册中没有矿工，请先招募矿工。</div>';
+    html += '<div class="note">'+L('名册中没有矿工，请先招募矿工。')+'</div>';
   } else if(!idle.length){
-    html += '<div class="note">当前没有可派遣矿工；任务中、医疗中或士气低于 25 的矿工不能出勤。</div>';
+    html += '<div class="note">'+L('当前没有可派遣矿工；任务中、医疗中或士气低于 25 的矿工不能出勤。')+'</div>';
   }
   html += '<div class="dispatch-miner-list">';
   S.miners.forEach(mn=>{
     const ready = mn.state==='idle' && mn.morale>=25;
-    const fit = mn.cls===t.best ? ' · 任务适配' : '';
-    const stateText = mn.state==='mission' ? '任务中' : mn.state==='med' ? '医疗中' : mn.morale<25 ? '士气过低' : '可派遣';
+    const fit = mn.cls===t.best ? L(' · 任务适配') : '';
+    const stateText = mn.state==='mission' ? L('任务中') : mn.state==='med' ? L('医疗中') : mn.morale<25 ? L('士气过低') : L('可派遣');
     html += '<label class="dispatch-miner-option'+(ready?'':' is-disabled')+'">'+
       '<input type="checkbox" data-miner="'+mn.id+'" '+(mn.id===defaultMinerId?'checked':'')+' '+(ready?'':'disabled')+'>'+
-      '<span class="dispatch-miner-copy"><b>'+minerName(mn)+' · '+CLASSES[mn.cls].name+' Lv.'+mn.lv+'</b>'+
-      '<span>'+stateText+' · 士气 '+mn.morale+'/100'+fit+'</span></span></label>';
+      '<span class="dispatch-miner-copy"><b>'+minerName(mn)+' · '+L(CLASSES[mn.cls].name)+' Lv.'+mn.lv+'</b>'+
+      '<span>'+stateText+L(' · 士气 ')+mn.morale+'/100'+fit+'</span></span></label>';
   });
   html += '</div>';
   const capN = hcCap();
-  html += '<div class="note" id="dp-cap">已默认选择首名可用矿工；小队上限 '+capN+' 人。</div>';
+  html += '<div class="note" id="dp-cap">'+L('已默认选择首名可用矿工；小队上限 ')+capN+L(' 人。')+'</div>';
   html += '<div class="meta" id="dp-summary"></div>';
-  html += '<button class="btn pri" id="dp-go" style="width:100%" disabled>派遣</button>';
+  html += '<button class="btn pri" id="dp-go" style="width:100%" disabled>'+L('派遣')+'</button>';
   showModal(html);
   const update = () => {
     let ids = [...$('#modal-box').querySelectorAll('input[data-miner]:checked')].map(x=>x.dataset.miner);
@@ -91,25 +91,25 @@ function openDispatch(mid){
     else { pCost = dispatchCost(m, hc, modEff, dur); }
     const cost = pCost;
     const fitN = ids.filter(id => { const mm = S.miners.find(x=>x.id===id); return mm && mm.cls===t.best; }).length;
-    const fitTxt = fitN ? ('　适配矿工 ×'+fitN+'（产出 +'+(fitN*8)+'%）') : '';
+    const fitTxt = fitN ? (L('　适配矿工 ×')+fitN+L('（产出 +')+(fitN*8)+L('%）')) : '';
     const modTxt = (modEff.duration || modEff.supplyCost || modEff.yield || modEff.eventSuccess) ?
-      ('　模组：'+effectText(modEff)) : '';
+      (L('　模组：')+effectText(modEff)) : '';
     const short = Math.max(0, cost - Math.floor(S.nitra));
     const loanFee = Math.round(short * 3);
-    const loanTxt = short > 0 ? ('　⚠ 硝石缺口 '+short+'，可赊账（记账 '+loanFee+' 代币）') : '';
-    $('#dp-summary').innerHTML = hc === 0 ? '至少选择 1 名矿工。'
-      : ('小队 '+hc+' 人　用时约 '+fmtDur(dur)+'　补给 -'+cost+' 硝石（持有 '+Math.floor(S.nitra)+'）'+fitTxt+modTxt+loanTxt);
+    const loanTxt = short > 0 ? (L('　⚠ 硝石缺口 ')+short+L('，可赊账（记账 ')+loanFee+L(' 代币）')) : '';
+    $('#dp-summary').innerHTML = hc === 0 ? L('至少选择 1 名矿工。')
+      : (L('小队 ')+hc+L(' 人　用时约 ')+fmtDur(dur)+L('　补给 -')+cost+L(' 硝石（持有 ')+Math.floor(S.nitra)+L('）')+fitTxt+modTxt+loanTxt);
     const go = $('#dp-go');
     go.dataset.ids = ids.join(',');
     go.dataset.fit = String(fitN);
     go.dataset.loan = String(short);
-    if(hc === 0){ go.disabled = true; go.textContent = '派遣'; return; }
+    if(hc === 0){ go.disabled = true; go.textContent = L('派遣'); return; }
     if(short > 0){
       go.disabled = S.credits < loanFee;
-      go.textContent = go.disabled ? '硝石不足' : '赊账派遣（补 '+loanFee+' 代币）';
+      go.textContent = go.disabled ? L('硝石不足') : L('赊账派遣（补 ')+loanFee+L(' 代币）');
     } else {
       go.disabled = false;
-      go.textContent = '派遣';
+      go.textContent = L('派遣');
     }
   };
   $('#modal-box').querySelectorAll('input[data-miner]').forEach(x=>{ x.onchange = update; });
@@ -126,7 +126,7 @@ function doDispatch(m, ids, fitN, loanStr){
   if(!S.activeDrinkBuff){
     S.activeDrinkBuff = rollDrink();
     const db0 = S.activeDrinkBuff;
-    log('🍻 出发酒：「' + db0.dname + '」（' + db0.rarity + '）' + db0.txt + '。', db0.bad ? 'bad' : 'sys');
+    log(L('🍻 出发酒：「') + L(db0.dname) + L('」（') + L(db0.rarity) + L('）') + L(db0.txt) + L('。'), db0.bad ? 'bad' : 'sys');
     applyDrinkImmediate(db0);
   }
   let drinkShield = 0, morkiteBuff = 1, durMulD = 1, evSuccD = 0, rareBoostD = 0, checkTD = 0, xpPerD = 0, autoEventsD = false;
@@ -169,7 +169,7 @@ function doDispatch(m, ids, fitN, loanStr){
     start:S.gm, dur, done:0, evt1:false, evt2:false, paused:null, bonus:1,
     rareBoost:(rareBoostD||0), xpPer:(xpPerD||0), autoEvents:autoEventsD, mode:(S.mode||'idle'), nitraSpent:cost});
   S.board = S.board.filter(x=>x.id!==m.id);
-  log(mtypeById(m.type).name+'【'+biomeById(m.biome).name+'】派遣 '+hc+' 人小队（'+names+'），预计 '+fmtDur(dur)+'。', '');
+  log(L(mtypeById(m.type))+L('【')+L(biomeById(m.biome))+L('】派遣 ')+hc+L(' 人小队（')+names+L('），预计 ')+fmtDur(dur)+L('。'), '');
   /* 社区彩蛋（B 设计 ev_lcyf166）：执勤护送（非深潜）派遣开始时 30% 概率到访 */
   const dep0 = S.deps[S.deps.length-1];
   if(m.type === 'escort' && !dep0.isDive && Math.random() < 0.3) startEvent(dep0, 'lcyf166');
@@ -218,16 +218,16 @@ function startMemeEvent(d, id){
   d.paused = {id: 'meme_' + id, meme: true, memeId: id};
   const biome = biomeById(d.m.biome).name;
   const T = (typeof TEXT !== 'undefined') ? TEXT : {};
-  const title = T[id+'_title'] || '奇怪的事件';
+  const title = T[id+'_title'] || L('奇怪的事件');
   const desc = T[id+'_desc'] || '';
-  const aBtn = T[id+'_a_btn'] || '选项 A';
-  const bBtn = T[id+'_b_btn'] || '选项 B';
+  const aBtn = T[id+'_a_btn'] || L('选项 A');
+  const bBtn = T[id+'_b_btn'] || L('选项 B');
   /* 头图：ev_doretta 用场景立绘，其余按事件 id 取 C 二期 meme_* 头图 */
   const animPre = (id === 'ev_doretta') ? animDiv('doretta_head', 100, 70) : animDiv(id.replace(/^ev_/, 'meme_'), 288, 96);
   let html = animPre + desc;
   if(!S.flags.memeSeen){
     S.flags.memeSeen = true;
-    html += '<div class="note">【首次提示】社区怪谈事件没有失败判定——两个选项都只是口味问题，放心选。</div>';
+    html += '<div class="note">'+L('【首次提示】社区怪谈事件没有失败判定——两个选项都只是口味问题，放心选。')+'</div>';
   }
   const opts = '<button class="opt btn pri" data-c="memeA">'+aBtn+'</button>'+
                '<button class="opt btn" data-c="memeB">'+bBtn+'</button>';
@@ -286,12 +286,12 @@ function startEvent(d, id){
     const p = clamp(p0 + es/100 + ct, 0.05, 0.98);
     d.paused.p = p;
     html = animDiv('swarm_banner', 240, 80) + animDiv('evt_swarm', 288, 96) + TEXT.ev_swarm_desc;
-    opts = '<button class="opt btn pri" data-c="hold">'+TEXT.ev_swarm_a_btn+'（成功概率 '+(p*100).toFixed(0)+'%：奖励 +20%，士气 +10；失败：1 人重伤入院，任务继续）</button>'+
-           '<button class="opt btn" data-c="bunker"'+nitroDis(100)+'>'+TEXT.ev_swarm_b_btn+'（无风险，任务时长 +25%）'+nitroTag(100)+'</button>';
+    opts = '<button class="opt btn pri" data-c="hold">'+TEXT.ev_swarm_a_btn+L('（成功概率 ')+(p*100).toFixed(0)+L('%：奖励 +20%，士气 +10；失败：1 人重伤入院，任务继续）')+'</button>'+
+           '<button class="opt btn" data-c="bunker"'+nitroDis(100)+'>'+TEXT.ev_swarm_b_btn+L('（无风险，任务时长 +25%）')+nitroTag(100)+'</button>';
   } else if(id === 'rich'){
     html = animDiv('evt_rich', 288, 96) + TEXT.ev_richvein_desc;
-    opts = '<button class="opt btn pri" data-c="stay"'+nitroDis(120)+'>'+TEXT.ev_richvein_a_btn+'（主矿物 ×1.6，稀有掉落 +50%，时长 +30%）'+nitroTag(120)+'</button>'+
-           '<button class="opt btn" data-c="leave">'+TEXT.ev_richvein_b_btn+'（额外 +30 代币勘测报偿）</button>';
+    opts = '<button class="opt btn pri" data-c="stay"'+nitroDis(120)+'>'+TEXT.ev_richvein_a_btn+L('（主矿物 ×1.6，稀有掉落 +50%，时长 +30%）')+nitroTag(120)+'</button>'+
+           '<button class="opt btn" data-c="leave">'+TEXT.ev_richvein_b_btn+L('（额外 +30 代币勘测报偿）')+'</button>';
   } else if(id === 'leech'){
     const victim = pick(d.minerIds);
     d.paused.victim = victim;
@@ -299,12 +299,12 @@ function startEvent(d, id){
     d.paused.bill = Math.round(250*HZv);
     d.paused.heal = Math.round(90*HZv);
     html = animDiv('evt_leech', 288, 96) + TEXT.ev_leech_desc.replace('{miner}', minerName(S.miners.find(x=>x.id===victim)));
-    opts = '<button class="opt btn pri" data-c="save"'+nitroDis(80)+'>'+TEXT.ev_leech_a_btn+'（任务时长 +20%，无伤归队，全队士气 +5）'+nitroTag(80)+'</button>'+
-           '<button class="opt btn warn" data-c="delay">'+TEXT.ev_leech_b_btn+'（重伤入院：账单 '+d.paused.bill+' 代币 + 休养 '+d.paused.heal+' 游戏小时；全队士气 -15；任务继续）</button>';
+    opts = '<button class="opt btn pri" data-c="save"'+nitroDis(80)+'>'+TEXT.ev_leech_a_btn+L('（任务时长 +20%，无伤归队，全队士气 +5）')+nitroTag(80)+'</button>'+
+           '<button class="opt btn warn" data-c="delay">'+TEXT.ev_leech_b_btn+L('（重伤入院：账单 ')+d.paused.bill+L(' 代币 + 休养 ')+d.paused.heal+L(' 游戏小时；全队士气 -15；任务继续）')+'</button>';
   } else if(id === 'break'){
     html = animDiv('evt_break', 288, 96) + TEXT.ev_breakdown_desc;
-    opts = '<button class="opt btn pri" data-c="fast">'+TEXT.ev_breakdown_a_btn+'（-'+Math.round(80*HZ)+' 代币，时长 +5%）</button>'+
-           '<button class="opt btn warn" data-c="slow"'+nitroDis(80)+'>'+TEXT.ev_breakdown_b_btn+'（免费，时长 +20%，'+[10,15,20,25,30][d.m.hazard-1]+'% 概率 1 人轻伤）</button>';
+    opts = '<button class="opt btn pri" data-c="fast">'+TEXT.ev_breakdown_a_btn+L('（-')+Math.round(80*HZ)+L(' 代币，时长 +5%）')+'</button>'+
+           '<button class="opt btn warn" data-c="slow"'+nitroDis(80)+'>'+TEXT.ev_breakdown_b_btn+L('（免费，时长 +20%，')+[10,15,20,25,30][d.m.hazard-1]+L('% 概率 1 人轻伤）')+'</button>';
   } else if(id === 'elite'){
     const p0 = clamp(teamPower(d) / (teamPower(d) + 2.0*HZ), 0.05, 0.98);
     const es = ((d.modEff && d.modEff.eventSuccess) || 0) + eliteEB + eliteCB;
@@ -313,26 +313,26 @@ function startEvent(d, id){
     const p = clamp(p0 + es/100 + ct, 0.05, 0.98);
     d.paused.p = p;
     html = animDiv('evt_elite', 288, 96) + TEXT.ev_elite_desc;
-    opts = '<button class="opt btn pri" data-c="fight">'+TEXT.ev_elite_a_btn+'（成功概率 '+(p*100).toFixed(0)+'%：黄金 ×2 + 大量稀有矿物；失败：1 人轻伤，时长 +10%）</button>'+
-           '<button class="opt btn" data-c="avoid">'+TEXT.ev_elite_b_btn+'（无事发生）</button>';
+    opts = '<button class="opt btn pri" data-c="fight">'+TEXT.ev_elite_a_btn+L('（成功概率 ')+(p*100).toFixed(0)+L('%：黄金 ×2 + 大量稀有矿物；失败：1 人轻伤，时长 +10%）')+'</button>'+
+           '<button class="opt btn" data-c="avoid">'+TEXT.ev_elite_b_btn+L('（无事发生）')+'</button>';
   } else if(id === 'cat'){
     /* 黑脸小猫参上（B 设计 ev_cat）：A 讨好 / B 绕道走（记仇值系统） */
     const g = S.catGrudge || 0;
     html = animDiv('cat_face', 96, 96) + (TEXT.ev_cat_desc || '') +
-      (g > 0 ? '<div class="note">（记仇值 '+g+'/3'+(g>=3?'——小猫已经在深潜简报上动笔了':'')+'）</div>' : '');
-    opts = '<button class="opt btn pri" data-c="catA">'+(TEXT.ev_cat_a_btn || '递上小红糖')+'（全队士气 +15，下次派遣时长 -10%，记仇 -1）</button>'+
-           '<button class="opt btn" data-c="catB">'+(TEXT.ev_cat_b_btn || '绕道走')+'（无事发生，记仇 +1）</button>';
+      (g > 0 ? '<div class="note">'+L('（记仇值 ')+g+'/3'+(g>=3?L('——小猫已经在深潜简报上动笔了'):'')+L('）')+'</div>' : '');
+    opts = '<button class="opt btn pri" data-c="catA">'+(TEXT.ev_cat_a_btn || L('递上小红糖'))+L('（全队士气 +15，下次派遣时长 -10%，记仇 -1）')+'</button>'+
+           '<button class="opt btn" data-c="catB">'+(TEXT.ev_cat_b_btn || L('绕道走'))+L('（无事发生，记仇 +1）')+'</button>';
   } else if(id === 'lcyf166'){
     /* lcyf166 到访（B 设计 ev_lcyf166）：A 听他的 / B v他50（需双模组解锁） */
     const ownsCombo = (S.modsOwned && (S.modsOwned['lok1_explosive_chemical']||0) > 0 && (S.modsOwned['pgl_fat_boy']||0) > 0);
     const blessOn = S.flags.lcyf166_bless;
     html = animDiv('lcyf166_avatar', 96, 96) + (TEXT.ev_lcyf_desc || '') +
-      (blessOn ? '<div class="note">（他的祝福已生效：工程师在队的虫潮，报酬 ×2）</div>' : '');
-    opts = '<button class="opt btn pri" data-c="lcyfA">'+(TEXT.ev_lcyf_a_btn || '听他的')+'（本次任务时长 -50%）</button>';
+      (blessOn ? '<div class="note">'+L('（他的祝福已生效：工程师在队的虫潮，报酬 ×2）')+'</div>' : '');
+    opts = '<button class="opt btn pri" data-c="lcyfA">'+(TEXT.ev_lcyf_a_btn || L('听他的'))+L('（本次任务时长 -50%）')+'</button>';
     if(ownsCombo){
       const canPay = S.credits >= 50;
-      opts += '<button class="opt btn" data-c="lcyfB"'+(canPay && !blessOn ? '' : ' disabled')+'>'+(TEXT.ev_lcyf_b_btn || 'v他50')+
-        '（-50 代币，永久：工程师在队时虫潮报酬 ×2、任务多耗 80 硝石）'+(blessOn ? '——已 v 过' : (canPay ? '' : '——代币不足'))+'</button>';
+      opts += '<button class="opt btn" data-c="lcyfB"'+(canPay && !blessOn ? '' : ' disabled')+'>'+(TEXT.ev_lcyf_b_btn || L('v他50'))+
+        L('（-50 代币，永久：工程师在队时虫潮报酬 ×2、任务多耗 80 硝石）')+(blessOn ? L('——已 v 过') : (canPay ? '' : L('——代币不足')))+'</button>';
     } else {
       opts += '<div class="note">🔒 '+(TEXT.ev_lcyf_unlock_hint || '')+'</div>';
     }
@@ -341,9 +341,9 @@ function startEvent(d, id){
   const evTitle5 = {swarm:'ev_swarm_title', rich:'ev_richvein_title', leech:'ev_leech_title', break:'ev_breakdown_title', elite:'ev_elite_title'}[id];
   if(id === 'cat' || id === 'lcyf166'){
     const evT = {cat:'ev_cat', lcyf166:'ev_lcyf'}[id];
-    log('【'+(TEXT[evT+'_title']||'社区彩蛋')+'】'+String(html).replace(/<[^>]+>/g,''), '');
+    log(L('【')+(TEXT[evT+'_title']||L('社区彩蛋'))+L('】')+String(html).replace(/<[^>]+>/g,''), '');
   } else {
-    log('【警报】'+(evTitle5 ? TEXT[evTitle5] : '派遣事件')+'【'+biome+'】：'+html.replace(/<[^>]+>/g,''), 'bad');
+    log(L('【警报】')+(evTitle5 ? TEXT[evTitle5] : L('派遣事件'))+L('【')+biome+L('】：')+html.replace(/<[^>]+>/g,''), 'bad');
   }
   if($('#modal').style.display === 'flex' && $('#modal-box').dataset.dep === d.id) return;
   showEventModal(d);
@@ -352,7 +352,7 @@ function showEventModal(d){
   const p = d.paused;
   $('#modal-box').dataset.dep = d.id;
   const evtIcon = {swarm:'evt_swarm', leech:'evt_leech', rich:'res_morkiteseed', break:'misc_matrix', elite:'evt_goldrush', cat:'misc_matrix', lcyf166:'misc_droppod'}[p.id] || 'misc_droppod';
-  const html = '<h3 style="color:var(--amber)">'+ic(evtIcon,'wicon')+' ⚡ 派遣事件 · '+biomeById(d.m.biome).name+'</h3><p style="margin:8px 0">'+p.html+'</p>'+p.opts;
+  const html = '<h3 style="color:var(--amber)">'+ic(evtIcon,'wicon')+L(' ⚡ 派遣事件 · ')+L(biomeById(d.m.biome))+'</h3><p style="margin:8px 0">'+p.html+'</p>'+p.opts;
   showModal(html, true);
   $('#modal-box').querySelectorAll('[data-c]').forEach(btn=>{
     btn.onclick = () => resolveEvent(d, btn.dataset.c);
@@ -368,7 +368,7 @@ function resolveEvent(d, c){
     if(d.drinkShield > 0){
       d.drinkShield--;
       m.morale = clamp(m.morale + 4, 0, 100);
-      log(minerName(m)+' 突进虫群却毫发无伤——红岩爆破手的酒劲还在。', 'good');
+      log(minerName(m)+L(' 突进虫群却毫发无伤——红岩爆破手的酒劲还在。'), 'good');
       return;
     }
     const mbMul = 1 + ((d.modEff && d.modEff.medBill) || 0)/100;
@@ -385,7 +385,7 @@ function resolveEvent(d, c){
     d.minerIds = d.minerIds.filter(x=>x!==min);
     if(d.isDive) diveHurtCheck(d);
     log(TEXT.med_notice.replace('{miner}', minerName(m)), 'bad');
-    log(TEXT.med_bill.replace('{cost}', bill).replace('{days}', Math.max(1, Math.round((m.medUntil-S.gm)/1440)))+'（'+(guardianOn?'守护者折扣 -30%，':'')+'预计休养 '+Math.round(90*HZ*gDisc*(1-0.1*S.fac.medbay)/60)+' 现实分钟）', 'bad');
+    log(TEXT.med_bill.replace('{cost}', bill).replace('{days}', Math.max(1, Math.round((m.medUntil-S.gm)/1440)))+L('（')+(guardianOn?L('守护者折扣 -30%，'):'')+L('预计休养 ')+Math.round(90*HZ*gDisc*(1-0.1*S.fac.medbay)/60)+L(' 现实分钟）'), 'bad');
   };
   if(p.id === 'swarm'){
     if(c === 'hold'){
@@ -396,7 +396,7 @@ function resolveEvent(d, c){
           d.rewardBonus = (d.rewardBonus||1) * 2;
           S.nitra = Math.max(0, S.nitra - 80);
           team.forEach(m => { m.morale = clamp(m.morale+10,0,100); m.xp += 10 + (m.lv||1) * 2; });
-          log('虫潮被顶回去了——lcyf166 的连锁核弹洗了地，报酬 ×2！代价：补给多烧掉 80 硝石。', 'gold');
+          log(L('虫潮被顶回去了——lcyf166 的连锁核弹洗了地，报酬 ×2！代价：补给多烧掉 80 硝石。'), 'gold');
         } else {
           d.rewardBonus = (d.rewardBonus||1) * 1.2;
           team.forEach(m => { m.morale = clamp(m.morale+10,0,100); m.xp += 10 + (m.lv||1) * 2; });   /* 事件成功 +10 XP */
@@ -548,7 +548,7 @@ function settle(d, offline, forceMul){
       });
       S.credits += (d.medBillsPaid||0);
       S.elite.rewindWeek = wk;
-      log('⟲ 回溯者发动锚点：本次团灭已从时间线上划除，账单全免。本周回溯已用 1/1。', 'gold');
+      log(L('⟲ 回溯者发动锚点：本次团灭已从时间线上划除，账单全免。本周回溯已用 1/1。'), 'gold');
       team = d.minerIds.map(id=>S.miners.find(x=>x.id===id)).filter(Boolean);
     } else if(idleElite){
       /* 精英救援：产出保 50%，账单退一半，治疗时长 -25% */
@@ -563,14 +563,14 @@ function settle(d, offline, forceMul){
       S.credits += g;
       S.stats.missions = (S.stats.missions||0) + 1;
       const en = ELITE_UNITS.units.find(x=>x.id===idleElite);
-      log('🛡 团灭救援：【'+(en?en.name_zh:'精英')+'】把所有人从棺材价账单里捞了出来。产出保住 50%（+'+g+' 代币），账单退还 '+refund+'，治疗提速 25%。', 'gold');
+      log(L('🛡 团灭救援：【')+(en?L(en):L('精英'))+L('】把所有人从棺材价账单里捞了出来。产出保住 50%（+')+g+L(' 代币），账单退还 ')+refund+L('，治疗提速 25%。'), 'gold');
       S.kpi.done += 0;
       return;
     } else {
       const g = Math.round((m.r.credits||0) * 0.3);
       S.credits += g;
       S.stats.missions = (S.stats.missions||0) + 1;
-      log((offline?'【离线结算】':'⚠ ')+'任务中止：'+mtypeById(m.type).name+'【'+biomeById(m.biome).name+'】全员退出战斗序列，无人机只抢回了 '+g+' 代币的矿袋。', 'bad');
+      log((offline?L('【离线结算】'):'⚠ ')+L('任务中止：')+L(mtypeById(m.type))+L('【')+L(biomeById(m.biome))+L('】全员退出战斗序列，无人机只抢回了 ')+g+L(' 代币的矿袋。'), 'bad');
       S.kpi.done += 0;
       return;
     }
@@ -645,12 +645,12 @@ function settle(d, offline, forceMul){
   S.dayStats.missions++;
   S.dayStats.credits += gain.credits;
   S.dayStats.morkite += gain.morkite;
-  if(m.hazard >= 5 && !d.isDive){ gainMerit(1, '危险 5 任务'); S.flags.hz5Done = true; }
+  if(m.hazard >= 5 && !d.isDive){ gainMerit(1, L('危险 5 任务')); S.flags.hz5Done = true; }
   holidayProgress('missions', 1);
   if(d.m && d.m.trit){
     const n = 1 + (m.hazard >= 3 ? 1 : 0);
     S.blanks = (S.blanks||0) + n;
-    log(TEXT.log_blanks.replace('{n}', n)+' 到装备终端的锻造台抽模组！', 'gold');
+    log(TEXT.log_blanks.replace('{n}', n)+L(' 到装备终端的锻造台抽模组！'), 'gold');
   if(Math.random() < 0.25) awardRandomTrinket('饰品箱');  /* B-5：三提石饰品箱 25% */
   }
   /* 经验与士气 */
@@ -670,18 +670,18 @@ function settle(d, offline, forceMul){
       S.campaign.si++;
       S.campaign.prog = 0;
       if(S.campaign.si >= CAMPAIGNS[S.campaign.ci].steps.length){
-        log('🏆 清账行动全部完成。编年史收官。', 'gold');
+        log(L('🏆 清账行动全部完成。编年史收官。'), 'gold');
         S.campaign.ci++; S.campaign.si = 0;
         S.flags.finaleDone = true;
       }
     }
-    showModal('<h3 style="color:var(--gold)">🏆 清账行动 · 完成</h3>'+
+    showModal('<h3 style="color:var(--gold)">'+L('🏆 清账行动 · 完成')+'</h3>'+
       '<div style="display:flex;gap:8px;align-items:flex-start;margin:10px 0">'+
       '<div class="wcell epic" style="width:60px;height:60px;"><img src="assets/anim/karl_silhouette.png" style="width:48px;height:48px;"></div>'+
       '<div class="note" style="flex:1;white-space:pre-line;line-height:1.7">'+TEXT.karl_finale_body+'</div></div>'+
-      '<div class="note" style="margin:6px 0">Rock and Stone，管理层。17 号钻台的账本，从今天起是干净的。</div>'+
+      '<div class="note" style="margin:6px 0">'+L('Rock and Stone，管理层。17 号钻台的账本，从今天起是干净的。')+'</div>'+
       '<button class="btn pri" style="width:100%" onclick="closeModal(true);renderAll()">Rock and Stone</button>', true);
-    log('🏆 清账行动完成。编年史收官——Day 2316 之后，无尽模式开启。', 'gold');
+    log(L('🏆 清账行动完成。编年史收官——Day 2316 之后，无尽模式开启。'), 'gold');
   }
   if(!d.hurtIds || d.hurtIds.length === 0){ S.flags.streak = (S.flags.streak||0) + 1; }
   else { S.flags.streak = 0; }
@@ -693,18 +693,18 @@ function settle(d, offline, forceMul){
     (drops||[]).forEach(x => { const nm = x.split('×')[0]; R.rare[nm] = (R.rare[nm]||0) + parseInt(x.split('×')[1]||1); });
     R.med += d.medBillsPaid || 0;
   }
-  log((offline?'【离线结算】':'✅ ')+'任务完成：'+mtypeById(m.type).name+'【'+b.name+'】 代币+'+gain.credits+
-      '，墨菱石+'+(gain.morkite||0)+(gain.moil?('，墨菱油+'+gain.moil):'')+(gain.gold?('，黄金+'+gain.gold):'')+
-      (drops.length?('，稀有矿物：'+drops.join('、')):''), 'good');
+  log((offline?L('【离线结算】'):'✅ ')+L('任务完成：')+L(mtypeById(m.type))+L('【')+L(b)+L('】 代币+')+gain.credits+
+      L('，墨菱石+')+(gain.morkite||0)+(gain.moil?(L('，墨菱油+')+gain.moil):'')+(gain.gold?(L('，黄金+')+gain.gold):'')+
+      (drops.length?(L('，稀有矿物：')+drops.join(L('、'))):''), 'good');
   /* 结算尾部趣味语（映射表 §十：egg_settle_1~5 随机抽 1） */
   if(!offline) log(TEXT['egg_settle_'+(1+Math.floor(Math.random()*5))], 'sys');
   /* 优化 #3：战利品逐条弹出 */
   if(!offline){
-    const rows = [lootRowHTML('', '代币', '+'+fmt(gain.credits))];
-    if(gain.morkite) rows.push(lootRowHTML('res_morkite', '墨菱石', '+'+fmt(gain.morkite)));
-    if(gain.moil) rows.push(lootRowHTML('res_morkite', '墨菱油', '+'+fmt(gain.moil)));
-    if(gain.gold) rows.push(lootRowHTML('res_gold', '黄金', '+'+fmt(gain.gold)));
-    if(gain.nitra) rows.push(lootRowHTML('res_nitra', '硝石', '+'+fmt(gain.nitra)));
+    const rows = [lootRowHTML('', L('代币'), '+'+fmt(gain.credits))];
+    if(gain.morkite) rows.push(lootRowHTML('res_morkite', L('墨菱石'), '+'+fmt(gain.morkite)));
+    if(gain.moil) rows.push(lootRowHTML('res_morkite', L('墨菱油'), '+'+fmt(gain.moil)));
+    if(gain.gold) rows.push(lootRowHTML('res_gold', L('黄金'), '+'+fmt(gain.gold)));
+    if(gain.nitra) rows.push(lootRowHTML('res_nitra', L('硝石'), '+'+fmt(gain.nitra)));
     (drops||[]).forEach(d=>{ const nm=d.split('×')[0]; rows.push(lootRowHTML('res_'+(MKEY[nm]||''), d, '+')); });
     showLootToast(rows);
   }
@@ -723,7 +723,7 @@ function lootRowHTML(icon, label, v){
 function showLootToast(rows){
   let t = document.getElementById('lootToast');
   if(!t){ t = document.createElement('div'); t.id = 'lootToast'; document.body.appendChild(t); }
-  t.innerHTML = '<div class="note" style="margin-bottom:4px;">📦 战利品入库</div>' + rows.map((r,i)=>'<div class="loot" style="animation-delay:'+(i*0.12)+'s">'+r+'</div>').join('');
+  t.innerHTML = '<div class="note" style="margin-bottom:4px;">'+L('📦 战利品入库')+'</div>' + rows.map((r,i)=>'<div class="loot" style="animation-delay:'+(i*0.12)+'s">'+r+'</div>').join('');
   t.style.display = 'block';
   clearTimeout(showLootToast._tm);
   showLootToast._tm = setTimeout(()=>{ t.style.display = 'none'; }, 4500);
@@ -789,14 +789,14 @@ function showIdleReport(){
   if(!R || !R.missions){
     rows = '<div class="note">' + TEXT.dm_report_empty + '</div>';
   } else {
-    rows = lootRowHTML('', TEXT.dm_report_missions, R.missions + ' 次') +
+    rows = lootRowHTML('', TEXT.dm_report_missions, R.missions + L(' 次')) +
       lootRowHTML('', TEXT.dm_report_credits, '+' + fmt(R.credits)) +
       (R.morkite ? lootRowHTML('res_morkite', TEXT.dm_report_morkite, '+' + fmt(R.morkite)) : '') +
       (R.moil ? lootRowHTML('res_morkite', TEXT.dm_report_moil, '+' + fmt(R.moil)) : '') +
       (R.nitra ? lootRowHTML('res_nitra', TEXT.dm_report_nitra, '+' + fmt(R.nitra)) : '') +
       Object.keys(R.rare).slice(0, 12).map(k => lootRowHTML('', k, '×' + R.rare[k])).join('') +
       (R.med ? lootRowHTML('', TEXT.dm_report_med, '-' + fmt(R.med)) : '') +
-      lootRowHTML('', TEXT.dm_report_events, R.events + ' 次');
+      lootRowHTML('', TEXT.dm_report_events, R.events + L(' 次'));
   }
   showModal('<h3 style="color:var(--amber)">' + TEXT.dm_report_title + '</h3><div style="display:flex;flex-direction:column;gap:6px;margin:10px 0;">' + rows + '</div><div class="note">' + TEXT.dm_report_scope + '</div><button class="btn pri" style="width:100%" onclick="closeModal(true)">' + TEXT.dm_report_sign + '</button>', false);
 }
@@ -857,7 +857,7 @@ function worldAdvanceBody(gm, offline){
             '<button class="btn" style="flex:1" id="pg-b">'+TEXT.st_comms_b+'</button></div>', true);
           $('#pg-a').onclick = $('#pg-b').onclick = () => {
             showModal('<h3 style="color:var(--red)">'+TEXT.st_lost_title+'</h3><div class="note" style="margin:10px 0">'+TEXT.st_lost_body+'</div>'+
-              '<button class="btn pri" style="width:100%" id="pg-fin">接班</button>', true);
+              '<button class="btn pri" style="width:100%" id="pg-fin">'+L('接班')+'</button>', true);
             $('#pg-fin').onclick = () => {
               S.flags.prologueDone = true;
               S.deps = S.deps.filter(x => x !== d);
@@ -897,7 +897,7 @@ function worldAdvanceBody(gm, offline){
       try{ settle(d, offline); }
       catch(err){
         try{ d.minerIds.forEach(id => { const mn = S.miners.find(x=>x.id===id); if(mn && mn.state==='mission') mn.state = 'idle'; }); }catch(e2){}
-        log('⚠ 结算异常（已保底处理，矿工已归队，不影响存档）：'+(err && err.message || err), 'bad');
+        log(L('⚠ 结算异常（已保底处理，矿工已归队，不影响存档）：')+(err && err.message || err), 'bad');
         console.error('settle error', err, d);
       }
     }
@@ -919,12 +919,12 @@ function worldAdvanceBody(gm, offline){
       while(m.mAcc >= 1){ m.mAcc -= 1; m.morale = clamp(m.morale + perHour, 10, 100); }
     });
     /* 任务板刷新 */
-    if(S.gm - S.boardAt >= 2880){ genBoard(); log('任务板已刷新：集团发来了新一批任务单。', 'sys'); }
+    if(S.gm - S.boardAt >= 2880){ genBoard(); log(L('任务板已刷新：集团发来了新一批任务单。'), 'sys'); }
     /* 节日活动自动开启（每 tick 判一次即可，holidayForNow 内部建 Date 较贵） */
     const hol = holidayForNow();
     if(hol && !S.holidayAct){
       S.holidayAct = {key:hol.key, id:hol.h.id, si:0, prog:0};
-      log('节日活动开启：【'+hol.h.name+'】！节日战役同步开放，完成派遣推进活动进度。', 'gold');
+      log(L('节日活动开启：【')+L(hol.h.name)+L('】！节日战役同步开放，完成派遣推进活动进度。'), 'gold');
     }
     /* 日期滚动：市场波动 + 每日简报 */
     while(S.lastDay < gameDay()){
@@ -965,7 +965,7 @@ function dailyBrief(d){
   }
   log(TEXT.log_daily.replace('{day}', d).replace('{missions}', ds.missions).replace('{credits}', fmt(ds.credits))
       .replace('{morkite}', fmt(ds.morkite)).replace('{injured}', ds.injured)
-      .replace('{market}', (up?up.name+'领涨，':'')+(down?down.name+'领跌。':''))+'今日提示：'+tip, 'sys');
+      .replace('{market}', (up?L(up.name)+L('领涨，'):'')+(down?L(down.name)+L('领跌。'):''))+L('今日提示：')+L(tip), 'sys');
   chronicleTick();
   S.dayStats = {missions:0, credits:0, morkite:0, injured:0};
 }
@@ -982,16 +982,16 @@ function holidayProgress(kind, amount){
     if(S.holidayAct.si >= hd.steps.length){
       const rw = hd.rw||{};
       const parts = [];
-      if(rw.credits){ S.credits += rw.credits; parts.push(rw.credits+' 代币'); }
-      if(rw.gold){ S.gold += rw.gold; parts.push('黄金×'+rw.gold); }
+      if(rw.credits){ S.credits += rw.credits; parts.push(rw.credits+L(' 代币')); }
+      if(rw.gold){ S.gold += rw.gold; parts.push(L('黄金×')+rw.gold); }
       Object.entries(rw).forEach(([k,v])=>{
         if(k.startsWith('rare_')){
           const key = k.slice(5);
           const mm = Object.keys(MKEY).find(n => MKEY[n] === key);
-          if(mm){ S.rare[mm] += v; parts.push(mm+'×'+v); }
+          if(mm){ S.rare[mm] += v; parts.push(L(mm)+'×'+v); }
         }
       });
-      log('🎄 节日战役【'+hd.name+'】通关！奖励：'+parts.join('、'), 'gold');
+      log(L('🎄 节日战役【')+L(hd.name)+L('】通关！奖励：')+parts.join(L('、')), 'gold');
       S.holidayDone[hd.key] = true;
       S.holidayAct = null;
       awardRandomTrinket(hd.name + ' 节日战役');
@@ -1010,11 +1010,11 @@ function upgradeMule(){
   const mule = MULE_UPGRADES.find(x => x.lv === (S.muleLv||1) + 1);
   if(!mule) return;
   for(const [k, v] of Object.entries(mule.cost)){
-    if((S.rare[k]||0) < v){ log('矿骡升级缺料：' + k + '×' + v + '。', 'bad'); return; }
+    if((S.rare[k]||0) < v){ log(L('矿骡升级缺料：') + L(k) + '×' + v + L('。'), 'bad'); return; }
   }
   Object.entries(mule.cost).forEach(([k, v]) => S.rare[k] -= v);
   S.muleLv = mule.lv;
-  log('Pack骡升级完成：Lv.' + S.muleLv + ' ' + mule.name + '——' + mule.txt + '。矿骡表示车斗里终于像样了。', 'gold');
+  log(L('Pack骡升级完成：Lv.') + S.muleLv + ' ' + L(mule.name) + L('——') + L(mule.txt) + L('。矿骡表示车斗里终于像样了。'), 'gold');
   renderAll(); save();
 }
 function upgradeRig(){
@@ -1055,13 +1055,13 @@ function buyLicense(cls){
   S.credits -= c.c; S.rare[c.m1] -= c.q1; S.rare[c.m2] -= c.q2;
   S.licenses[cls]++;
   campProgress('license', '', 1);
-  log(CLASSES[cls].name+' 凭证升级：主手解锁 '+weaponZh(WEAPON_SET[cls].main[S.licenses[cls]-1])+'，副手解锁 '+weaponZh(WEAPON_SET[cls].off[S.licenses[cls]-1])+'！', 'gold');
+  log(L(CLASSES[cls].name)+L(' 凭证升级：主手解锁 ')+weaponZh(WEAPON_SET[cls].main[S.licenses[cls]-1])+L('，副手解锁 ')+weaponZh(WEAPON_SET[cls].off[S.licenses[cls]-1])+L('！'), 'gold');
   renderAll(); save();
 }
 function hireCost(){ return Math.round(CFG.HIRE_BASE * Math.pow(CFG.HIRE_MUL, S.miners.length - 1)); }
 function recruit(cls){
   const C = CLASSES[cls];
-  if(S.rigLv < C.rig){ log('钻井平台等级不足，尚未解锁'+C.name+'。', 'bad'); return; }
+  if(S.rigLv < C.rig){ log(L('钻井平台等级不足，尚未解锁')+L(C.name)+L('。'), 'bad'); return; }
   if(S.miners.some(m=>m.cls===cls)) return;
   const c = hireCost();
   if(S.credits < c) return;
@@ -1078,7 +1078,7 @@ const FRAME_COLORS = {'铜':'#b87333','银':'#c0c0c0','金':'#ffd700','铂':'#e5
 function frameOf(stars){
   if(!stars || stars <= 0) return null;
   if(stars <= FRAMES.length) return FRAMES[stars-1];
-  return '红3 · 额外晋升 ×' + (stars - FRAMES.length);
+  return L('红3 · 额外晋升 ×') + (stars - FRAMES.length);
 }
 function frameHtml(stars){
   const f = frameOf(stars); if(!f) return '';
@@ -1093,7 +1093,7 @@ function promoteMiner(id){
   if(S.credits < c) return;
   S.credits -= c;
   m.stars++; m.lv = 1; m.xp = 0; m.morale = 100; m.state = 'idle';
-  log(minerName(m)+' 晋升完成！授予晋升框【'+frameOf(m.stars)+'】，战斗力与寻矿直觉永久提升。集团贺词：欢迎回到第 1 级——挖到手软，赚到盆满！', 'gold');
+  log(minerName(m)+L(' 晋升完成！授予晋升框【')+L(frameOf(m.stars))+L('】，战斗力与寻矿直觉永久提升。集团贺词：欢迎回到第 1 级——挖到手软，赚到盆满！'), 'gold');
   renderAll(); save();
 }
 function hire(){
@@ -1109,7 +1109,7 @@ function hire(){
 /* 旧 buyDrink（四酒单版）已随酒吧 v2 抽酒制移除 */
 function gainMerit(n, why){
   S.merit = (S.merit||0) + n;
-  log(TEXT.log_merit.replace('{n}', n)+'（'+why+'）。当前：'+S.merit, 'gold');
+  log(TEXT.log_merit.replace('{n}', n)+L('（')+why+L('）。当前：')+S.merit, 'gold');
 }
 function claimKPI(){
   if(S.kpi.done < S.kpi.quota) return;
@@ -1121,11 +1121,11 @@ function claimKPI(){
   if(S.kpi.done > S.kpi.quota * 1.5){
     S.credits += 500;
     S.blanks = (S.blanks || 0) + 1;
-    overTxt = ' 超额完成！追加 500 代币 + 空白模组×1。';
+    overTxt = L(' 超额完成！追加 500 代币 + 空白模组×1。');
   }
-  log('季度分红稀有矿物：' + rarePick + '×10。', 'gold');
+  log(L('季度分红稀有矿物：') + L(rarePick) + '×10'+L('。'), 'gold');
   campProgress('kpi', '', 1);
-  gainMerit(5, '季度 KPI 达成');
+  gainMerit(5, L('季度 KPI 达成'));
   const rep = t => t.replace('{reward}', fmt(bonus)).replace('{quota}', fmt(S.kpi.quota));
   log(rep(TEXT['kpi_success_'+(1+Math.floor(Math.random()*3))]) + overTxt, 'gold');
   S.kpi.term++; S.kpi.quota = Math.round(S.kpi.quota * CFG.KPI_MUL); S.kpi.done = 0;
@@ -1141,7 +1141,7 @@ function treatNow(){
   inMed.forEach(m=>{ m.medUntil = Math.max(S.gm, m.medUntil - 60); });
   const bill = 120 * inMed.length;
   S.credits = Math.max(0, S.credits - bill);
-  log('为 '+inMed.length+' 名伤员支付加急治疗费 '+bill+' 代币，恢复时间减半。', '');
+  log(L('为 ')+inMed.length+L(' 名伤员支付加急治疗费 ')+bill+L(' 代币，恢复时间减半。'), '');
   renderAll(); save();
 }
 
