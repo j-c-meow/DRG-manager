@@ -27,6 +27,24 @@ function migrateLegacyRealtimeStorage(){
   }catch(e){}
 }
 
+/* —— 管理层称呼系统（用户 09-19 拍板）——
+   玩家开局登记代号后，日志/文案里"称呼位"的管理层自动升级为「管理层·代号」。
+   只命中称呼位：管理层后紧跟标点/空白/串尾；复合词（如"管理层入职培训""管理层决策"）不受影响。 */
+function mgrTitle(){
+  return (S && S.managerName) ? ('管理层·' + S.managerName) : '管理层';
+}
+function applyMgrTitle(msg){
+  if(!S || !S.managerName) return msg;
+  return String(msg).replace(/管理层(?=[，。！？、；：…—!? ]|$)/g, mgrTitle());
+}
+
+function log(msg, cls){
+  if(msg === undefined || msg === null) msg = '（日志异常，已捕获）';
+  msg = applyMgrTitle(msg);
+  S.log.unshift({t:clockStr(), m:String(msg), c:cls||''});
+  if(S.log.length > 80) S.log.length = 80;
+}
+
 function newMiner(cls){
   const n = S.nextNum[cls]++;
   return {id:'m'+Date.now().toString(36)+Math.random().toString(36).slice(2,6), cls, num:n,
@@ -54,6 +72,7 @@ function newGame(){
     blanks:0, modsOwned:{}, equipped:{}, drawSinceT1:0, rerolled:false,
     dive:{week:'', normal:{stage:0, done:false}, elite:{locked:true, stage:0, done:false}, modifiers:[]},
     log:[], flags:{}, speed:1, stats:{missions:0, inj:0}, mode:'idle', idleReport:null, muleLv:1,
+    managerName:'',   /* 玩家代号：开局登记后，称呼位升级为「管理层·代号」 */
     unlocked:{kpi:false, bar:false, market:false, med:false, gear:false},
     recruited:{scout:true, engineer:false, gunner:false, driller:false},
     realtime:null, settledRealtime:{}, realtimeProfile:null,
@@ -82,6 +101,7 @@ function load(){
     DRGUnified.domain.migrateSave(S);
     migrateLegacyRealtimeStorage();
     if(!S.recruited) S.recruited = {scout:true, engineer:true, gunner:true, driller:true};
+    if(S.managerName === undefined) S.managerName = '';
     if(!S.stats) S.stats = {missions:0, inj:0};
     if(!S.campaign) S.campaign = {ci:0, si:0, prog:0};
     if(S.blanks === undefined){ S.blanks = 0; S.modsOwned = {}; S.equipped = {}; }
@@ -222,11 +242,6 @@ const rnd = (a,b) => a + Math.random()*(b-a);
 const irnd = (a,b) => Math.floor(rnd(a,b+1));
 const pick = arr => arr[Math.floor(Math.random()*arr.length)];
 const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
-function log(msg, cls){
-  if(msg === undefined || msg === null) msg = '（日志异常，已捕获）';
-  S.log.unshift({t:clockStr(), m:String(msg), c:cls||''});
-  if(S.log.length > 80) S.log.length = 80;
-}
 function clockStr(){
   const total = Math.floor(S.gm) + 480;
   const day = Math.floor(total/1440) + 1;

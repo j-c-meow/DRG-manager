@@ -217,6 +217,41 @@ function showLogModal(){
     '<div class="row" style="justify-content:center;margin-top:10px;"><button class="btn" onclick="closeModal(true)">关闭</button></div>', true);
 }
 
+/* —— 起名系统（用户 09-19 拍板）——
+   开局登记管理层代号；称呼位由 log() 里的 applyMgrTitle 统一升级为「管理层·代号」。
+   黑名单（用户指定，案底：剽窃游戏攻略、攻击 Mod 作者与难度代码作者）：命中即弹窗拉黑。 */
+const NAME_BLACKLIST = ['月饼02', 'iceisbing', '迪克少校'];
+function nameBlacklisted(name){
+  const norm = (name||'').trim().toLowerCase().replace(/\s+/g,'');
+  if(!norm) return false;
+  return NAME_BLACKLIST.some(b => norm.includes(b.toLowerCase().replace(/\s+/g,'')));
+}
+function showNameRegistration(){
+  showModal('<h3 style="color:var(--amber)">入职登记 · 代号核验</h3>'+
+    '<div class="note" style="margin:8px 0">集团规定：每位管理层须登记专属代号。此后董事会与全钻台将以「管理层·代号」称呼您。（留空则只称"管理层"）</div>'+
+    '<input id="reg-name" class="opt" style="text-align:center" maxlength="12" placeholder="例如：铁心、老矿灯" autocomplete="off" spellcheck="false">'+
+    '<div class="row" style="margin-top:10px"><button class="btn pri" id="reg-go" style="width:100%">登记完成</button></div>', true);
+  const inp = document.getElementById('reg-name');
+  if(inp) inp.focus();
+  $('#reg-go').onclick = () => {
+    const name = (document.getElementById('reg-name').value||'').trim().slice(0,12);
+    if(nameBlacklisted(name)){
+      log('【人事系统】代号核验失败：「'+name+'」已列入永不录用黑名单（案底：剽窃游戏攻略、攻击 Mod 作者与难度代码作者）。', 'bad');
+      showModal('<h3 style="color:var(--red)">⛔ 代号核验未通过</h3>'+
+        '<div class="note" style="margin:8px 0">人事档案提示：「<b style="color:var(--red)">'+name+'</b>」已被集团列入【永不录用】黑名单。<br>案底：剽窃游戏攻略、攻击 Mod 作者与难度代码作者。</div>'+
+        '<div class="note" style="margin:8px 0;color:var(--amber)">请更换一个体面的代号重新登记。</div>'+
+        '<div class="row"><button class="btn pri" id="reg-again" style="width:100%">重新登记</button></div>', true);
+      $('#reg-again').onclick = showNameRegistration;
+      return;
+    }
+    S.managerName = name;
+    S.flags.nameChosen = true;
+    closeModal(true);
+    log(name ? ('代号登记完成：从今天起，您就是 '+mgrTitle()+'。欢迎加入 17 号钻台。') : '跳过代号登记。集团将继续称呼您为管理层。', 'gold');
+    renderAll(); save();
+  };
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   window.__initErr = null;
   try{
@@ -304,6 +339,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   const mqDock7 = window.matchMedia('(max-width:700px)'), mqDockC = window.matchMedia('(pointer:coarse)');
   if(mqDock7.addEventListener) mqDock7.addEventListener('change', dockTabs);
   if(mqDockC.addEventListener) mqDockC.addEventListener('change', dockTabs);
+  /* 起名：序章已结束的老档，进游戏时补一次代号登记（新档由 endPrologue 触发） */
+  if(S.flags.prologueDone && !S.flags.nameChosen) showNameRegistration();
   $('#btn-log-modal').onclick = showLogModal;
   $('#btn-res-overview').onclick = showResourceOverview;
   $('#logMini').onclick = () => { FOLD.log = false; saveFold(); applyLogFold(); };
@@ -422,6 +459,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   };
   const creditsBtn = document.getElementById('btn-credits');
   if(creditsBtn) creditsBtn.onclick = showCredits;
+  const renameBtn = document.getElementById('btn-rename');
+  if(renameBtn) renameBtn.onclick = showNameRegistration;   /* 起名系统：随时改代号 */
   window.addEventListener('beforeunload', save);
   }catch(initErr){ window.__initErr = (initErr.stack || initErr.message); renderAll(); }
 });

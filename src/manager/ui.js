@@ -1323,6 +1323,8 @@ function endPrologue(){
   S.flags.prologueDone = true;
   log(TEXT.st_prologue_done_log, 'gold');
   renderAll(); save();
+  /* 起名（用户 09-19 拍板）：序章收尾后弹出代号登记（showNameRegistration 定义在 main.js） */
+  if(typeof showNameRegistration === 'function' && !S.flags.nameChosen) setTimeout(showNameRegistration, 500);
 }
 
 function showMemorial(){
