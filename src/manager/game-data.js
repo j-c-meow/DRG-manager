@@ -421,7 +421,10 @@ function ic(key, cls){
    pity：连续 9 抽未出顶级档(tier T1)，第 10 抽的三选一强制含 ≥1 条 T1，触发后计数清零 */
 
 
-/* ---------------- 武器模组全池（B-3 v1.2，99 条） + 抽卡配置 ---------------- */
+/* ---------------- 武器模组全池（B-3 v1.2 主手 99 条 + 副手二期 54 条 = 153 条） + 抽卡配置 ----------------
+   副手 9 把（scout: jury/zhukov/nishanka；gunner: bulldog/brt7/armskore；driller: subata/plasmacharger/colette）
+   移植自旧版单文件 OFF_POOLS（15a780e 扩池），tier 已按 3a178b4 对齐 166 攻略（29 处修正后的最终数据态）；
+   engineer 副手 pgl/breachcutter/sharddif 的 19 条在 B-3 v1.2 时已入池，未重复。 */
 /* 武器模组全池（B-3 产出）—— 三提石抽卡 3 选 1 数据源，主会话负责实装 */
 const WEAPON_MODS = {
   scout: {
@@ -453,7 +456,31 @@ const WEAPON_MODS = {
       { id:"drak_overtuned_accelerator", name_zh:"爆能电浆", name_en:"Overtuned Particle Accelerator", rarity:"balanced", tier:"T2", s6raw:null, inferred:true, effect:{ yield:12, supplyCost:8 }, desc:"单发伤害显著提升，电池：我谢谢您。", unlock:{ weaponUp:3, hazard:2 }, cost:{ mineral:"妙绝珠", qty:50, credits:800 } },
       { id:"drak_shield_battery", name_zh:"护盾协能", name_en:"Shield Battery Booster", rarity:"unstable", tier:"T1", s6raw:"T0", inferred:false, effect:{ yield:25, medBill:40 }, desc:"满盾伤害爆炸，过热护盾即失效——矮人管这叫\"赌命节奏\"。", unlock:{ weaponUp:4, hazard:3 }, cost:{ mineral:"妙绝珠", qty:75, credits:1300 } },
       { id:"drak_thermal_exhaust", name_zh:"废热回导", name_en:"Thermal Exhaust Feedback", rarity:"unstable", tier:"T1", s6raw:"T0", inferred:false, effect:{ yield:30, morale:-5 }, desc:"枪管越热打越疼，抱着它睡觉的矮人有意见。", unlock:{ weaponUp:5, hazard:3 }, cost:{ mineral:"妙绝珠", qty:80, credits:1400 } }
-    ]}
+    ]},
+    /* —— 以下副手池移植自旧版单文件（15a780e 扩池，tier 已按 3a178b4 对齐 166 攻略）—— */
+    jury: { zh: "应急霰弹枪", mods: [
+      { id:"jury_compact_shells", name_zh:"压缩弹壳", name_en:"Compact Shells", rarity:"clean", tier:"T2", s6raw:null, inferred:false, effect:{ supplyCost:-10 }, desc:"弹壳紧凑装填，后勤组少跑一趟。", unlock:{ weaponUp:0, hazard:1 }, cost:{ mineral:"玉石", qty:20, credits:300 } },
+      { id:"jury_stuffed_shells", name_zh:"填充弹壳", name_en:"Stuffed Shells", rarity:"clean", tier:"T2", s6raw:null, inferred:false, effect:{ yield:10 }, desc:"塞得满满的，产量自然上来。", unlock:{ weaponUp:1, hazard:1 }, cost:{ mineral:"玉石", qty:25, credits:400 } },
+      { id:"jury_shaped_shells", name_zh:"异形弹壳", name_en:"Shaped Shells", rarity:"balanced", tier:"T2", s6raw:null, inferred:false, effect:{ rareDrop:15 }, desc:"弹壳异形成型，稀有矿见得更多。", unlock:{ weaponUp:1, hazard:1 }, cost:{ mineral:"乌玛石", qty:30, credits:500 } },
+      { id:"jury_jumbo_shells", name_zh:"超大弹壳", name_en:"Jumbo Shells", rarity:"balanced", tier:"T1", s6raw:null, inferred:false, effect:{ yield:18, supplyCost:8 }, desc:"壳大劲足，就是费硝石。", unlock:{ weaponUp:2, hazard:1 }, cost:{ mineral:"乌玛石", qty:35, credits:550 } },
+      { id:"jury_double_barrel", name_zh:"双管齐下", name_en:"Double Barrel", rarity:"balanced", tier:"T1", s6raw:null, inferred:false, effect:{ yield:25, supplyCost:10 }, desc:"两管一起轰，账单也一起轰。", unlock:{ weaponUp:3, hazard:2 }, cost:{ mineral:"妙绝珠", qty:50, credits:700 } },
+      { id:"jury_special_powder", name_zh:"特殊火药", name_en:"Special Powder", rarity:"unstable", tier:"T1", s6raw:null, inferred:false, effect:{ yield:30, morale:-5 }, desc:"集团违禁火药，产出惊人，人事部皱眉。", unlock:{ weaponUp:3, hazard:2 }, cost:{ mineral:"妙绝珠", qty:50, credits:800 } }
+    ] },
+    zhukov: { zh: "朱可夫 NUK17 双持冲锋枪", mods: [
+      { id:"zhukov_minimal_magazines", name_zh:"精简弹匣", name_en:"Minimal Magazines", rarity:"clean", tier:"T2", s6raw:null, inferred:false, effect:{ supplyCost:-12 }, desc:"轻装上阵，硝石省着花。", unlock:{ weaponUp:0, hazard:1 }, cost:{ mineral:"玉石", qty:20, credits:300 } },
+      { id:"zhukov_custom_casings", name_zh:"定制弹壳", name_en:"Custom Casings", rarity:"clean", tier:"T2", s6raw:null, inferred:false, effect:{ yield:10 }, desc:"手工定制，品质溢价。", unlock:{ weaponUp:1, hazard:1 }, cost:{ mineral:"玉石", qty:25, credits:400 } },
+      { id:"zhukov_cryo_minelets", name_zh:"冰冻陷阱", name_en:"Cryo Minelets", rarity:"balanced", tier:"T1", s6raw:null, inferred:false, effect:{ eventSuccess:12 }, desc:"冻一地冰碴，虫子脚下打滑。", unlock:{ weaponUp:1, hazard:1 }, cost:{ mineral:"乌玛石", qty:30, credits:500 } },
+      { id:"zhukov_gas_recycling", name_zh:"热气回收", name_en:"Gas Recycling", rarity:"unstable", tier:"T1", s6raw:null, inferred:false, effect:{ yield:15, supplyCost:-10 }, desc:"废气循环利用，财务部起立鼓掌。", unlock:{ weaponUp:2, hazard:1 }, cost:{ mineral:"妙绝珠", qty:40, credits:600 } },
+      { id:"zhukov_embedded_detonators", name_zh:"内置起爆", name_en:"Embedded Detonators", rarity:"unstable", tier:"T1", s6raw:null, inferred:false, effect:{ yield:28, medBill:35 }, desc:"弹头内嵌雷管——医疗部表示已读。", unlock:{ weaponUp:3, hazard:2 }, cost:{ mineral:"妙绝珠", qty:50, credits:800 } }
+    ] },
+    nishanka: { zh: "尼桑卡 X-80「闪电鲨」战术弩", mods: [
+      { id:"nishanka_quick_fire", name_zh:"速射模式", name_en:"Quick Fire", rarity:"clean", tier:"T2", s6raw:null, inferred:false, effect:{ morale:3 }, desc:"拉栓都快，士气跟着利索。", unlock:{ weaponUp:0, hazard:1 }, cost:{ mineral:"玉石", qty:20, credits:300 } },
+      { id:"nishanka_bodkin_points", name_zh:"乘胜锥击", name_en:"Bodkin Points", rarity:"clean", tier:"T1", s6raw:null, inferred:false, effect:{ rareDrop:15 }, desc:"锥头凿岩，稀有矿更容易露头。", unlock:{ weaponUp:1, hazard:1 }, cost:{ mineral:"玉石", qty:25, credits:450 } },
+      { id:"nishanka_cryo_bolt", name_zh:"冰冻弩箭", name_en:"Cryo Bolt", rarity:"balanced", tier:"T1", s6raw:null, inferred:false, effect:{ eventSuccess:12 }, desc:"一箭冻住场面。", unlock:{ weaponUp:1, hazard:1 }, cost:{ mineral:"乌玛石", qty:30, credits:500 } },
+      { id:"nishanka_fire_bolt", name_zh:"火焰弩箭", name_en:"Fire Bolt", rarity:"balanced", tier:"T3", s6raw:null, inferred:false, effect:{ yield:12 }, desc:"带火市的箭，结算带劲。", unlock:{ weaponUp:2, hazard:1 }, cost:{ mineral:"乌玛石", qty:30, credits:500 } },
+      { id:"nishanka_the_specialist", name_zh:"行家里手", name_en:"The Specialist", rarity:"balanced", tier:"T2", s6raw:null, inferred:false, effect:{ eventSuccess:15, yield:10 }, desc:"老手出手，又稳又赚。", unlock:{ weaponUp:2, hazard:2 }, cost:{ mineral:"妙绝珠", qty:45, credits:650 } },
+      { id:"nishanka_trifork_volley", name_zh:"一箭三连", name_en:"Trifork Volley", rarity:"unstable", tier:"T1", s6raw:null, inferred:false, effect:{ yield:25, supplyCost:12 }, desc:"三叉齐射，硝石烧得像烟花。", unlock:{ weaponUp:3, hazard:2 }, cost:{ mineral:"妙绝珠", qty:50, credits:800 } }
+    ] }
   },
   engineer: {
     warthog: { zh: "\"疣猪\" 210 自动霰弹枪", mods: [
@@ -519,7 +546,33 @@ const WEAPON_MODS = {
       { id:"hurricane_plasma_burster", name_zh:"贯穿爆破", name_en:"Plasma Burster Missiles", rarity:"balanced", tier:"T1", s6raw:"T0", inferred:false, effect:{ yield:18, eventSuccess:10, supplyCost:12 }, desc:"多段爆破穿透弹体。虫：我到底被炸了几次？", unlock:{ weaponUp:3, hazard:2 }, cost:{ mineral:"铜矿", qty:55, credits:800 } },
       { id:"hurricane_jet_fuel", name_zh:"疾速飞弹", name_en:"Jet Fuel Homebrew", rarity:"unstable", tier:"T2", s6raw:null, inferred:true, effect:{ yield:25, supplyCost:15 }, desc:"直击×2.5、出膛即极速。配方是自制燃料，安全部泪目。", unlock:{ weaponUp:4, hazard:3 }, cost:{ mineral:"铜矿", qty:70, credits:1250 } },
       { id:"hurricane_cluster", name_zh:"集束轰炸", name_en:"Cluster Charges", rarity:"unstable", tier:"T1", s6raw:"T0.5", inferred:false, effect:{ yield:20, eventSuccess:15, rareDrop:5, supplyCost:15 }, desc:"每枚弹再炸七个子弹头。邦邦两下，全场结账。", unlock:{ weaponUp:4, hazard:3 }, cost:{ mineral:"铜矿", qty:80, credits:1450 } }
-    ]}
+    ]},
+    /* —— 副手池（同 scout 段注释：移植自 15a780e，tier 按 3a178b4 对齐）—— */
+    bulldog: { zh: "「斗牛犬」重型左轮手枪", mods: [
+      { id:"bulldog_homebrew_powder", name_zh:"自制火药", name_en:"Homebrew Powder", rarity:"clean", tier:"T2", s6raw:null, inferred:false, effect:{ supplyCost:-12 }, desc:"土法火药，财务部不敢细问。", unlock:{ weaponUp:0, hazard:1 }, cost:{ mineral:"吸铁石", qty:20, credits:300 } },
+      { id:"bulldog_chain_hit", name_zh:"连锁打击", name_en:"Chain Hit", rarity:"clean", tier:"T2", s6raw:null, inferred:false, effect:{ rareDrop:12 }, desc:"弹头连跳，稀有矿被点名。", unlock:{ weaponUp:1, hazard:1 }, cost:{ mineral:"吸铁石", qty:25, credits:450 } },
+      { id:"bulldog_six_shooter", name_zh:"六连射手", name_en:"Six Shooter", rarity:"balanced", tier:"T2", s6raw:null, inferred:false, effect:{ eventSuccess:10 }, desc:"六发点射，场面稳得住。", unlock:{ weaponUp:1, hazard:1 }, cost:{ mineral:"蜂母石", qty:30, credits:500 } },
+      { id:"bulldog_elephant_rounds", name_zh:"巨象弹药", name_en:"Elephant Rounds", rarity:"balanced", tier:"T2", s6raw:null, inferred:false, effect:{ yield:15, morale:-3 }, desc:"后坐力堪比象踢，腰子遭罪。", unlock:{ weaponUp:2, hazard:1 }, cost:{ mineral:"蜂母石", qty:35, credits:550 } },
+      { id:"bulldog_magic_bullets", name_zh:"魔法子弹", name_en:"Magic Bullets", rarity:"unstable", tier:"T1", s6raw:null, inferred:false, effect:{ yield:22, supplyCost:-15 }, desc:"弹药凭空补充，科学拒绝评论。", unlock:{ weaponUp:2, hazard:2 }, cost:{ mineral:"乌玛石", qty:45, credits:700 } },
+      { id:"bulldog_volatile_bullets", name_zh:"易燃子弹", name_en:"Volatile Bullets", rarity:"unstable", tier:"T1", s6raw:null, inferred:false, effect:{ yield:30, medBill:40 }, desc:"一颗引爆一颗，工伤率同步暴涨。", unlock:{ weaponUp:3, hazard:2 }, cost:{ mineral:"乌玛石", qty:50, credits:800 } }
+    ] },
+    brt7: { zh: "BRT7 连发手枪", mods: [
+      { id:"brt7_compact_casings", name_zh:"紧凑弹壳", name_en:"Compact Casings", rarity:"clean", tier:"T2", s6raw:null, inferred:false, effect:{ supplyCost:-10 }, desc:"紧凑省料，账面好看。", unlock:{ weaponUp:0, hazard:1 }, cost:{ mineral:"吸铁石", qty:20, credits:300 } },
+      { id:"brt7_full_chamber_seal", name_zh:"全腔密封", name_en:"Full Chamber Seal", rarity:"clean", tier:"T2", s6raw:null, inferred:false, effect:{ yield:10 }, desc:"密封到位，弹道更实在。", unlock:{ weaponUp:1, hazard:1 }, cost:{ mineral:"吸铁石", qty:25, credits:400 } },
+      { id:"brt7_compact_mags", name_zh:"紧凑弹匣", name_en:"Compact Mags", rarity:"balanced", tier:"T1", s6raw:null, inferred:false, effect:{ rareDrop:8 }, desc:"小弹匣翻找快，顺手捡矿。", unlock:{ weaponUp:1, hazard:1 }, cost:{ mineral:"蜂母石", qty:25, credits:400 } },
+      { id:"brt7_electro_minelets", name_zh:"电击陷阱", name_en:"Electro Minelets", rarity:"balanced", tier:"T3", s6raw:null, inferred:false, effect:{ eventSuccess:12 }, desc:"落地带电，虫潮都礼貌。", unlock:{ weaponUp:2, hazard:1 }, cost:{ mineral:"蜂母石", qty:30, credits:500 } },
+      { id:"brt7_micro_flechettes", name_zh:"微型镖弹", name_en:"Micro Flechettes", rarity:"balanced", tier:"T2", s6raw:null, inferred:false, effect:{ rareDrop:15 }, desc:"钢针细雨，专敲稀有矿。", unlock:{ weaponUp:2, hazard:1 }, cost:{ mineral:"乌玛石", qty:30, credits:550 } },
+      { id:"brt7_lead_spray", name_zh:"铅弹散射", name_en:"Lead Spray", rarity:"unstable", tier:"T1", s6raw:null, inferred:false, effect:{ yield:18, morale:-4 }, desc:"铅雨泼面，矿工骂骂咧咧但认了。", unlock:{ weaponUp:2, hazard:2 }, cost:{ mineral:"乌玛石", qty:40, credits:650 } },
+      { id:"brt7_experimental_rounds", name_zh:"实验弹药", name_en:"Experimental Rounds", rarity:"unstable", tier:"T1", s6raw:null, inferred:false, effect:{ yield:25, medBill:30 }, desc:"实验批号，效果与工伤俱佳。", unlock:{ weaponUp:3, hazard:2 }, cost:{ mineral:"乌玛石", qty:50, credits:800 } }
+    ] },
+    armskore: { zh: "「武装核心」电磁手炮", mods: [
+      { id:"armskore_backfeeding_module", name_zh:"返补模块", name_en:"Backfeeding Module", rarity:"clean", tier:"T2", s6raw:null, inferred:false, effect:{ supplyCost:-14 }, desc:"余能回充，硝石账单瘦身。", unlock:{ weaponUp:1, hazard:1 }, cost:{ mineral:"吸铁石", qty:25, credits:450 } },
+      { id:"armskore_the_mole", name_zh:"鼹鼠", name_en:"The Mole", rarity:"clean", tier:"T2", s6raw:null, inferred:false, effect:{ eventSuccess:12 }, desc:"钻地弹道，洞穴里横着走。", unlock:{ weaponUp:1, hazard:1 }, cost:{ mineral:"蜂母石", qty:25, credits:450 } },
+      { id:"armskore_ultra_magnetic_coils", name_zh:"超磁线圈", name_en:"Ultra-Magnetic Coils", rarity:"balanced", tier:"T1", s6raw:null, inferred:false, effect:{ yield:14 }, desc:"超磁储能，单发更值钱。", unlock:{ weaponUp:2, hazard:1 }, cost:{ mineral:"蜂母石", qty:30, credits:500 } },
+      { id:"armskore_triple_tech_chambers", name_zh:"三重连射", name_en:"Triple-Tech Chambers", rarity:"clean", tier:"T1", s6raw:null, inferred:false, effect:{ yield:16, rareDrop:8 }, desc:"三技术集于一身，实在。", unlock:{ weaponUp:2, hazard:2 }, cost:{ mineral:"乌玛石", qty:40, credits:650 } },
+      { id:"armskore_hellfire", name_zh:"地狱烈焰", name_en:"Hellfire", rarity:"unstable", tier:"T1", s6raw:null, inferred:false, effect:{ yield:24, morale:-5 }, desc:"枪口喷地狱，矿工说像加班。", unlock:{ weaponUp:3, hazard:2 }, cost:{ mineral:"乌玛石", qty:50, credits:800 } },
+      { id:"armskore_re_atomizer", name_zh:"原子重组", name_en:"Re-atomizer", rarity:"unstable", tier:"T2", s6raw:null, inferred:false, effect:{ yield:26, medBill:30 }, desc:"原子级重组，重组成账单。", unlock:{ weaponUp:3, hazard:2 }, cost:{ mineral:"乌玛石", qty:50, credits:800 } }
+    ] }
   },
   driller: {
     crspr: { zh: "CRSPR 火焰喷射器", mods: [
@@ -557,7 +610,32 @@ const WEAPON_MODS = {
       { id:"bc_high_voltage", name_zh:"高压转接", name_en:"High Voltage Crossover", rarity:"balanced", tier:"T2", s6raw:null, inferred:true, effect:{ eventSuccess:15, supplyCost:8 }, desc:"光束带电，弹匣缩水六成。电疗效果好，就是费电。", unlock:{ weaponUp:3, hazard:2 }, cost:{ mineral:"乌玛石", qty:50, credits:700 } },
       { id:"bc_spinning_death", name_zh:"死亡圆舞", name_en:"Spinning Death", rarity:"unstable", tier:"T3", s6raw:null, inferred:true, effect:{ yield:18, eventSuccess:-8, supplyCost:-10 }, desc:"弹束原地旋转两圈半，覆盖全场，就是转得慢。杀阵很美，节奏很慢。", unlock:{ weaponUp:4, hazard:3 }, cost:{ mineral:"乌玛石", qty:70, credits:1200 } },
       { id:"bc_inferno", name_zh:"地狱火", name_en:"Inferno", rarity:"unstable", tier:"T1", s6raw:"T0", inferred:false, effect:{ yield:25, eventSuccess:15, medBill:40, supplyCost:15 }, desc:"官方说明：以减弱直接伤害和护甲破坏为代价，换取射线经过之处横尸遍野，寸草不生。会计部补充：账单也一样。", unlock:{ weaponUp:5, hazard:3 }, cost:{ mineral:"乌玛石", qty:85, credits:1500 } }
-    ]}
+    ]},
+    /* —— 副手池（同 scout 段注释：移植自 15a780e，tier 按 3a178b4 对齐）—— */
+    subata: { zh: "苏巴特 120 半自动手枪", mods: [
+      { id:"subata_homebrew_powder", name_zh:"自制火药", name_en:"Homebrew Powder", rarity:"clean", tier:"T2", s6raw:null, inferred:false, effect:{ supplyCost:-12 }, desc:"钻机部土方，省钱有一手。", unlock:{ weaponUp:0, hazard:1 }, cost:{ mineral:"铜矿", qty:20, credits:300 } },
+      { id:"subata_oversized_magazine", name_zh:"超大弹匣", name_en:"Oversized Magazine", rarity:"clean", tier:"T1", s6raw:null, inferred:false, effect:{ yield:10 }, desc:"弹匣管饱，产出跟涨。", unlock:{ weaponUp:1, hazard:1 }, cost:{ mineral:"铜矿", qty:25, credits:400 } },
+      { id:"subata_chain_hit", name_zh:"连锁打击", name_en:"Chain Hit", rarity:"clean", tier:"T2", s6raw:null, inferred:false, effect:{ rareDrop:12 }, desc:"串联弹道，稀有矿排队露头。", unlock:{ weaponUp:1, hazard:1 }, cost:{ mineral:"蜂母石", qty:25, credits:450 } },
+      { id:"subata_tranquilizer_rounds", name_zh:"镇定弹药", name_en:"Tranquilizer Rounds", rarity:"balanced", tier:"T1", s6raw:null, inferred:false, effect:{ morale:4 }, desc:"镇静弹一响，矿工心态稳了。", unlock:{ weaponUp:2, hazard:1 }, cost:{ mineral:"容和石", qty:30, credits:500 } },
+      { id:"subata_explosive_reload", name_zh:"爆破装填", name_en:"Explosive Reload", rarity:"balanced", tier:"T1", s6raw:null, inferred:false, effect:{ yield:14 }, desc:"换弹都带爆破，讲究。", unlock:{ weaponUp:2, hazard:1 }, cost:{ mineral:"蜂母石", qty:30, credits:550 } },
+      { id:"subata_automatic_fire", name_zh:"全自动射击", name_en:"Automatic Fire", rarity:"unstable", tier:"T2", s6raw:null, inferred:false, effect:{ yield:25, supplyCost:10 }, desc:"全自动烧硝石，手速对齐流水线。", unlock:{ weaponUp:3, hazard:2 }, cost:{ mineral:"妙绝珠", qty:50, credits:800 } }
+    ] },
+    plasmacharger: { zh: "实验性等离子蓄能手枪", mods: [
+      { id:"plasmacharger_energy_rerouting", name_zh:"能量重导", name_en:"Energy Rerouting", rarity:"clean", tier:"T1", s6raw:null, inferred:false, effect:{ supplyCost:-12 }, desc:"能量改线，成本改低。", unlock:{ weaponUp:1, hazard:1 }, cost:{ mineral:"铜矿", qty:25, credits:400 } },
+      { id:"plasmacharger_magnetic_cooling_unit", name_zh:"磁力制冷", name_en:"Magnetic Cooling Unit", rarity:"clean", tier:"T1", s6raw:null, inferred:false, effect:{ morale:4 }, desc:"枪不烫手，矿工暖心。", unlock:{ weaponUp:1, hazard:1 }, cost:{ mineral:"蜂母石", qty:25, credits:450 } },
+      { id:"plasmacharger_heat_pipe", name_zh:"热导管", name_en:"Heat Pipe", rarity:"balanced", tier:"T1", s6raw:null, inferred:false, effect:{ yield:12 }, desc:"余热变现，绿色经济。", unlock:{ weaponUp:2, hazard:1 }, cost:{ mineral:"蜂母石", qty:30, credits:500 } },
+      { id:"plasmacharger_persistent_plasma", name_zh:"长时电浆", name_en:"Persistent Plasma", rarity:"balanced", tier:"T1", s6raw:null, inferred:false, effect:{ eventSuccess:14, yield:8 }, desc:"电浆挂机时间长，事件全接住。", unlock:{ weaponUp:2, hazard:2 }, cost:{ mineral:"容和石", qty:40, credits:650 } },
+      { id:"plasmacharger_overcharger", name_zh:"超载充能", name_en:"Overcharger", rarity:"unstable", tier:"T2", s6raw:null, inferred:false, effect:{ yield:20, supplyCost:8 }, desc:"超载一时爽，硝石火葬场。", unlock:{ weaponUp:2, hazard:2 }, cost:{ mineral:"妙绝珠", qty:40, credits:650 } },
+      { id:"plasmacharger_heavy_hitter", name_zh:"沉重打击", name_en:"Heavy Hitter", rarity:"unstable", tier:"T1", s6raw:null, inferred:false, effect:{ yield:24, medBill:30 }, desc:"一击沉重，医疗部沉重。", unlock:{ weaponUp:3, hazard:2 }, cost:{ mineral:"妙绝珠", qty:50, credits:800 } }
+    ] },
+    colette: { zh: "柯莱特微波烹调者", mods: [
+      { id:"colette_liquid_cooling_system", name_zh:"液冷系统", name_en:"Liquid Cooling System", rarity:"clean", tier:"T1", s6raw:null, inferred:false, effect:{ morale:4 }, desc:"微波炉带液冷，厨房安全生产。", unlock:{ weaponUp:1, hazard:1 }, cost:{ mineral:"铜矿", qty:25, credits:400 } },
+      { id:"colette_super_focus_lens", name_zh:"超聚镜头", name_en:"Super Focus Lens", rarity:"clean", tier:"T2", s6raw:null, inferred:false, effect:{ rareDrop:12 }, desc:"聚波成针，专挑稀有矿下嘴。", unlock:{ weaponUp:1, hazard:1 }, cost:{ mineral:"蜂母石", qty:25, credits:450 } },
+      { id:"colette_diffusion_ray", name_zh:"扩散射线", name_en:"Diffusion Ray", rarity:"balanced", tier:"T1", s6raw:null, inferred:false, effect:{ eventSuccess:12 }, desc:"波及全场，事件稳收。", unlock:{ weaponUp:2, hazard:1 }, cost:{ mineral:"容和石", qty:30, credits:500 } },
+      { id:"colette_mega_power_supply", name_zh:"超级电容", name_en:"Mega Power Supply", rarity:"unstable", tier:"T1", s6raw:null, inferred:false, effect:{ yield:20, supplyCost:8 }, desc:"电容超级，账单也超级。", unlock:{ weaponUp:2, hazard:2 }, cost:{ mineral:"妙绝珠", qty:40, credits:650 } },
+      { id:"colette_blistering_necrosis", name_zh:"脓包坏死", name_en:"Blistering Necrosis", rarity:"unstable", tier:"T1", s6raw:null, inferred:false, effect:{ yield:24, medBill:30 }, desc:" microwave 熟透，医疗部熟读合同。", unlock:{ weaponUp:3, hazard:2 }, cost:{ mineral:"妙绝珠", qty:50, credits:800 } },
+      { id:"colette_gamma_contamination", name_zh:"伽马污染", name_en:"Gamma Contamination", rarity:"unstable", tier:"T2", s6raw:null, inferred:false, effect:{ yield:26, morale:-5 }, desc:"伽马管够，体检管够。", unlock:{ weaponUp:3, hazard:2 }, cost:{ mineral:"容和石", qty:50, credits:800 } }
+    ] }
   }
 };
 
