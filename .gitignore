@@ -19,4 +19,3 @@ drg_save_*.json
 
 # Local archives
 *.zip
-package-lock.json
