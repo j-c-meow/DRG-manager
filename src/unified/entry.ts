@@ -1,5 +1,5 @@
 import { managerBiomes, realtimeBiomeByManagerId, realtimeBiomes, realtimeHazards, SAVE_SCHEMA_VERSION } from './definitions';
-import { abortDirectMission, canSettleMission, markMissionSettled, migrateSave, startDirectMission } from './domain';
+import { abortDirectMission, canSettleMission, markMissionSettled, migrateSave, startDirectMission, startDirectMissionFromDep } from './domain';
 import { PhaserMissionRuntime } from './phaser-runtime';
 import type { MissionResult } from './contracts';
 
@@ -18,6 +18,7 @@ const unified = Object.freeze({
   domain: Object.freeze({
     migrateSave,
     startDirectMission,
+    startDirectMissionFromDep,
     canSettleMission,
     markMissionSettled,
     abortDirectMission,

@@ -281,10 +281,15 @@ function renderDeps(){
       '<div class="meta">'+team+'　剩余 '+remainTxt+'</div>'+
       '<div class="prog" style="--m1:'+mPos[0]+'%;--m2:'+mPos[1]+'%;--m3:'+mPos[2]+'%;--m4:'+mPos[3]+'%"><i style="width:'+pct+'%"></i>'+
       '<span class="digger anim-spr" data-anim="dwarf_'+cls0+'_dig" style="left:'+pct+'%;width:24px;height:24px;"></span></div>'+
+      /* 实时介入（用户 09-19 拍板）：挂机中的采矿探险随时亲自下场 */
+      (d.m.type==='exp' && !d.paused ? '<div style="margin-top:5px"><button class="btn live" data-rt-dep="'+d.id+'" style="width:100%">⚡ 实时介入 · 亲自下场</button></div>':'')+
       (d.paused?'<div class="evtbox"><div class="q">'+TEXT.ui_deps_event+'</div><button class="btn warn" data-ev="'+d.id+'">'+TEXT.ui_deps_event_btn+'</button></div>':'')+
       '</div>';
   });
   $('#deps').innerHTML = html;
+  $('#deps').querySelectorAll('[data-rt-dep]').forEach(el=>{
+    el.onclick = () => interveneRealtime(el.dataset.rtDep);
+  });
   const selectMission = $('#deps').querySelector('[data-select-mission]');
   if(selectMission) selectMission.onclick = () => {
     let missions = S.board.filter(m => m && m.type);

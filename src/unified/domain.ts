@@ -51,6 +51,48 @@ export function startDirectMission(state: UnifiedSaveState, input: StartDirectMi
   return request;
 }
 
+/** 实时介入：矿工小队正在挂机推进的派遣单，玩家亲自下场。任务不经过任务板、
+ *  不再扣硝石（派遣出发时已付），仅登记 S.realtime 并冻结该派遣（paused）；
+ *  胜=派遣立即结算，败/召回=解除冻结继续挂机（由管理端消费）。 */
+export function startDirectMissionFromDep(
+  state: UnifiedSaveState,
+  input: { requestId: string; seed: number; depId: string; minerId: string; now: number },
+): DirectMissionRequest {
+  if (state.realtime) throw new Error('已有实时任务正在进行');
+  const dep = state.deps?.find(item => item.id === input.depId);
+  if (!dep) throw new Error('派遣任务已不存在');
+  const miner = state.miners.find(item => item.id === input.minerId);
+  if (!miner) throw new Error('矿工不存在');
+  const minerFull = miner as unknown as { name?: string; lv?: number };
+
+  const mission = structuredClone(dep.m);
+  const missionAny = mission as unknown as { rewards?: Record<string, number>; r?: Record<string, number> };
+  const realtimeBiome = realtimeBiomeByManagerId[mission.biome as keyof typeof realtimeBiomeByManagerId] ?? 'crystalline';
+  const request: DirectMissionRequest = {
+    version: 2,
+    id: input.requestId,
+    createdAt: input.now,
+    seed: input.seed,
+    resolution: 'direct',
+    /* 管理端的任务报酬字段是 r（startDirectMission 由调用方折成 rewards），此处统一兜底 */
+    mission: { ...mission, rewards: { ...(missionAny.r || mission.rewards || {}) }, realtimeBiome },
+    miner: { id: miner.id, cls: miner.cls, name: minerFull.name || miner.cls, level: minerFull.lv || 1 },
+  };
+
+  state.realtime = {
+    requestId: request.id,
+    missionId: mission.id,
+    minerId: miner.id,
+    mission: structuredClone(mission),
+    nitraSpent: 0,
+    startedAt: input.now,
+    resolution: 'direct',
+    depId: dep.id,
+  };
+  dep.paused = true;
+  return request;
+}
+
 export function canSettleMission(state: UnifiedSaveState, result: MissionResult): boolean {
   return !!state.realtime
     && state.realtime.requestId === result.requestId

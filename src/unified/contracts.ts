@@ -58,6 +58,17 @@ export interface RealtimeState {
   nitraSpent: number;
   startedAt: number;
   resolution: 'direct';
+  /** 实时介入来源的派遣单 id（介入模式：胜=该派遣直接结算，败/召回=派遣恢复挂机） */
+  depId?: string;
+}
+
+/** 派遣单最小快照（管理端 S.deps 元素，介入模式用） */
+export interface DepSnapshot {
+  id: string;
+  m: MissionDefinition;
+  minerIds: string[];
+  paused?: boolean | null;
+  [key: string]: unknown;
 }
 
 export interface UnifiedSaveState {
@@ -68,5 +79,6 @@ export interface UnifiedSaveState {
   miners: Array<{ id: string; cls: string; state: string; morale: number }>;
   realtime: RealtimeState | null;
   settledRealtime?: Record<string, number>;
+  deps?: DepSnapshot[];
   [key: string]: unknown;
 }

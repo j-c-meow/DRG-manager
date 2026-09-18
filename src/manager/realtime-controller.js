@@ -154,6 +154,36 @@ function finishRealtimeMission(){
   save();
 }
 
+/* 实时介入（用户 09-19 拍板）：挂机中的采矿探险派遣可随时亲自下场——
+   不再扣硝石（出发时已付）、派遣冻结（paused），胜=该派遣按原班人马立即结算，
+   败/召回=解除冻结继续挂机。领域入口 startDirectMissionFromDep（domain.ts） */
+function interveneRealtime(depId){
+  if(!S || isRealtimeGameOpen()) return;
+  if(S.realtime){ showPendingRealtime(); return; }
+  const d = S.deps.find(x=>x.id===depId);
+  if(!d || d.paused){ log('该派遣当前无法介入（事件待处理或已暂停）。', 'bad'); return; }
+  const miner = S.miners.find(x=>x.id===d.minerIds[0]);
+  if(!miner) return;
+  const requestId = 'rt'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+  let request;
+  try{
+    request = DRGUnified.domain.startDirectMissionFromDep(S, {
+      requestId,
+      seed:realtimeSeed(d.m),
+      depId:d.id,
+      minerId:miner.id,
+      now:Date.now(),
+    });
+  }catch(error){
+    log('实时介入失败：'+(error && error.message || error), 'bad');
+    return;
+  }
+  DRG.integration.setRequest(request);
+  log('▶ '+minerName(miner)+' 亲自介入【'+biomeById(d.m.biome).name+'】派遣：洞穴内见真章，胜则全队即刻结算归队。', 'gold');
+  save();
+  openRealtimeGame();
+}
+
 function startRealtimeMission(m, miner, cost){
   const requestId = 'rt'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
   let request;
@@ -192,6 +222,23 @@ function showPendingRealtime(){
 
 function recallRealtime(){
   if(!S.realtime) return;
+  const dep = S.realtime.depId ? S.deps.find(x=>x.id===S.realtime.depId) : null;
+  if(dep){
+    /* 介入模式召回：不退补给（本就未扣），矿工归队继续该派遣，士气 -15 */
+    const miner = S.miners.find(x=>x.id===S.realtime.minerId);
+    if(miner) miner.morale = clamp(miner.morale-15, 10, 100);
+    dep.paused = false;
+    S.realtime = null;
+    pendingRealtimeResult = null;
+    if(window.DRG && DRG.integration) DRG.integration.clear();
+    log('实时介入已召回：'+(miner?minerName(miner):'矿工')+' 归队，士气 -15。派遣恢复自动推进。', 'bad');
+    clearRealtimeBridge();
+    closeRealtimeGame();
+    closeModal(true);
+    renderAll();
+    save();
+    return;
+  }
   DRGUnified.domain.abortDirectMission(S, 15);
   S.stats.realtimeFailed = (S.stats.realtimeFailed||0) + 1;
   log('实时任务已中止：矿工被紧急召回，士气 -15，出舱补给不退。', 'bad');
@@ -210,24 +257,38 @@ function consumeRealtimeResult(explicitResult){
   const m = pending.mission;
   const miner = S.miners.find(x=>x.id===pending.minerId);
   if(!m || !miner) return null;
-  const summary = {win:!!result.win, result, mission:m, miner:minerName(miner), gain:{}};
+  /* 介入模式：结算对象是原派遣单本身 */
+  const dep = pending.depId ? S.deps.find(x=>x.id===pending.depId) : null;
+  const summary = {win:!!result.win, result, mission:m, miner:minerName(miner), gain:{}, intervene:!!dep};
   try{
     if(result.win){
       const before = {credits:S.credits, nitra:S.nitra, morkite:S.morkite, moil:S.moil, gold:S.gold};
       const kills = Number(result.stats && result.stats.kills)||0;
       const gold = Number(result.deposited && result.deposited.gold)||0;
       const performance = clamp(0.85 + Math.min(kills,60)/300 + Math.min(gold,60)/600, 0.85, 1.15);
-      settle({
-        id:'live-'+pending.requestId, m, hc:1, minerIds:[miner.id],
-        fitN:miner.cls===mtypeById(m.type).best?1:0, modEff:squadModEffects([miner.id]),
-        bonus:1, rewardBonus:1, morkiteBuff:1, mode:'realtime', nitraSpent:pending.nitraSpent,
-      }, false, performance);
+      if(dep){
+        /* 派遣按原班人马（含酒buff/适配/精英加成）立即结算并移除 */
+        settle(dep, false, performance);
+        S.deps = S.deps.filter(x=>x!==dep);
+      }else{
+        settle({
+          id:'live-'+pending.requestId, m, hc:1, minerIds:[miner.id],
+          fitN:miner.cls===mtypeById(m.type).best?1:0, modEff:squadModEffects([miner.id]),
+          bonus:1, rewardBonus:1, morkiteBuff:1, mode:'realtime', nitraSpent:pending.nitraSpent,
+        }, false, performance);
+      }
       summary.performance = performance;
       Object.keys(before).forEach(k=>{ summary.gain[k] = Math.round((S[k]||0)-before[k]); });
       S.stats.realtimeWon = (S.stats.realtimeWon||0) + 1;
+    }else if(dep){
+      /* 介入失败：派遣解除冻结继续挂机，矿工归队（保持 mission 态），士气 -15 */
+      dep.paused = false;
+      miner.morale = clamp(miner.morale-15, 10, 100);
+      S.stats.realtimeFailed = (S.stats.realtimeFailed||0) + 1;
+      log('实时介入失败：'+minerName(miner)+' 归队，士气 -15。派遣恢复自动推进。', 'bad');
     }else{
       miner.state = 'idle';
-      miner.morale = clamp(miner.morale-15,10,100);
+      miner.morale = clamp(miner.morale-15, 10, 100);
       S.stats.realtimeFailed = (S.stats.realtimeFailed||0) + 1;
       log('实时任务失败：'+minerName(miner)+' 已归队，士气 -15。'+(result.failReason?' '+result.failReason:''), 'bad');
     }
@@ -247,7 +308,7 @@ function showRealtimeSummary(summary){
   const r = summary.result;
   const elapsed = Math.max(0, Math.round(r.time||0));
   const elapsedText = Math.floor(elapsed/60)+':'+String(elapsed%60).padStart(2,'0');
-  const outcome = summary.win ? '任务完成' : '任务失败';
+  const outcome = summary.win ? (summary.intervene?'介入成功 · 派遣完成':'任务完成') : (summary.intervene?'介入失败 · 派遣继续':'任务失败');
   let reward = '<div class="note">本次没有管理终端报酬。</div>';
   if(summary.win){
     const g = summary.gain;
