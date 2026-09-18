@@ -19,6 +19,7 @@
     DRG.ui.sel.biome = mission.realtimeBiome || 'crystalline';
     DRG.ui.sel.haz = mission.hazard || 1;
     DRG.ui.sel.cls = request.miner.cls || 'scout';
+    DRG.ui.sel.type = mission.type || 'exp';          // exp | escort …
     DRG.ui.sel.seed = request.seed || 1;
     var seedInput = document.getElementById('seed-input');
     if (seedInput) seedInput.value = DRG.ui.sel.seed;
@@ -67,6 +68,7 @@
         haz: DRG.ui.sel.haz,
         cls: DRG.ui.sel.cls,
         seed: DRG.ui.sel.seed,
+        type: DRG.ui.sel.type || 'exp',
         requestId: request.id
       });
       if (!managerVisible) DRG.game.setPaused(true);

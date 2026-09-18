@@ -246,7 +246,8 @@
       $('#deb-art').src = win ? 'assets/img/salute.png' : 'assets/img/bug_grunt.png';
 
       var rows = [
-        ['存入莫尔凯特 MORKITE', Math.floor(m.deposited.morkite) + ' / ' + m.quota, win],
+        [m.isEscort ? '朵蕾妲推进进度' : '存入莫尔凯特 MORKITE',
+          m.isEscort ? Math.round((m.doretta ? m.doretta.progress : 0) * 100) + '%' : Math.floor(m.deposited.morkite) + ' / ' + m.quota, win],
         ['存入硝石 NITRA', Math.floor(m.deposited.nitra)],
         ['存入黄金 GOLD', Math.floor(m.deposited.gold)],
         ['存入晶石 GEMS', Math.floor(m.deposited.crystal)],

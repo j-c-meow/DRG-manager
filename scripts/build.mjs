@@ -3,14 +3,29 @@ import { cp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import sharp from "sharp";
 
-const outputDirectory = "dist";
+// 输出目录可用 DRG_DIST_DIR 覆盖（默认 dist；供 dist 被本地预览进程占用时旁路验证构建）
+const outputDirectory = process.env.DRG_DIST_DIR || "dist";
 const managerSourceDirectory = "src/manager";
 const managerOutputDirectory = join(outputDirectory, "scripts/manager");
 const realtimeSourceDirectory = "src/realtime";
 const buildVersion = `${Date.now().toString(36)}-${randomBytes(4).toString("hex")}`;
 const realtimeOutputDirectory = join(outputDirectory, "scripts/realtime");
 
-await rm(outputDirectory, { recursive: true, force: true });
+// dist 可能被资源管理器/杀软等进程占用（EBUSY）：重试数次；若最终只剩空壳目录则照常构建
+for (let attempt = 0; ; attempt++) {
+  try {
+    await rm(outputDirectory, { recursive: true, force: true });
+    break;
+  } catch (error) {
+    const leftover = await readdir(outputDirectory).catch(() => null);
+    if (leftover !== null && leftover.length === 0) {
+      console.warn("build: dist 被其他进程占用但已为空，继续构建");
+      break;
+    }
+    if (attempt >= 4) throw error;
+    await new Promise(resolve => setTimeout(resolve, 600));
+  }
+}
 await mkdir(join(outputDirectory, "scripts"), { recursive: true });
 await mkdir(managerOutputDirectory, { recursive: true });
 await mkdir(realtimeOutputDirectory, { recursive: true });

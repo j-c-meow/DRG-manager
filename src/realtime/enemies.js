@@ -88,13 +88,16 @@
     this.hitFlash = Math.max(0, this.hitFlash - dt * 4);
     this.attackCd -= dt; this.spitCd -= dt; this.alarm -= dt;
     var p = m.player, w = m.world;
-    var dx = p.x - this.x, dy = (p.y - 10) - this.y;
+    /* 执勤护送目标权重：朵蕾妲 > 玩家（m.escortPrey 返回 {x,y,doretta} 或 null） */
+    var prey = m.escortPrey ? m.escortPrey(this) : null;
+    var px = prey ? prey.x : p.x, py = prey ? prey.y : (p.y - 10);
+    var dx = px - this.x, dy = py - this.y;
     var dist = M.len(dx, dy);
     var aware = dist < 620 && !p.downedFully;
 
-    if (this.def.kind === 'fly') this.updateFly(dt, m, dx, dy, dist, aware);
+    if (this.def.kind === 'fly') this.updateFly(dt, m, dx, dy, dist, aware, prey);
     else if (this.passive) this.updatePassive(dt, m, dist);
-    else this.updateWalk(dt, m, dx, dy, dist, aware);
+    else this.updateWalk(dt, m, dx, dy, dist, aware, prey);
 
     // announce themselves once in a while
     if (aware && this.alarm <= 0 && Math.random() < dt * 0.25) {
@@ -108,27 +111,35 @@
     return !this.dead;
   };
 
-  Enemy.prototype.tryAttack = function (m, dist) {
+  Enemy.prototype.tryAttack = function (m, dist, prey) {
     var p = m.player;
-    if (this.def.melee && dist < this.def.melee * 46 + 18 && this.attackCd <= 0 && !p.downed) {
+    var tgt = prey && prey.doretta && !prey.doretta.dead ? prey.doretta : null;
+    if (this.def.melee && dist < this.def.melee * 46 + 18 && this.attackCd <= 0 && (tgt || !p.downed)) {
       this.attackCd = 1.15;
-      p.hurt(this.def.dmg * m.hazard.dmgMul, m, 'bite');
+      if (tgt) {
+        /* 优先啃咬朵蕾妲 */
+        tgt.hurt(this.def.dmg * m.hazard.dmgMul, m, this.x);
+        m.fx.burst(tgt.x + (this.x < tgt.x ? -30 : 30), tgt.y - tgt.h * 0.5, 6, { col: ['#ff6a5a', '#ffd08a'], speed: 160, life: 0.35, kind: 1 });
+      } else {
+        p.hurt(this.def.dmg * m.hazard.dmgMul, m, 'bite');
+        m.fx.burst(p.x, p.y - 10, 6, { col: ['#ff6a5a', '#ffd08a'], speed: 160, life: 0.35, kind: 1 });
+      }
       DRG.audio.clipOf(['grunt_attack_1', 'grunt_attack_2'], 0.5);
-      m.fx.burst(p.x, p.y - 10, 6, { col: ['#ff6a5a', '#ffd08a'], speed: 160, life: 0.35, kind: 1 });
       this.state = 'attack';
     }
   };
 
-  Enemy.prototype.updateWalk = function (dt, m, dx, dy, dist, aware) {
+  Enemy.prototype.updateWalk = function (dt, m, dx, dy, dist, aware, prey) {
     var w = m.world, p = m.player;
     var wantX = 0;
     if (aware) {
       wantX = M.sign(dx) * this.spd * (this.def.kind === 'boom' ? 1.18 : 1);
       this.face = M.sign(dx) || this.face;
       this.state = 'chase';
-      this.tryAttack(m, dist);
+      this.tryAttack(m, dist, prey);
       if (this.def.kind === 'boom' && dist < 54 && this.fuse === 0) { this.fuse = 0.65; DRG.audio.clip('exploder_scream', 0.6); }
-      if (this.def.spit && this.spitCd <= 0 && dist > 120 && dist < 460) {
+      /* 锁定朵蕾妲的虫不吐酸（酸弹只判玩家命中），贴上去用咬的 */
+      if (this.def.spit && !(prey && prey.doretta) && this.spitCd <= 0 && dist > 120 && dist < 460) {
         this.spitCd = this.def.spit + Math.random();
         var a = Math.atan2((p.y - 12) - (this.y - 10), p.x - this.x);
         m.bullets.push(new DRG.Ent.Bullet({
@@ -202,7 +213,7 @@
     if (aware && this.onGround && dy < -40 && Math.random() < dt * 3) { this.vy = -500; }
   };
 
-  Enemy.prototype.updateFly = function (dt, m, dx, dy, dist, aware) {
+  Enemy.prototype.updateFly = function (dt, m, dx, dy, dist, aware, prey) {
     var p = m.player, w = m.world;
     var tx, ty;
     if (this.def.spawner) {
@@ -219,7 +230,7 @@
       tx = p.x - Math.cos(ang) * pref;
       ty = (p.y - 40) - Math.sin(ang) * pref * 0.5 - 30;
       this.face = M.sign(dx) || this.face;
-      if (this.def.spit && this.spitCd <= 0 && dist < 460) {
+      if (this.def.spit && !(prey && prey.doretta) && this.spitCd <= 0 && dist < 460) {
         this.spitCd = this.def.spit + Math.random() * 0.8;
         var a2 = Math.atan2((p.y - 12) - this.y, p.x - this.x);
         m.bullets.push(new DRG.Ent.Bullet({
@@ -239,7 +250,7 @@
     var nx = this.x + this.vx * dt, ny = this.y + this.vy * dt;
     if (!w.rectSolid(nx - this.w / 2, this.y - this.h / 2, this.w, this.h)) this.x = nx; else this.vx *= -0.5;
     if (!w.rectSolid(this.x - this.w / 2, ny - this.h / 2, this.w, this.h)) this.y = ny; else this.vy *= -0.5;
-    if (dist < 40) this.tryAttack(m, dist);
+    if (dist < 40) this.tryAttack(m, dist, prey);
   };
 
   Enemy.prototype.updatePassive = function (dt, m, dist) {

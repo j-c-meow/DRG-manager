@@ -201,7 +201,7 @@ function renderBoard(){
       html += '<div class="mcard compact-card">'+
         '<span class="nm" style="flex:1">'+t.name+' · '+b.name+' <span class="hz">'+'★'.repeat(m.hazard)+'</span>'+
         (m.clause?' <span class="note">【'+m.clause.name+'】</span>':'')+'</span>'+
-        (m.type==='exp'?'<button class="btn live" data-live="'+m.id+'">实时下矿</button>':'')+
+        ((m.type==='exp'||m.type==='escort')?'<button class="btn live" data-live="'+m.id+'">'+(m.type==='escort'?'实时护送':'实时下矿')+'</button>':'')+
         '<button class="btn pri" data-disp="'+m.id+'">派遣小队</button></div>';
       return;
     }
@@ -220,7 +220,7 @@ function renderBoard(){
           (t.best?(CLASSES[t.best]?CLASSES[t.best].name:t.best):'任意')+
           (m.clause?' · '+m.clause.name+'：'+m.clause.d:'')+'</div>'+
         '<div class="mission-actions"><button class="btn pri" data-disp="'+m.id+'">派遣小队</button>'+
-          (m.type==='exp'?'<button class="btn live" data-live="'+m.id+'">实时下矿</button>':'')+
+          ((m.type==='exp'||m.type==='escort')?'<button class="btn live" data-live="'+m.id+'">'+(m.type==='escort'?'实时护送':'实时下矿')+'</button>':'')+
         '</div></div></article>';
   });
   $('#board').innerHTML = html;
@@ -281,8 +281,8 @@ function renderDeps(){
       '<div class="meta">'+team+'　剩余 '+remainTxt+'</div>'+
       '<div class="prog" style="--m1:'+mPos[0]+'%;--m2:'+mPos[1]+'%;--m3:'+mPos[2]+'%;--m4:'+mPos[3]+'%"><i style="width:'+pct+'%"></i>'+
       '<span class="digger anim-spr" data-anim="dwarf_'+cls0+'_dig" style="left:'+pct+'%;width:24px;height:24px;"></span></div>'+
-      /* 实时介入（用户 09-19 拍板）：挂机中的采矿探险随时亲自下场 */
-      (d.m.type==='exp' && !d.paused ? '<div style="margin-top:5px"><button class="btn live" data-rt-dep="'+d.id+'" style="width:100%">⚡ 实时介入 · 亲自下场</button></div>':'')+
+      /* 实时介入（用户 09-19 拍板）：挂机中的采矿探险/执勤护送随时亲自下场 */
+      ((d.m.type==='exp'||d.m.type==='escort') && !d.paused ? '<div style="margin-top:5px"><button class="btn live" data-rt-dep="'+d.id+'" style="width:100%">⚡ 实时介入 · 亲自下场</button></div>':'')+
       (d.paused?'<div class="evtbox"><div class="q">'+TEXT.ui_deps_event+'</div><button class="btn warn" data-ev="'+d.id+'">'+TEXT.ui_deps_event_btn+'</button></div>':'')+
       '</div>';
   });
