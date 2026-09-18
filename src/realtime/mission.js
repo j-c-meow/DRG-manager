@@ -14,17 +14,35 @@
   function Mission(opt) {
     var self = this;
     this.opt = opt;
+    this.type = opt.type || 'exp';
+    this.isEscort = this.type === 'escort';
     this.biome = opt.biome;
     this.hazard = DRG.HAZARDS[M.clamp(opt.haz, 1, 5) - 1];
     this.seed = opt.seed;
     this.state = 'intro';               // intro | play | extract | success | failed
     this.time = 0;
-    this.world = new DRG.World({ w: 400, h: 160, seed: opt.seed, biome: opt.biome });
+    this.world = new DRG.World(this.isEscort
+      ? { w: 340, h: 96, seed: opt.seed, biome: opt.biome, mode: 'escort' }
+      : { w: 400, h: 160, seed: opt.seed, biome: opt.biome });
 
     var st = this.world.start;
-    this.player = new DRG.Player(opt.cls, st.tx * T + T / 2, st.ty * T);
+    var spawnX = st.tx * T + T / 2, spawnY = st.ty * T;
+    if (this.isEscort) spawnX = this.world.escortTrack.x0 - 84;   // 站在朵蕾妲左后方，别叠在她出生点上
+    this.player = new DRG.Player(opt.cls, spawnX, spawnY);
+    this.player.carriedCan = null;      // 头顶携带的燃料罐
     this.bosco = new DRG.Ent.Bosco(this.player.x - 40, this.player.y - 50);
-    this.mule = new DRG.Ent.Mule(this.player.x + 70, this.player.y);
+    this.mule = new DRG.Ent.Mule(this.player.x + (this.isEscort ? -60 : 70), this.player.y);
+
+    // 执勤护送：朵蕾妲掘进机（血量随危险度缩放：100 + (lv-1)×12%）
+    this.doretta = null;
+    this.defenseT = 0;                  // 终点心石防守倒计时
+    this.defenseWave = 0;
+    this.waveMark = 0;                  // 25/50/75% 进度虫潮游标
+    if (this.isEscort) {
+      if (DRG.loadEscortSprites) DRG.loadEscortSprites();
+      this.doretta = new DRG.Doretta(this.world.escortTrack,
+        Math.round(100 * (1 + (this.hazard.lv - 1) * 0.12)));
+    }
 
     this.enemies = []; this.bullets = []; this.pickups = []; this.flares = []; this.props = [];
     this.fx = new DRG.Particles(1500);
@@ -57,11 +75,11 @@
       if (M.dist(f.tx * T, f.ty * T, this.player.x, this.player.y) < 400) continue;
       this.spawnEnemy(rng.chance(0.12) ? 'goldbug' : 'lootbug', f.tx * T + T / 2, f.ty * T + T);
     }
-    for (i = 0; i < Math.round(5 * this.hazard.rate) && floors.length; i++) {
+    if (!this.isEscort) for (i = 0; i < Math.round(5 * this.hazard.rate) && floors.length; i++) {
       f = floors[rng.int(0, floors.length - 1)];
       if (M.dist(f.tx * T, f.ty * T, this.player.x, this.player.y) < 700) continue;
       this.spawnEnemy('grunt', f.tx * T + T / 2, f.ty * T + T);
-    }
+    }   // 护送局不预置敌对虫：压力全部交给 25/50/75% 虫潮导演，避免开局就把朵蕾妲啃穿
 
     // gentle onboarding: the controls that matter, spread over the first minute
     this.hints = [
@@ -71,6 +89,14 @@
       { t: 27, text: '存够 80 硝石后按 V 呼叫补给舱 · 左键开火，Q 使用职业装备', col: '#ffd76a' },
       { t: 36, text: '贴着墙按空格可以蹬墙跳，爬出自己挖的竖井', col: '#c8a4ff' }
     ];
+    if (this.isEscort) {
+      this.hints = [
+        { t: 3.5, text: '朵蕾妲会自动掘进——跟紧她，别让她孤军奋战', col: '#ffb03c' },
+        { t: 11, text: '虫子会优先啃咬朵蕾妲——听到「遭受攻击」警报立刻回防', col: '#ff8a5a' },
+        { t: 19, text: '她停车时会放下燃料罐：走近按 E 拾起，再对油箱口按 E 加入', col: '#ffd76a' },
+        { t: 27, text: '存够 80 硝石后按 V 呼叫补给舱 · 左键开火，Q 使用职业装备', col: '#8ad4ff' }
+      ];
+    }
 
     this.tileFx = function (type, tx, ty, broken) { self.handleTile(type, tx, ty, broken); };
     DRG.bus.on('pod-landed', function () { });
@@ -134,6 +160,11 @@
       p.hurt(dmg * 0.28 * (1 - pd / (radius * 0.9)), this, 'blast');
       p.vx += M.sign(p.x - x) * 260 * (1 - pd / radius);
       p.vy -= 200 * (1 - pd / radius);
+    }
+    // 爆炸同样波及朵蕾妲（爆裂虫是推车路上最烦的东西）
+    if (this.doretta && !this.doretta.dead) {
+      var dd = M.dist(x, y, this.doretta.x, this.doretta.y - this.doretta.h * 0.5);
+      if (dd < radius) this.doretta.hurt(dmg * 0.5 * (1 - dd / radius), this);
     }
   };
 
@@ -216,6 +247,114 @@
     return loose || anyEmpty;
   };
 
+  /* ---------------- escort：执勤护送（推车） ---------------- */
+
+  /** 玩家 E 键的护送交互：先加油（若携罐且靠近油箱口），再尝试拾取燃料罐 */
+  Mission.prototype.escortInteract = function () {
+    if (!this.isEscort || !this.doretta || this.doretta.dead) return false;
+    var p = this.player;
+    if (this.doretta.canFuel(p)) { this.doretta.addFuel(this); return true; }
+    if (p.carriedCan) return false;
+    var best = null, bd = 52;
+    for (var i = 0; i < this.props.length; i++) {
+      var pr = this.props[i];
+      if (!(pr instanceof DRG.FuelCanister) || pr.state !== 'idle') continue;
+      var d = M.dist(pr.x, pr.y, p.x, p.y);
+      if (d < bd) { bd = d; best = pr; }
+    }
+    if (best) {
+      best.state = 'carried';
+      p.carriedCan = best;
+      this.toast('拾起燃料罐 · 送到朵蕾妲油箱口按 E 加入', '#ffd76a', 2.5);
+      DRG.audio.sfx('beep');
+      return true;
+    }
+    return false;
+  };
+
+  /** 虫潮目标权重：朵蕾妲 > 玩家（近距离必咬车，远处约 3/4 扑车，其余骚扰玩家） */
+  Mission.prototype.escortPrey = function (e) {
+    if (!this.isEscort || !this.doretta || this.doretta.dead) return null;
+    var d = this.doretta;
+    var dd = M.dist(e.x, e.y, d.x, d.y - d.h * 0.4);
+    if (dd > 620) return null;
+    if (e._preyBias == null) e._preyBias = Math.random();
+    return (dd < 320 || e._preyBias < 0.72)
+      ? { x: d.x, y: d.y - d.h * 0.4, doretta: d }
+      : null;
+  };
+
+  /** 朵蕾妲抵达终点：开始 20 秒心石防守（连续两波虫） */
+  Mission.prototype.onDorettaArrived = function () {
+    this.defenseT = 20;
+    this.defenseWave = 0;
+    this.mc('完成！奥魔兰心石，我们来了！', 'mc_countdown');
+    this.toast('心石防守：守住朵蕾妲 20 秒！', '#ff7adf', 5);
+    DRG.audio.sfx('alarm');
+  };
+
+  Mission.prototype.onDorettaDestroyed = function () {
+    if (this.state === 'failed' || this.state === 'success') return;
+    this.state = 'failed';
+    this.failReason = '朵蕾妲被摧毁 · DRILLDOZER LOST';
+    this.toast('朵蕾妲被摧毁了……任务失败', '#ff5a4a', 5);
+    DRG.audio.stopAmbience();
+  };
+
+  Mission.prototype.winEscort = function () {
+    if (this.state !== 'play' || !this.doretta) return;
+    this.doretta.state = 'done';
+    this.objectiveDone = true;
+    this.state = 'success';
+    this.stats.credits += 420 * this.hazard.credit;
+    this.stats.xp += 520 * this.hazard.xp;
+    this.mc('完成！奥魔兰心石，我们来了！', 'mc_complete_1');
+    DRG.audio.clipOf(['salute_1', 'salute_2', 'salute_3'], 0.9, true);
+    DRG.audio.stopAmbience();
+  };
+
+  /** 护送导演：25/50/75% 进度虫潮 + 零散爬虫 + 终点心石防守 */
+  Mission.prototype.escortDirector = function (dt) {
+    var d = this.doretta;
+    if (!d) return;
+    var marks = [0.25, 0.5, 0.75];
+    while (this.waveMark < marks.length && d.progress >= marks[this.waveMark]) {
+      this.waveMark++;
+      this.spawnWave(1.15, true);
+    }
+    this.ambientCd -= dt;
+    if (this.ambientCd <= 0) {
+      this.ambientCd = 15 / this.hazard.rate;
+      if (this.enemies.length < 24) {
+        var rng = DRG.RNG((this.time * 1000) | 0);
+        var s = this.pickEscortSpawnSpot(rng);
+        if (s) this.spawnEnemy(rng.chance(0.3) ? 'swarmer' : 'grunt', s.x, s.y);
+      }
+    }
+    if (d.state === 'hold' && this.state === 'play') {
+      this.defenseT -= dt;
+      var waveAt = [17, 7];                 // 剩 17s 与 7s 各压上一波
+      while (this.defenseWave < waveAt.length && this.defenseT <= waveAt[this.defenseWave]) {
+        this.defenseWave++;
+        this.spawnWave(1.35, true);
+      }
+      if (this.defenseT <= 0) this.winEscort();
+    }
+  };
+
+  /** 虫子在朵蕾妲附近的地面出生 */
+  Mission.prototype.pickEscortSpawnSpot = function (rng) {
+    var d = this.doretta, w = this.world;
+    for (var i = 0; i < 60; i++) {
+      var f = w.floors[rng.int(0, w.floors.length - 1)];
+      if (!f) return null;
+      var dd = M.dist(f.tx * T, f.ty * T, d.x, d.y);
+      if (dd < 240 || dd > 1100) continue;
+      return { x: f.tx * T + T / 2, y: f.ty * T + T };
+    }
+    return null;
+  };
+
   /* ---------------- objectives ---------------- */
   Mission.prototype.deposit = function () {
     var p = this.player, any = 0, credits = 0;
@@ -239,7 +378,7 @@
   };
 
   Mission.prototype.checkObjective = function () {
-    if (this.objectiveDone) return;
+    if (this.objectiveDone || this.isEscort) return;
     if (this.deposited.morkite >= this.quota) {
       this.objectiveDone = true;
       this.mc('主要目标完成！莫尔凯特配额已达成，按 R 呼叫撤离飞船。', 'mc_objective_1');
@@ -285,7 +424,7 @@
   };
 
   /* ---------------- wave director ---------------- */
-  Mission.prototype.spawnWave = function (mul) {
+  Mission.prototype.spawnWave = function (mul, near) {
     mul = mul || 1;
     this.waveNo++;
     this.stats.waves++;
@@ -305,7 +444,7 @@
     while (budget > 0 && guard++ < 200) {
       var pick = pool[rng.int(0, pool.length - 1)];
       if (pick[1] > budget + 1) continue;
-      var spot = this.pickSpawnSpot(rng, pick[0] === 'mactera' || pick[0] === 'breeder');
+      var spot = this.pickSpawnSpot(rng, pick[0] === 'mactera' || pick[0] === 'breeder', near);
       if (!spot) break;
       this.spawnEnemy(pick[0], spot.x, spot.y);
       budget -= pick[1];
@@ -320,8 +459,8 @@
     this.nextWave = (this.state === 'extract' ? 26 : 68 + Math.random() * 34) / haz.rate;
   };
 
-  Mission.prototype.pickSpawnSpot = function (rng, flying) {
-    var p = this.player, w = this.world;
+  Mission.prototype.pickSpawnSpot = function (rng, flying, near) {
+    var p = (near && this.doretta) ? this.doretta : this.player, w = this.world;
     for (var i = 0; i < 90; i++) {
       var f = w.floors[rng.int(0, w.floors.length - 1)];
       if (!f) return null;
@@ -350,12 +489,14 @@
       this.player.update(dt, this);
       this.bosco.update(dt, this);
       this.mule.update(dt, this);
+      if (this.doretta && this.state === 'play') this.doretta.update(dt, this);
       if (this.shield && this.shield.life <= 0) this.shield = null;
 
       // interactions
       var I = DRG.input;
       if (I.hit('KeyE')) {
         if (this.pod && this.pod.canBoard(this.player)) this.board();
+        else if (this.isEscort && this.escortInteract()) { /* 油罐拾取 / 加油 */ }
         else if (this.mule.canDeposit(this.player)) this.deposit();
         else {
           var used = false;
@@ -381,7 +522,7 @@
           if (!used && this.mule.canDeposit(this.player)) this.deposit();
         }
       }
-      if (I.hit('KeyR') && this.objectiveDone && !this.podCalled) this.callPod();
+      if (I.hit('KeyR') && !this.isEscort && this.objectiveDone && !this.podCalled) this.callPod();
       if (I.hit('KeyV')) this.callResupply();
       if (I.hit('KeyT')) {
         this.mule.state = 'called';
@@ -392,7 +533,9 @@
       if (I.hit('KeyQ') && I.key('ShiftLeft', 'ShiftRight')) this.commandBosco();
 
       // director
-      if (this.state === 'play') {
+      if (this.isEscort && this.state === 'play') {
+        this.escortDirector(dt);
+      } else if (this.state === 'play') {
         this.nextWave -= dt;
         if (this.nextWave <= 0 && this.time > 25) this.spawnWave();
         this.ambientCd -= dt;
@@ -536,10 +679,12 @@
     for (i = 0; i < this.flares.length; i++) this.flares[i].draw(g, cam);
     for (i = 0; i < this.props.length; i++) this.props[i].draw(g, cam);
     this.mule.draw(g, cam);
+    if (this.doretta) this.doretta.draw(g, cam);
     if (this.pod) this.pod.draw(g, cam);
     for (i = 0; i < this.enemies.length; i++) this.enemies[i].draw(g, cam);
     this.bosco.draw(g, cam);
     this.player.draw(g, cam);
+    if (this.player.carriedCan) this.player.carriedCan.draw(g, cam);   // 头顶燃料罐盖在玩家之上
     for (i = 0; i < this.bullets.length; i++) this.bullets[i].draw(g, cam);
     this.fx.draw(g, cam);
 
@@ -549,6 +694,7 @@
     this.player.lights(cam, this);
     this.bosco.lights(cam);
     this.mule.lights(cam);
+    if (this.doretta) this.doretta.lights(cam);
     for (i = 0; i < this.flares.length; i++) this.flares[i].lights(cam);
     for (i = 0; i < this.pickups.length; i++) this.pickups[i].lights(cam);
     for (i = 0; i < this.props.length; i++) if (this.props[i].lights) this.props[i].lights(cam);
@@ -595,10 +741,16 @@
   /** off-screen objective markers, like the DRG HUD pings */
   Mission.prototype.drawMarkers = function (g, cam, view) {
     var targets = [];
-    targets.push({ x: this.mule.x, y: this.mule.y - 20, col: '#8ad4ff', label: 'M.U.L.E.' });
-    if (this.pod) targets.push({ x: this.pod.x, y: this.pod.y - 40, col: '#7fff9a', label: '撤离' });
-    for (var i = 0; i < this.props.length; i++)
-      if (this.props[i] instanceof DRG.Ent.Resupply) targets.push({ x: this.props[i].x, y: this.props[i].y - 20, col: '#ffd76a', label: '补给' });
+    if (this.doretta) {
+      targets.push({ x: this.doretta.x, y: this.doretta.y - 30, col: '#ffb03c', label: '朵蕾妲' });
+      if (this.player.carriedCan && !this.doretta.dead)
+        targets.push({ x: this.doretta.fuelPort().x, y: this.doretta.fuelPort().y - 14, col: '#ffd76a', label: '油箱口' });
+    } else {
+      targets.push({ x: this.mule.x, y: this.mule.y - 20, col: '#8ad4ff', label: 'M.U.L.E.' });
+      if (this.pod) targets.push({ x: this.pod.x, y: this.pod.y - 40, col: '#7fff9a', label: '撤离' });
+      for (var i = 0; i < this.props.length; i++)
+        if (this.props[i] instanceof DRG.Ent.Resupply) targets.push({ x: this.props[i].x, y: this.props[i].y - 20, col: '#ffd76a', label: '补给' });
+    }
 
     for (i = 0; i < targets.length; i++) {
       var t = targets[i];

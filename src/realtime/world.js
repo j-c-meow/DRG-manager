@@ -38,6 +38,7 @@
   function World(opt) {
     this.w = opt.w || 400;
     this.h = opt.h || 165;
+    this.mode = opt.mode || 'cave';       // cave | escort
     this.seed = opt.seed || 1;
     this.biome = opt.biome || DRG.BIOMES[0];
     this.rng = DRG.RNG(this.seed);
@@ -54,7 +55,8 @@
     this.dirtyMinimap = true;
     this.mmBox = null;                    // dirty bbox for incremental minimap redraws
     this.shade = new Uint8Array(n);       // per-tile colour jitter
-    this.generate();
+    if (this.mode === 'escort') this.generateEscort();
+    else this.generate();
   }
   World.prototype.idx = function (tx, ty) { return ty * this.w + tx; };
   /** grow the minimap's dirty rectangle so redraws stay cheap */
@@ -284,6 +286,138 @@
       }
     }
     DRG.log('world', this.w + 'x' + this.h, 'ore', JSON.stringify(this.oreCount), 'floors', this.floors.length);
+  };
+
+  /* ---------------- escort: 横向单向长走廊（执勤护送） ----------------
+     一条平直轨道 + 起点舱室 + 3 处加宽据点（两处燃料检查点 + 终点心石场），
+     轨道床强制实心、走廊内不生成硬岩，保证朵蕾妲轨道通畅（她也会自己啃穿挡路岩柱）。 */
+  World.prototype.generateEscort = function () {
+    var w = this.w, h = this.h, rng = this.rng, i, x, y;
+    var x0 = 14, x1 = w - 16;                 // corridor span (tiles)
+    var ty = h - 20;                          // 轨道床顶（朵蕾妲脚下的地面）
+    var self = this;
+
+    // 1. solid rock everywhere + border walls
+    for (i = 0; i < w * h; i++) this.tiles[i] = TT.ROCK;
+    for (y = 0; y < h; y++) for (x = 0; x < w; x++) this.shade[y * w + x] = Math.floor(this.noise2(x * 0.7, y * 0.7) * 255);
+
+    // 2. noisy ceiling so the tunnel reads as a cave, not a rectangle
+    function ceiling(x) {
+      var wob = Math.sin(x * 0.085) * 2.6 + Math.sin(x * 0.023 + 2.2) * 3.2 + (self.noise(x * 0.3, 9) - 0.5) * 3;
+      return M.clamp(Math.round(ty - 11 - wob), 8, ty - 8);
+    }
+    for (x = x0; x <= x1; x++) {
+      var top = ceiling(x);
+      for (y = top; y < ty; y++) this.tiles[y * w + x] = TT.EMPTY;
+    }
+    // 3. flat track bed, a few tiles thick so nothing undermines the rails
+    for (x = x0; x <= x1; x++) for (y = ty; y < Math.min(h - 4, ty + 5); y++) this.tiles[y * w + x] = TT.DIRT;
+
+    // 4. stations: start cavern + 2 fuel checkpoints + end heart-stone arena (3 加宽据点)
+    var stations = [x0 + 14, Math.round(x0 + (x1 - x0) * 0.45), Math.round(x0 + (x1 - x0) * 0.8), x1 - 8];
+    for (i = 0; i < stations.length; i++) {
+      var sx = stations[i], rx = i === 0 ? 15 : (i === stations.length - 1 ? 18 : 13), ry = i === 0 ? 8 : 9;
+      for (y = Math.max(4, ty - ry * 2); y < Math.min(h - 4, ty + 3); y++) {
+        for (x = sx - rx; x <= sx + rx; x++) {
+          if (!this.inside(x, y)) continue;
+          var dx = (x - sx) / rx, dy2 = (y - (ty - 2)) / (ry * 1.6);
+          if (dx * dx + dy2 * dy2 < 1) this.tiles[y * w + x] = TT.EMPTY;
+        }
+      }
+      for (x = sx - rx - 1; x <= sx + rx + 1; x++) if (this.inside(x, ty)) this.tiles[ty * w + x] = TT.DIRT;
+    }
+
+    // 5. a few breakable rock pillars for the drilldozer to chew through
+    var pillars = 5 + rng.int(0, 3);
+    for (i = 0; i < pillars; i++) {
+      var px = rng.int(x0 + 20, x1 - 20), tooClose = false;
+      for (var s = 0; s < stations.length; s++) if (Math.abs(px - stations[s]) < 20) tooClose = true;
+      if (tooClose) continue;
+      var ph = rng.int(2, 5);
+      for (y = ty - ph; y < ty; y++) this.tiles[y * w + px] = TT.DIRT;
+      if (rng.chance(0.5) && this.inside(px, ty - ph - 1)) this.tiles[(ty - ph - 1) * w + px] = TT.DIRT;
+    }
+
+    // 6. materialise: no unbreakable veins anywhere near the track band
+    for (y = 0; y < h; y++) {
+      for (x = 0; x < w; x++) {
+        i = y * w + x;
+        if (x < 3 || y < 3 || x >= w - 3 || y >= h - 3) { this.tiles[i] = TT.HARD; continue; }
+        if (this.tiles[i] === TT.EMPTY || this.tiles[i] === TT.DIRT) continue;
+        if (x >= x0 - 2 && x <= x1 + 2 && y >= ty - 16 && y <= ty + 8) continue;   // keep the band chewable
+        var nv = this.noise(x * 0.055, y * 0.055);
+        if (this.noise2(x * 0.11 + 40, y * 0.11 - 20) > 0.845 && nv > 0.4) this.tiles[i] = TT.HARD;
+        else this.tiles[i] = nv > 0.52 ? TT.DIRT : TT.ROCK;
+      }
+    }
+
+    // 7. mineral veins on exposed surfaces (nitra keeps resupply pods relevant)
+    var surface = [];
+    for (y = 4; y < h - 4; y++) {
+      for (x = 4; x < w - 4; x++) {
+        i = y * w + x;
+        if (this.tiles[i] === TT.EMPTY || this.tiles[i] === TT.HARD) continue;
+        if (this.tiles[i - 1] === TT.EMPTY || this.tiles[i + 1] === TT.EMPTY ||
+            this.tiles[i - w] === TT.EMPTY || this.tiles[i + w] === TT.EMPTY) surface.push(i);
+      }
+    }
+    rng.shuffle(surface);
+    function vein(startIdx, type, size) {
+      var open = [startIdx], placed = 0, guard = 0;
+      while (open.length && placed < size && guard++ < 160) {
+        var k = open.splice(rng.int(0, open.length - 1), 1)[0];
+        if (self.tiles[k] === TT.EMPTY || self.tiles[k] === TT.HARD || self.tiles[k] === type) continue;
+        self.tiles[k] = type; self.hp[k] = HP[type]; placed++;
+        var kx = k % w, ky = (k - kx) / w;
+        if (kx > 4) open.push(k - 1);
+        if (kx < w - 5) open.push(k + 1);
+        if (ky > 4) open.push(k - w);
+        if (ky < h - 5) open.push(k + w);
+      }
+      return placed;
+    }
+    var plan = [
+      ['nitra', TT.NITRA, 30, 3, 6],
+      ['gold', TT.GOLD, 16, 2, 5],
+      ['morkite', TT.MORKITE, 10, 2, 4],
+      ['crystal', TT.CRYSTAL, Math.round(10 * (this.biome.crystals || 1)), 2, 4]
+    ];
+    var cursor = 0;
+    for (var pi = 0; pi < plan.length; pi++) {
+      var pl = plan[pi];
+      for (var v = 0; v < pl[2] && cursor < surface.length; v++) {
+        var n2 = vein(surface[cursor += Math.max(1, rng.int(3, 11))], pl[1], rng.int(pl[3], pl[4]));
+        this.oreCount[pl[0]] += n2;
+      }
+    }
+
+    // 8. spawn point: middle of the start cavern, standing on the bed
+    this.start = { tx: stations[0], ty: ty - 1 };
+    this.startNode = { x: stations[0], y: ty - 4 };
+
+    // 9. tile hp + escort metadata for mission/doretta
+    for (i = 0; i < w * h; i++) this.hp[i] = HP[this.tiles[i]];
+    var stopX = (stations[3] - 2) * T + T / 2;
+    this.escortTrack = {
+      ty: ty,
+      x0: stations[0] * T + T / 2,               // 朵蕾妲出生点 = 0%
+      x1: stopX,                                 // 终点心石场 = 100%
+      stations: [stations[1] * T + T / 2, stations[2] * T + T / 2],   // 两处燃料检查点
+      endX: stopX
+    };
+
+    // 10. cache open floor spots (spawning, molly, pods)
+    this.floors = [];
+    for (y = 6; y < h - 6; y++) {
+      for (x = 6; x < w - 6; x++) {
+        i = y * w + x;
+        if (this.tiles[i] !== TT.EMPTY) continue;
+        if (this.tiles[i + w] === TT.EMPTY || this.tiles[i + w] === TT.HARD) continue;
+        if (this.tiles[i - w] !== TT.EMPTY || this.tiles[i - 2 * w] !== TT.EMPTY) continue;
+        this.floors.push({ tx: x, ty: y });
+      }
+    }
+    DRG.log('escort world', this.w + 'x' + this.h, 'stations', JSON.stringify(stations), 'floors', this.floors.length);
   };
 
   /* ---------------- queries ---------------- */

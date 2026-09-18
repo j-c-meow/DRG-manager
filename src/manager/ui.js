@@ -201,7 +201,7 @@ function renderBoard(){
       html += '<div class="mcard compact-card">'+
         '<span class="nm" style="flex:1">'+t.name+' · '+b.name+' <span class="hz">'+'★'.repeat(m.hazard)+'</span>'+
         (m.clause?' <span class="note">'+L('【')+L(m.clause.name)+L('】')+'</span>':'')+'</span>'+
-        (m.type==='exp'?'<button class="btn live" data-live="'+m.id+'">实时下矿</button>':'')+
+        ((m.type==='exp'||m.type==='escort')?'<button class="btn live" data-live="'+m.id+'">'+(m.type==='escort'?L('实时护送'):L('实时下矿'))+'</button>':'')+
         '<button class="btn pri" data-disp="'+m.id+'">'+L('派遣小队')+'</button></div>';
       return;
     }
@@ -220,7 +220,7 @@ function renderBoard(){
           (t.best?(CLASSES[t.best]?L(CLASSES[t.best].name):L(t.best)):L('任意'))+
           (m.clause?' · '+L(m.clause.name)+L('：')+L(m.clause.d):'')+'</div>'+
         '<div class="mission-actions"><button class="btn pri" data-disp="'+m.id+'">'+L('派遣小队')+'</button>'+
-          (m.type==='exp'?'<button class="btn live" data-live="'+m.id+'">实时下矿</button>':'')+
+          ((m.type==='exp'||m.type==='escort')?'<button class="btn live" data-live="'+m.id+'">'+(m.type==='escort'?L('实时护送'):L('实时下矿'))+'</button>':'')+
         '</div></div></article>';
   });
   $('#board').innerHTML = html;
@@ -275,14 +275,14 @@ function renderDeps(){
     /* 矿道矿脉点位：按任务 id 播种，同一任务稳定、不同任务错落（硝/金交替嵌在未挖掘岩壁里，挖到即消失） */
     let hs = 0; for(let j=0;j<d.id.length;j++) hs = (hs*31 + d.id.charCodeAt(j))>>>0;
     const mPos = [12+hs%16, 34+(hs>>>4)%18, 58+(hs>>>8)%16, 82+(hs>>>12)%14];
-    html += '<div class="dep'+(d.paused?' evt':'')+'" data-dep="'+d.id+'">'+
+    html += '<div class="dep'+(d.paused?' evt':'')+'" data-dep="'+d.id+'" data-biome="'+d.m.biome+'">'+
       '<div class="t"><span class="nm">'+mtypeById(d.m.type).name+' · '+biomeById(d.m.biome).name+'</span>'+
       '<span class="hz">'+'★'.repeat(d.m.hazard)+'</span></div>'+
       '<div class="meta">'+team+L('　剩余 ')+remainTxt+'</div>'+
       '<div class="prog" style="--m1:'+mPos[0]+'%;--m2:'+mPos[1]+'%;--m3:'+mPos[2]+'%;--m4:'+mPos[3]+'%"><i style="width:'+pct+'%"></i>'+
       '<span class="digger anim-spr" data-anim="dwarf_'+cls0+'_dig" style="left:'+pct+'%;width:24px;height:24px;"></span></div>'+
-      /* 实时介入（用户 09-19 拍板）：挂机中的采矿探险随时亲自下场 */
-      (d.m.type==='exp' && !d.paused ? '<div style="margin-top:5px"><button class="btn live" data-rt-dep="'+d.id+'" style="width:100%">⚡ 实时介入 · 亲自下场</button></div>':'')+
+      /* 实时介入（用户 09-19 拍板）：挂机中的采矿探险/执勤护送随时亲自下场 */
+      ((d.m.type==='exp'||d.m.type==='escort') && !d.paused ? '<div style="margin-top:5px"><button class="btn live" data-rt-dep="'+d.id+'" style="width:100%">⚡ 实时介入 · 亲自下场</button></div>':'')+
       (d.paused?'<div class="evtbox"><div class="q">'+TEXT.ui_deps_event+'</div><button class="btn warn" data-ev="'+d.id+'">'+TEXT.ui_deps_event_btn+'</button></div>':'')+
       '</div>';
   });

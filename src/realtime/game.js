@@ -119,7 +119,9 @@
       var m = G.mission;
       setTimeout(function () {
         if (G.mission !== m) return;
-        m.mc('欢迎来到 ' + opt.biome.name + '，矮人。开采 ' + m.quota + ' 单位莫尔凯特并存入 M.U.L.E.。', 'mc_begin_1');
+        m.mc(opt.type === 'escort'
+          ? '欢迎来到 ' + opt.biome.name + '。朵蕾妲开路！保持警惕，就像她是你们的亲妈一样保护好她！'
+          : '欢迎来到 ' + opt.biome.name + '，矮人。开采 ' + m.quota + ' 单位莫尔凯特并存入 M.U.L.E.。', 'mc_begin_1');
       }, 700);
       DRG.log('mission start', opt.biome.id, 'haz', opt.haz, 'cls', opt.cls, 'seed', opt.seed);
     },

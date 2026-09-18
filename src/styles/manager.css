@@ -608,6 +608,9 @@ main>*{min-width:0}
   border:1px solid #255064;
   background:linear-gradient(110deg,#0b202a,#07161d);
   clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px);
+  /* 矿道进度条岩体默认色（棕岩），按群系被 .dep[data-biome] 覆盖（变量必须挂 .dep 上，
+     挂 .dep .prog 会就近胜出、挡住继承） */
+  --r1:#3d2f24;--r2:#221a14;--r3:#150f0b;
 }
 .dep .t{display:flex;justify-content:space-between;gap:8px}
 .dep .meta,.meta{margin:4px 0;color:var(--dim);font-size:11px}
@@ -966,8 +969,21 @@ body.realtime-open{overflow:hidden;padding-bottom:0}
     repeating-linear-gradient(90deg,rgba(0,0,0,.38) 0 3px,transparent 3px 8px),
     radial-gradient(ellipse 16px 10px at 24% 32%,rgba(118,92,72,.6),transparent 70%),
     radial-gradient(ellipse 20px 13px at 71% 68%,rgba(98,77,60,.55),transparent 70%),
-    linear-gradient(180deg,#3d2f24,#221a14 55%,#150f0b);
+    linear-gradient(180deg,var(--r1),var(--r2) 55%,var(--r3));
 }
+/* 各群系岩体配色：由官方地形材质（M_*_Rock01）的 Wall Diffuse - Tint 1/2 + Fresnel/Subsurface，
+   按各群系 Wall Diffuse 纹理 8x8 采样亮度分位插值（线性空间→sRGB）派生，提取过程见 docs/_biome_ref */
+.dep[data-biome="crystal"]{--r1:#64778b;--r2:#50535d;--r3:#474751} /* 水晶洞穴 CrystalCaves T_BaseMap05 */
+.dep[data-biome="salt"]{--r1:#aa201f;--r2:#8b0315;--r3:#720311} /* 盐坑 SaltCaves T_BaseMap05_01 */
+.dep[data-biome="fungus"]{--r1:#584611;--r2:#543600;--r3:#4a3200} /* 霉菌沼泽 FungusBogs T_Base_Grunge003 */
+.dep[data-biome="sand"]{--r1:#e48c35;--r2:#d7782c;--r3:#cd6925} /* 飞沙走廊 SandblastedCorridors T_BaseMap05_02 */
+.dep[data-biome="rad"]{--r1:#799d95;--r2:#555a5c;--r3:#4c5152} /* 放射性禁区 RadioactiveZone T_Base_Grunge002+绿Fresnel */
+.dep[data-biome="bio"]{--r1:#581927;--r2:#4f1623;--r3:#46141f} /* 密林丛原 LushDownpour T_Base_Grunge002 */
+.dep[data-biome="glacial"]{--r1:#57c2e9;--r2:#0097ce;--r3:#0084b6} /* 冰封岩层 IceCaves T_Base_Grunge003+冰蓝Tint */
+.dep[data-biome="bough"]{--r1:#391b0d;--r2:#2e190d;--r3:#28150b} /* 藤络树洞 HollowBough T_Base_Bark01 */
+.dep[data-biome="magma"]{--r1:#704e3e;--r2:#352626;--r3:#2a1e1e} /* 熔岩之心 MagmaCaves T_BaseMap05_01+暖Subsurface */
+.dep[data-biome="azure"]{--r1:#223c49;--r2:#1d3b44;--r3:#222f3f} /* 蔚蓝花甸 AzureWeald T_Base_Tiger02 */
+.dep[data-biome="ossuary"]{--r1:#5a4941;--r2:#4a2f1c;--r3:#422918} /* 栖骨深渊 BoneYards T_BaseMap05+T_Bones_BaseColor */
 /* 已挖掘段 = 隧道：深处渐暗，掌子面（推进沿）一道暖光；关掉基础规则的青纹滚动动画 */
 .dep .prog>i{
   display:block;height:100%;

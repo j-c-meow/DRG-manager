@@ -35,6 +35,7 @@
       HUD.vitals(g, m, p, hudView);
       HUD.itemBar(g, m, p, hudView);
       HUD.objective(g, m, hudView);
+      if (m.isEscort) HUD.escortTrack(g, m, hudView);
       HUD.inventory(g, m, p, hudView);
       HUD.minimap(g, m, hudView);
       HUD.messages(g, m, hudView);
@@ -157,16 +158,40 @@
     objective: function (g, m, view) {
       var w = 268, x = 18, y = 16;
       gfx.panel(g, x, y, w, 86, { fill: INK });
-      gfx.sprite(g, A().get('mission_mining'), x + 26, y + 30, 34);
-      gfx.text(g, '采矿远征 · MINING EXPEDITION', x + 50, y + 20, { size: 13, col: GOLD });
-      gfx.text(g, m.biome.name + ' · ' + m.hazard.name, x + 50, y + 36, { size: 12, col: '#9aa8b6' });
+      if (m.isEscort) {
+        var d = m.doretta, dHp = d ? M.clamp(d.hp / d.maxHp, 0, 1) : 0;
+        gfx.sprite(g, A().get('mission_escort'), x + 26, y + 30, 34);
+        gfx.text(g, '执勤护送 · DRILLDOZER ESCORT', x + 50, y + 20, { size: 13, col: GOLD });
+        gfx.text(g, m.biome.name + ' · ' + m.hazard.name, x + 50, y + 36, { size: 12, col: '#9aa8b6' });
 
-      var q = M.clamp(m.deposited.morkite / m.quota, 0, 1);
-      gfx.bar(g, x + 12, y + 48, w - 24, 14, q, m.objectiveDone ? '#4ad06a' : '#3ad98a', { grad: true, ghost: M.clamp((m.deposited.morkite + m.player.carry.morkite) / m.quota, 0, 1) });
-      gfx.sprite(g, A().get('ore_morkite'), x + 22, y + 55, 16);
-      gfx.text(g, Math.floor(m.deposited.morkite) + ' / ' + m.quota + ' 莫尔凯特', x + 34, y + 60, { size: 12, col: '#eafff2' });
-      gfx.text(g, m.objectiveDone ? '目标完成 · 按 R 呼叫飞船' : '把矿石存入 M.U.L.E.（靠近按 E）',
-        x + 12, y + 78, { size: 12, col: m.objectiveDone ? gfx.pulse(m.time, '#7fff9a', '#ffffff', 5) : '#9aa8b6' });
+        gfx.bar(g, x + 12, y + 48, w - 24, 14, dHp, dHp > 0.3 ? '#ffb03c' : gfx.pulse(m.time, '#ff4a3a', '#ff9a6a', 9), { grad: true });
+        var dImg = A().get('doretta');
+        if (dImg && dImg.width > 2) gfx.sprite(g, dImg, x + 22, y + 55, 18);
+        else gfx.sprite(g, A().get('mission_escort'), x + 22, y + 55, 16);
+        gfx.text(g, '朵蕾妲 ' + Math.ceil(d ? d.hp : 0) + ' / ' + (d ? d.maxHp : 0), x + 34, y + 60, { size: 12, col: '#ffe9c8' });
+
+        var phase;
+        if (!d || d.dead) phase = '朵蕾妲已损毁……';
+        else if (d.state === 'hold') phase = '心石防守：坚持 ' + Math.ceil(m.defenseT) + ' 秒！';
+        else if (d.state === 'fueling') phase = '加油中……';
+        else if (d.state === 'waitFuel') phase = '停车加油：把燃料罐送到油箱口';
+        else phase = '推进中 ' + Math.round(d.progress * 100) + '%';
+        gfx.text(g, phase, x + 12, y + 78, {
+          size: 12,
+          col: d && d.state === 'hold' ? gfx.pulse(m.time, '#ff7adf', '#ffffff', 6) : (d && d.dead ? '#ff5a4a' : '#9aa8b6')
+        });
+      } else {
+        gfx.sprite(g, A().get('mission_mining'), x + 26, y + 30, 34);
+        gfx.text(g, '采矿远征 · MINING EXPEDITION', x + 50, y + 20, { size: 13, col: GOLD });
+        gfx.text(g, m.biome.name + ' · ' + m.hazard.name, x + 50, y + 36, { size: 12, col: '#9aa8b6' });
+
+        var q = M.clamp(m.deposited.morkite / m.quota, 0, 1);
+        gfx.bar(g, x + 12, y + 48, w - 24, 14, q, m.objectiveDone ? '#4ad06a' : '#3ad98a', { grad: true, ghost: M.clamp((m.deposited.morkite + m.player.carry.morkite) / m.quota, 0, 1) });
+        gfx.sprite(g, A().get('ore_morkite'), x + 22, y + 55, 16);
+        gfx.text(g, Math.floor(m.deposited.morkite) + ' / ' + m.quota + ' 莫尔凯特', x + 34, y + 60, { size: 12, col: '#eafff2' });
+        gfx.text(g, m.objectiveDone ? '目标完成 · 按 R 呼叫飞船' : '把矿石存入 M.U.L.E.（靠近按 E）',
+          x + 12, y + 78, { size: 12, col: m.objectiveDone ? gfx.pulse(m.time, '#7fff9a', '#ffffff', 5) : '#9aa8b6' });
+      }
 
       // extraction timer
       var timerY = view.compact ? 146 : 14;
@@ -179,6 +204,67 @@
         });
       } else if (m.time > 1) {
         gfx.text(g, '任务时间 ' + M.fmtTime(m.time), view.w / 2, view.compact ? 148 : 26, { size: 13, align: 'center', col: 'rgba(220,230,240,0.55)' });
+      }
+    },
+
+    /* ---------- escort：顶部朵蕾妲进度轨（车头位置 + 血条 + 燃料状态） ---------- */
+    escortTrack: function (g, m, view) {
+      var d = m.doretta;
+      if (!d) return;
+      var railW = Math.min(430, view.w - 360);
+      if (railW < 150) return;
+      var railH = 8;
+      var x = Math.round(view.w / 2 - railW / 2), y = view.compact ? 178 : 42;
+
+      // rail + progress fill
+      gfx.bar(g, x, y, railW, railH, d.progress, d.dead ? '#6a5a48' : GOLD, { grad: true, back: 'rgba(16,20,26,0.88)' });
+
+      // station ticks（两处燃料检查点 + 终点）
+      var track = d.track;
+      var ticks = [];
+      for (var i = 0; i < track.stations.length; i++)
+        ticks.push({ f: (track.stations[i] - track.x0) / (track.x1 - track.x0), col: '#ffd76a', done: d.stationIdx > i });
+      ticks.push({ f: 1, col: '#ff7adf', done: d.state === 'done' });
+      g.save();
+      for (i = 0; i < ticks.length; i++) {
+        var tk = ticks[i];
+        g.globalAlpha = tk.done ? 1 : 0.8;
+        g.fillStyle = tk.col;
+        g.fillRect(x + railW * tk.f - 1.5, y - 3, 3, railH + 6);
+      }
+      g.restore();
+
+      // doretta head marker on the rail
+      var dImg = A().get('doretta');
+      var hx = x + railW * d.progress;
+      if (dImg && dImg.width > 2) gfx.sprite(g, dImg, hx, y - 12, 18);
+      else gfx.sprite(g, A().get('mission_escort'), hx, y - 12, 16);
+
+      // hp strip under the rail
+      var hpF = M.clamp(d.hp / d.maxHp, 0, 1);
+      gfx.bar(g, x + railW * 0.2, y + railH + 5, railW * 0.6, 5, hpF,
+        hpF > 0.3 ? '#ffb03c' : gfx.pulse(m.time, '#ff4a3a', '#ff9a6a', 9));
+
+      // fuel canister status icons（两处检查点：完成=亮、进行中=闪烁、未到=暗）
+      var cImg = A().get('fuel_canister');
+      for (i = 0; i < track.stations.length; i++) {
+        var done = d.stationIdx > i, cur = d.stationIdx === i;
+        var cx = x + railW + 16 + i * 24, cy = y + railH / 2;
+        g.save();
+        g.globalAlpha = done ? 1 : (cur ? 0.55 + 0.4 * Math.sin(m.time * 6) : 0.25);
+        if (cImg && cImg.width > 2) gfx.sprite(g, cImg, cx, cy, 20);
+        else {
+          g.fillStyle = '#ffd76a'; g.fillRect(cx - 5, cy - 8, 10, 16);
+          g.fillStyle = '#d64834'; g.fillRect(cx - 5, cy - 3, 10, 4);
+        }
+        g.restore();
+        if (done) gfx.text(g, '✓', cx, cy + 4, { size: 11, align: 'center', col: '#7fff9a' });
+      }
+
+      // heart-stone defense countdown
+      if (d.state === 'hold') {
+        gfx.text(g, '心石防守 ' + Math.ceil(m.defenseT) + 's', view.w / 2, y + railH + 26,
+          { size: 20, align: 'center', col: gfx.pulse(m.time, '#ff7adf', '#ffffff', 8) });
       }
     },
 
@@ -242,6 +328,7 @@
         blip(e.x, e.y, '#ff4a3a', 2);
       }
       blip(m.mule.x, m.mule.y, '#8ad4ff', 3);
+      if (m.doretta) blip(m.doretta.x, m.doretta.y - 10, '#ffb03c', 4);
       blip(m.bosco.x, m.bosco.y, '#7ad7ff', 2);
       if (m.pod) blip(m.pod.x, m.pod.y, '#7fff9a', 4);
       blip(p.x, p.y, '#ffd76a', 3.4);
@@ -268,6 +355,7 @@
         if (label) gfx.text(g, label, bx, by - r - 4, { size: 11, align: 'center', col: col });
       }
       put(m.mule.x, m.mule.y, '#8ad4ff', 4, 'M.U.L.E.');
+      if (m.doretta) put(m.doretta.x, m.doretta.y - 10, '#ffb03c', 5, '朵蕾妲');
       if (m.pod) put(m.pod.x, m.pod.y, '#7fff9a', 5, '撤离飞船');
       for (var i = 0; i < m.props.length; i++)
         if (m.props[i] instanceof DRG.Ent.Resupply) put(m.props[i].x, m.props[i].y, '#ffd76a', 4, '补给');
@@ -327,15 +415,32 @@
     /* ---------- context prompts ---------- */
     prompts: function (g, m, p, view) {
       var msg = null;
-      if (m.pod && m.pod.canBoard(p)) msg = '按 E 登船撤离';
-      else if (m.mule.canDeposit(p)) {
-        var tot = p.carry.morkite + p.carry.nitra + p.carry.gold + p.carry.crystal;
-        msg = tot > 0 ? '按 E 存放 ' + tot + ' 单位矿石' : 'M.U.L.E. 就绪';
+      if (m.isEscort) {
+        var d = m.doretta;
+        if (d && !d.dead) {
+          if (d.canFuel(p)) msg = '按 E 加入燃料罐';
+          else if (p.carriedCan) msg = '把燃料罐送到朵蕾妲油箱口（黄色箭头）';
+          else {
+            for (var i = 0; i < m.props.length; i++) {
+              var pr = m.props[i];
+              if (pr instanceof DRG.Ent.Resupply && pr.canUse(p)) { msg = '按 E 使用补给舱 (' + pr.uses + ')'; break; }
+              if (pr instanceof DRG.FuelCanister && pr.state === 'idle' && M.dist(pr.x, pr.y, p.x, p.y) < 52) { msg = '按 E 拾起燃料罐'; break; }
+            }
+          }
+          if (!msg && d.state === 'hold') msg = '守住朵蕾妲！还剩 ' + Math.ceil(m.defenseT) + ' 秒';
+          if (!msg && d.state === 'waitFuel') msg = '朵蕾妲在等待燃料——找到她放下的燃料罐';
+        }
       } else {
-        for (var i = 0; i < m.props.length; i++)
-          if (m.props[i] instanceof DRG.Ent.Resupply && m.props[i].canUse(p)) msg = '按 E 使用补给舱 (' + m.props[i].uses + ')';
+        if (m.pod && m.pod.canBoard(p)) msg = '按 E 登船撤离';
+        else if (m.mule.canDeposit(p)) {
+          var tot = p.carry.morkite + p.carry.nitra + p.carry.gold + p.carry.crystal;
+          msg = tot > 0 ? '按 E 存放 ' + tot + ' 单位矿石' : 'M.U.L.E. 就绪';
+        } else {
+          for (var j = 0; j < m.props.length; j++)
+            if (m.props[j] instanceof DRG.Ent.Resupply && m.props[j].canUse(p)) msg = '按 E 使用补给舱 (' + m.props[j].uses + ')';
+        }
+        if (m.objectiveDone && !m.podCalled) msg = msg || '按 R 呼叫撤离飞船';
       }
-      if (m.objectiveDone && !m.podCalled) msg = msg || '按 R 呼叫撤离飞船';
       if (msg) {
         var y = view.h - (view.touch ? 510 : (view.compact ? 285 : 210));
         gfx.text(g, msg, view.w / 2, y, { size: 17, align: 'center', col: gfx.pulse(m.time, '#ffd76a', '#ffffff', 6) });

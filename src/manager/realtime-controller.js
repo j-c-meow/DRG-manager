@@ -22,13 +22,17 @@ function realtimeCost(m){
 function openRealtime(mid){
   if(S.realtime){ showPendingRealtime(); return; }
   const m = S.board.find(x=>x.id===mid);
-  if(!m || m.type !== 'exp') return;
+  /* 采矿探险 + 执勤护送都可实时下场 */
+  if(!m || (m.type !== 'exp' && m.type !== 'escort')) return;
   const t = mtypeById(m.type);
+  const isEscort = m.type === 'escort';
   const idle = S.miners.filter(x=>x.state==='idle' && x.morale>=25)
     .sort((a,b)=>Number(b.cls===t.best)-Number(a.cls===t.best) || b.lv-a.lv);
   const cost = realtimeCost(m);
-  let html = '<h3 style="color:var(--amber)">▶ 实时下矿 · '+biomeById(m.biome).name+'</h3>'+
-    '<div class="note">直接操控 1 名矿工完成采矿、虫潮与撤离。胜利按任务基础报酬和实战表现结算；失败无任务报酬。</div>'+
+  let html = '<h3 style="color:var(--amber)">▶ '+(isEscort?'实时护送':'实时下矿')+' · '+biomeById(m.biome).name+'</h3>'+
+    '<div class="note">'+(isEscort
+      ?'直接操控 1 名矿工护送朵蕾妲掘进机：护车、两处停车加油与终点心石防守。胜利按任务基础报酬和实战表现结算；朵蕾妲被摧毁或矿工倒地不起则失败。'
+      :'直接操控 1 名矿工完成采矿、虫潮与撤离。胜利按任务基础报酬和实战表现结算；失败无任务报酬。')+'</div>'+
     '<div class="meta">危险等级 '+'★'.repeat(m.hazard)+'　出舱补给 -'+cost+' 硝石（持有 '+Math.floor(S.nitra)+'）</div>'+
     '<h3 class="sec">选择主控矿工</h3>';
   if(!idle.length) html += '<div class="note">没有士气 ≥25 的空闲矿工。</div>';
