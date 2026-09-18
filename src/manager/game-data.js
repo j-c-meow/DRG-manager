@@ -299,9 +299,10 @@ function campProgress(kind, match, amount){
             /* B 反馈①：跳跃用 offline worldAdvance 真推派遣（深潜/任务不再冻结；已暂停的事件保持等玩家） */
             worldAdvance(skip * 1440, true);
             S.lastReal = Date.now();
-            const pkgC = skip * 120, pkgN = skip * 25;
-            S.credits += pkgC; S.nitra += pkgN;
-            log(TEXT.ch_jump_brief.replace('{days}', skip)+L('（折算入账 ')+fmt(pkgC)+L(' 代币 + ')+fmt(pkgN)+L(' 硝石）'), 'sys');
+            /* A2（数值观察复核建议2，B 判定采纳）：跳跃折算不再发硝石——消除速通最大暴利项（全链约 -57,875 硝石） */
+            const pkgC = skip * 120;
+            S.credits += pkgC;
+            log(TEXT.ch_jump_brief.replace('{days}', skip)+L('（折算入账 ')+fmt(pkgC)+L(' 代币）'), 'sys');
           }
         }
       }
