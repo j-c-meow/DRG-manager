@@ -272,12 +272,12 @@ function renderDeps(){
     const team = d.minerIds.map(id=>minerName(S.miners.find(x=>x.id===id))).join('、');
     const remainTxt = d.paused ? '待管理层决策' : fmtDur(Math.ceil(Math.max(0, d.dur-done)));
     const cls0 = d.minerIds.length ? ((S.miners.find(x=>x.id===d.minerIds[0])||{}).cls || 'scout') : 'scout';
-    html += '<div class="dep'+(d.paused?' evt':'')+'">'+
+    html += '<div class="dep'+(d.paused?' evt':'')+'" data-dep="'+d.id+'">'+
       '<div class="t"><span class="nm">'+mtypeById(d.m.type).name+' · '+biomeById(d.m.biome).name+'</span>'+
       '<span class="hz">'+'★'.repeat(d.m.hazard)+'</span></div>'+
       '<div class="meta">'+team+'　剩余 '+remainTxt+'</div>'+
       '<div class="prog"><i style="width:'+pct+'%"></i>'+
-      (window.innerWidth<=700 ? '<span class="digger anim-spr" data-anim="dwarf_'+cls0+'_dig" style="left:'+pct+'%;width:24px;height:24px;"></span>' : '')+'</div>'+
+      '<span class="digger anim-spr" data-anim="dwarf_'+cls0+'_dig" style="left:'+pct+'%;width:24px;height:24px;"></span></div>'+
       (d.paused?'<div class="evtbox"><div class="q">'+TEXT.ui_deps_event+'</div><button class="btn warn" data-ev="'+d.id+'">'+TEXT.ui_deps_event_btn+'</button></div>':'')+
       '</div>';
   });
@@ -447,6 +447,7 @@ function renderGear(){
           const eqId = pool==='main' ? (S.equipped||{})[c] : (S.equippedOff||{})[c];
           const eqMod = eqId && MOD_INDEX[eqId] && MOD_INDEX[eqId].weaponId === wid ? MOD_INDEX[eqId] : null;
           if(eqMod) html += '<div class="row"><span style="flex:1">　已装配：'+eqMod.name_zh+'（'+effectText(eqMod.effect)+'）</span><button class="btn" data-unequip2="'+c+':'+pool+'">卸下</button></div>';
+          if(!eqMod && !ownedForW.length) html += '<div class="row"><span class="note" style="flex:1">　模组：暂未抽到该武器的模组——锻造台全池抽卡随机产出。</span></div>';
           ownedForW.forEach(id => {
             if(eqId === id) return;
             const mod = MOD_INDEX[id];
@@ -1230,11 +1231,13 @@ function renderIfChanged(){
   }
   /* 轻量更新：进度条/士气条与时钟/货币数字 */
   renderHeader();
-  document.querySelectorAll('#deps .dep').forEach((card, i)=>{
-    const d = S.deps[i]; if(!d) return;
-    const done = clamp(d.done||0, 0, d.dur);
+  document.querySelectorAll('#deps .dep').forEach(card=>{
+    const d = S.deps.find(x=>x.id===card.dataset.dep); if(!d) return;
+    const pct = clamp(d.done||0, 0, d.dur)/d.dur*100;
     const bar = card.querySelector('.prog > i');
-    if(bar) bar.style.width = (done/d.dur*100).toFixed(1)+'%';
+    if(bar) bar.style.width = pct.toFixed(1)+'%';
+    const dig = card.querySelector('.digger');
+    if(dig) dig.style.left = pct.toFixed(1)+'%';
   });
   S.miners.forEach(m=>{
     const bar = document.querySelector('.mbar > i[data-mid="'+m.id+'"]');
@@ -1264,6 +1267,18 @@ function tickStages(now){
     el.style.backgroundPosition = (-f*a.frameW*s)+'px 0';
   });
 }
+/* 逐帧驱动（rAF 节流 ~20fps，移植自 c4e4daa）：150ms 定时器在窗口被遮挡时会被浏览器降到 1Hz，
+   矮人挥镐/走路动画会冻成一秒一跳的定格——rAF 不受此类降频影响。
+   tickStages 的帧位是时间戳的纯函数（frame=floor(now/1000*fps)%frames），与 main.js 留守的 150ms
+   定时器（名册 8fps 兜底线）双驱动不会加速任何动画，仅提高采样密度；名册视觉节奏不变。 */
+(function(){
+  let last = 0;
+  function animLoop(now){
+    if(now - last >= 50){ last = now; try{ tickStages(now); }catch(e){} }
+    requestAnimationFrame(animLoop);
+  }
+  requestAnimationFrame(animLoop);
+})();
 /* 通用动画组件：插入后由 tickStages 驱动 */
 function animDiv(animId, w, h){
   return '<div class="anim-spr" data-anim="'+animId+'" style="width:'+w+'px;height:'+h+'px;'+

@@ -931,8 +931,6 @@ body.realtime-open{overflow:hidden;padding-bottom:0}
   .panel h2{min-height:38px}.panel-title{font-size:15px}
   .btn{padding:5px 9px}
   .modal{padding:8px}.modal .box{width:96vw;max-height:91vh;padding:13px}
-  .dep .prog{position:relative;height:18px;overflow:visible}
-  .dep .digger{position:absolute;z-index:2;bottom:-2px;width:22px;height:22px;transform:translateX(-50%);background-repeat:no-repeat;image-rendering:pixelated}
   #board.folded{display:none}
   #boardFoldSummary.on{display:block;padding:8px 10px;color:var(--dim);cursor:pointer}
 }
@@ -949,3 +947,8 @@ body.realtime-open{overflow:hidden;padding-bottom:0}
   .realtime-shell-bar{min-height:38px;padding-top:max(4px,env(safe-area-inset-top));padding-bottom:4px}
   .realtime-shell-close{padding:5px 8px;font-size:10px}
 }
+
+/* 派遣通道：矿道进度条 + 挖掘小人（移植自 53f51c8：从 700px 断点提为全局，桌面同样显示；
+   置于作用域末尾赢得级联。进度条充填纹样沿用 iris 全局 .dep .prog>i 青色斜纹 + stripeRoll） */
+.dep .prog{position:relative;height:18px;overflow:visible}
+.dep .digger{position:absolute;z-index:2;bottom:-2px;width:22px;height:22px;transform:translateX(-50%);background-repeat:no-repeat;image-rendering:pixelated}
