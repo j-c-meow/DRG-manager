@@ -836,7 +836,9 @@ function worldAdvanceBody(gm, offline){
     const adv = Math.min(step, remain);
     remain -= adv; S.gm += adv; guard++;
     /* 派遣推进 */
-    for(const d of S.deps){
+    const completed = [];
+    for(let depIndex = 0; depIndex < S.deps.length; depIndex++){
+      const d = S.deps[depIndex];
       if(d.finished) continue;   /* 防嵌套推进后重复结算 */
       if(d.paused){
         if(d.autoEvents){ autoResolveEvent(d); continue; }
@@ -871,15 +873,11 @@ function worldAdvanceBody(gm, offline){
         }
         continue;
       }
+      const remainingBeforeAdvance = Math.max(0, d.dur - (d.done || 0));
       d.done = Math.min(d.dur, (d.done || 0) + adv);   /* 封顶防浮点残差卡死 */
       if(d.done >= d.dur){
-        d.finished = true;   /* 先标记防嵌套重复结算 */
-        try{ settle(d, offline); }
-        catch(err){
-          try{ d.minerIds.forEach(id => { const mn = S.miners.find(x=>x.id===id); if(mn && mn.state==='mission') mn.state = 'idle'; }); }catch(e2){}
-          log('⚠ 结算异常（已保底处理，矿工已归队，不影响存档）：'+(err && err.message || err), 'bad');
-          console.error('settle error', err, d);
-        }
+        d.finished = true;   /* 先标记防嵌套推进后重复结算 */
+        completed.push({d, offset:remainingBeforeAdvance, order:depIndex});
         continue;
       }
       if(!offline){
@@ -891,6 +889,16 @@ function worldAdvanceBody(gm, offline){
           else if(!d.evt3 && d.done/d.dur >= 0.85 && Math.random() < extra + 0.35){ d.evt3 = true; rollEvent(d, 3); }
         }
         else maybeEvent(d, d.done / d.dur);
+      }
+    }
+    /* 同一步内可能有多单归队：必须按实际归队时刻结算，不能按数组/派遣顺序。 */
+    completed.sort((a,b) => a.offset-b.offset || a.order-b.order);
+    for(const {d} of completed){
+      try{ settle(d, offline); }
+      catch(err){
+        try{ d.minerIds.forEach(id => { const mn = S.miners.find(x=>x.id===id); if(mn && mn.state==='mission') mn.state = 'idle'; }); }catch(e2){}
+        log('⚠ 结算异常（已保底处理，矿工已归队，不影响存档）：'+(err && err.message || err), 'bad');
+        console.error('settle error', err, d);
       }
     }
     if(S.deps.some(d=>d.finished)){
