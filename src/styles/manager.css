@@ -792,6 +792,10 @@ h3.sec{
 /* Modal */
 .modal{position:fixed;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(0,4,7,.84);backdrop-filter:blur(3px)}
 .modal .box{width:560px;max-width:94vw;max-height:90vh;overflow-y:auto;padding:18px;border:1px solid #b98532;color:var(--txt);background:linear-gradient(135deg,#0c2029,#061219);clip-path:var(--clip);box-shadow:0 0 40px rgba(0,0,0,.7),inset 0 0 20px rgba(44,122,143,.08)}
+/* 幻影弹窗防御：本文件的 .modal{display:flex} 会命中实时模式的 .modal（ov-*）——当 realtime.css
+   缺失/禁用/新旧版错位时，实时弹窗会脱离 .active 开关被裸渲染且永远关不掉（用户 09-18 实录）。
+   此规则保证非 .active 的实时弹窗在任何样式组合下都隐藏；.active 时让位给 realtime.css 的 display:grid */
+#realtime-app .modal:not(.active){display:none}
 .opt{width:100%;margin-top:8px;padding:9px;text-align:left}
 
 /* Footer */

@@ -44,10 +44,13 @@
       var el = $('#ov-' + name);
       if (!el) return;
       el.classList.toggle('active', on !== false);
+      /* 幻影弹窗防御：关闭态强制内联隐藏，打开态先清内联——即使 manager.css 的
+         .modal{display:flex} 与 realtime.css 缺失/错位叠加，.active 开关也始终有效 */
+      el.style.display = (on === false) ? 'none' : '';
       if (on !== false) DRG.audio.sfx('ui');
     },
     anyModal: function () { return !!$('.modal.active'); },
-    closeModals: function () { $$('.modal').forEach(function (m) { m.classList.remove('active'); }); },
+    closeModals: function () { $$('.modal').forEach(function (m) { m.classList.remove('active'); m.style.display = 'none'; }); },
 
     /* ---------------- boot ---------------- */
     bootProgress: function (f, label) {
