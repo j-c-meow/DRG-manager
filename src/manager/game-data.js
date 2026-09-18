@@ -777,9 +777,32 @@ function equippedTrinket(){
   const id = S.trinketEq;
   return (id && TRINKET_INDEX[id]) ? TRINKET_INDEX[id] : null;
 }
+/* 第二饰品槽（用户 09-19 拍板）：门槛判定独立成函数，供 UI 显示解锁条件。
+   晋升档位语义（读码确认）：m.stars 即晋升档计数（promoteMiner 每次 +1★，FRAMES[stars-1] 铜1→红3），
+   故「晋升 ≥3★」= stars >= 3（第 3 档晋升·银1），无需进度值换算；门槛值走 TRINKETS.secondSlot 配置。 */
+function trinketSlot2NeedStars(){
+  return (TRINKETS.secondSlot && TRINKETS.secondSlot.unlockStars) || 3;
+}
+function bestPromotionStars(){
+  let max = 0;
+  (S.miners||[]).forEach(m => { const st = m.stars||0; if(st > max) max = st; });
+  return max;
+}
+function trinketSlot2Unlocked(){
+  return bestPromotionStars() >= trinketSlot2NeedStars();
+}
+/* 两槽佩戴位（同名不可重复：槽二与槽一同 ID 时忽略槽二，聚合层兜底） */
+function equippedTrinkets(){
+  ensureTrinketIndex();
+  const ids = [S.trinketEq, (S.trinketEq2 && S.trinketEq2 !== S.trinketEq) ? S.trinketEq2 : null];
+  return ids.map(id => (id && TRINKET_INDEX[id]) ? TRINKET_INDEX[id] : null).filter(Boolean);
+}
 function trinketEffect(){
-  const t = equippedTrinket();
-  return (t && t.effect) ? t.effect : {};
+  const agg = {};
+  equippedTrinkets().forEach(t => {
+    if(t && t.effect) for(const k in t.effect) agg[k] = (agg[k]||0) + t.effect[k];
+  });
+  return agg;
 }
 function awardRandomTrinket(why){
   ensureTrinketIndex();
@@ -939,7 +962,8 @@ const WEEKLY_DIVE = {
 /* ---------------- 饰品系统（B-5） ---------------- */
 /* 饰品系统（B-5 产出）——主会话负责实装；效果键沿用 B-3 七键 */
 const TRINKETS = {
-  slotsPerMiner: 1,                 // 每矿工 1 槽（官方栏位词：面部饰品）
+  slotsPerMiner: 1,                 // 基础槽 1 个（官方栏位词：面部饰品）；第二槽见 secondSlot
+  secondSlot: { unlockStars: 3 },   // 第二饰品槽（用户 09-19 拍板）：任一矿工晋升 ≥3★ 解锁；效果与第一槽叠加，同名不可重复佩戴
   effectScope: "squad",             // 全队结算加成；同名不可重复佩戴
   duplicate: "freeReroll",          // 沿用 B-3 抽卡规则
   pool: [
@@ -1439,6 +1463,7 @@ const TEXT = {
   // —— 饰品/模组/精英（log 腔）——
   log_trinket_off: "饰品已取下，放回陈列柜。", // 直替
   log_trinket_on: "已佩戴饰品【{name}】。", // 直替
+  log_trinket_on2: "第二饰品槽已佩戴饰品【{name}】。", // 直替（第二槽，09-19 拍板）
   log_mod_off: "已卸下模组（保留在仓库）。", // 直替
   log_mod_in: "模组入库：【{name}】", // 直替
   log_mod_dup: "抽到重复的【{name}】，已按集团规定免费重抽一次。", // 直替+规则对齐
@@ -1541,7 +1566,12 @@ Object.assign(TEXT, {
   tr_linktree_buy: "数据节点已兑换。饰品链路图进度推进——购物流，也是进度流。", // 官方原文仿写
   tr_equip_msg: "{miner} 佩戴了 {name}。绩效报表上这是一行数据，在酒吧里这是一个故事。", // 仿写自任务指挥腔
   tr_season_banner: "当期节日战役：{festival}——限定饰品，错过再等一年（或等集团回溯，别指望）。", // 仿写自赛季语料
-  tr_lock_hint: "饰品从深潜末关、节日战役与饰品箱掉落。好东西不进商店——这是集团数一数二的浪漫。" // 仿写自PSA体
+  tr_lock_hint: "饰品从深潜末关、节日战役与饰品箱掉落。好东西不进商店——这是集团数一数二的浪漫。", // 仿写自PSA体
+  tr_slot2_locked: "第二饰品槽 🔒：任一矿工晋升 ≥3★ 后解锁（当前最高晋升 ★{n}）。", // 仿写自精英深潜门槛语料（09-19 拍板）
+  tr_slot2_empty: "第二饰品槽已解锁、空置中——晋升精锐的第二个栏位，别浪费。", // 仿写
+  tr_ui_btn_equip2: "佩戴·二槽", // 仿写
+  tr_slot2_dup: "同一件饰品不可同时佩戴两槽——集团规定，脸面要紧。", // 规则对齐（同名唯一沿用）
+  tr_slot2_locked_log: "第二饰品槽未解锁：需任一矿工晋升 ≥3★。", // 仿写自精英深潜门槛语料
 
 });
 
