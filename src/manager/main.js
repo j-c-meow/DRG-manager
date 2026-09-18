@@ -288,6 +288,22 @@ document.addEventListener('DOMContentLoaded', async () => {
   $('#boardFoldSummary').onclick = () => { FOLD.boardFolded = false; saveFold(); boardBtnSync(); };
   window.addEventListener('resize', boardBtnSync);
   boardBtnSync();
+  /* 底部页签栏停靠：≤700px 或触屏主输入（pointer:coarse，覆盖 iPhone"请求桌面网站"把布局
+     撑到 ~980px 的情形）时，把 #tabs 移到 body 直下固定底部；桌面还原原位（事件监听随节点保留） */
+  const tabsEl = document.getElementById('tabs');
+  const tabsHome = tabsEl.parentElement, tabsNext = tabsEl.nextSibling;
+  function dockTabs(){
+    const dock = window.matchMedia('(max-width:700px)').matches || window.matchMedia('(pointer:coarse)').matches;
+    document.body.classList.toggle('tabs-docked', dock);
+    if(dock && tabsEl.parentElement !== document.body) document.body.appendChild(tabsEl);
+    else if(!dock && tabsEl.parentElement !== tabsHome) tabsHome.insertBefore(tabsEl, tabsNext);
+  }
+  dockTabs();
+  window.addEventListener('resize', dockTabs);
+  window.addEventListener('orientationchange', dockTabs);
+  const mqDock7 = window.matchMedia('(max-width:700px)'), mqDockC = window.matchMedia('(pointer:coarse)');
+  if(mqDock7.addEventListener) mqDock7.addEventListener('change', dockTabs);
+  if(mqDockC.addEventListener) mqDockC.addEventListener('change', dockTabs);
   $('#btn-log-modal').onclick = showLogModal;
   $('#btn-res-overview').onclick = showResourceOverview;
   $('#logMini').onclick = () => { FOLD.log = false; saveFold(); applyLogFold(); };
