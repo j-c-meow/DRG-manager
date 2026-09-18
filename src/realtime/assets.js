@@ -98,6 +98,8 @@
   A.load = function (onProgress, onDone) {
     var keys = Object.keys(IMG), sndKeys = Object.keys(SND);
     var assetBase = new URL('assets/', document.baseURI);
+    var buildMeta = document.querySelector('meta[name="drg-build-version"]');
+    var buildVersion = buildMeta ? buildMeta.content : '';
     A.total = keys.length;
     A.loaded = 0;
     A.failed.length = 0;
@@ -105,6 +107,7 @@
 
     function assetUrl(path, retry) {
       var url = new URL(path, assetBase);
+      if (buildVersion) url.searchParams.set('v', buildVersion);
       if (retry) url.searchParams.set('retry', Date.now().toString(36));
       return url.href;
     }
@@ -214,7 +217,7 @@
             setTimeout(function () { loadAtlas(attempt + 1); }, 250);
             return;
           }
-          runQueue(keys, 4, function (key, next) { loadImage(key, next, 0); });
+          runQueue(keys, 2, function (key, next) { loadImage(key, next, 0); });
         });
     }
 
@@ -229,7 +232,7 @@
     // hard safety valve: never hang the boot screen
     setTimeout(function () {
       if (!done) { done = true; A.ready = true; onDone && onDone(); }
-    }, 12000);
+    }, 30000);
   };
 
   DRG.IMG_MANIFEST = IMG;

@@ -1,3 +1,4 @@
+import { randomBytes } from "node:crypto";
 import { cp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import sharp from "sharp";
@@ -6,6 +7,7 @@ const outputDirectory = "dist";
 const managerSourceDirectory = "src/manager";
 const managerOutputDirectory = join(outputDirectory, "scripts/manager");
 const realtimeSourceDirectory = "src/realtime";
+const buildVersion = `${Date.now().toString(36)}-${randomBytes(4).toString("hex")}`;
 const realtimeOutputDirectory = join(outputDirectory, "scripts/realtime");
 
 await rm(outputDirectory, { recursive: true, force: true });
@@ -18,7 +20,7 @@ await cp("public", outputDirectory, { recursive: true });
 
 const atlasInputDirectory = "public/assets/img";
 const atlasOutputDirectory = join(outputDirectory, "assets/generated");
-const atlasSize = 4096;
+const atlasSize = 2048;
 const atlasPadding = 2;
 const atlasFiles = (await readdir(atlasInputDirectory))
   .filter(file => /\.(png|webp)$/i.test(file));
@@ -110,19 +112,30 @@ await writeFile(
   join(atlasOutputDirectory, "realtime-atlas.json"),
   `${JSON.stringify(atlasManifest)}\n`,
 );
-const [managerHtml, realtimeShell] = await Promise.all([
+const [managerHtml, realtimeShell, serviceWorker] = await Promise.all([
   readFile("src/pages/manager.html", "utf8"),
   readFile("src/realtime/shell.html", "utf8"),
+  readFile("src/pwa/service-worker.js", "utf8"),
 ]);
 if (!managerHtml.includes("<!-- REALTIME_SHELL -->")) {
   throw new Error("manager.html is missing the realtime shell marker");
 }
-await writeFile(
-  join(outputDirectory, "index.html"),
-  managerHtml.replace("<!-- REALTIME_SHELL -->", realtimeShell),
+const assembledHtml = managerHtml
+  .replace("<!-- REALTIME_SHELL -->", realtimeShell)
+  .replace(
+    "</head>",
+    `<meta name="drg-build-version" content="${buildVersion}">\n</head>`,
+  );
+const versionedHtml = assembledHtml.replace(
+  /((?:src|href)=")([^"?]+\.(?:js|css|webmanifest))(?:\?[^"]*)?(")/g,
+  (_, prefix, assetPath, suffix) => `${prefix}${assetPath}?v=${buildVersion}${suffix}`,
 );
+await writeFile(join(outputDirectory, "index.html"), versionedHtml);
 await cp("src/pwa/manifest.webmanifest", join(outputDirectory, "manifest.webmanifest"));
-await cp("src/pwa/service-worker.js", join(outputDirectory, "sw.js"));
+await writeFile(
+  join(outputDirectory, "sw.js"),
+  serviceWorker.replaceAll("__BUILD_VERSION__", buildVersion),
+);
 await cp("src/styles", join(outputDirectory, "styles"), { recursive: true });
 await cp("THIRD_PARTY_LICENSE.txt", join(outputDirectory, "THIRD_PARTY_LICENSE.txt"));
 

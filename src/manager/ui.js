@@ -112,7 +112,9 @@ function renderHeader(){
   if(spdChip) spdChip.style.display = (S.mode === 'rush') ? 'none' : '';
   const pauseBtnSync = document.getElementById('btn-pause');
   if(pauseBtnSync){
-    const want = (speed === 0) ? '▶ 继续' : '⏸ 暂停';
+    const want = speed === 0
+      ? '<span class="play-glyph" aria-hidden="true"></span><b>继续</b>'
+      : '<span class="pause-glyph" aria-hidden="true"></span><b>暂停</b>';
     if(pauseBtnSync.innerHTML !== want) pauseBtnSync.innerHTML = want;
   }
   const modeChip = document.getElementById('mode-chip');
@@ -121,12 +123,12 @@ function renderHeader(){
     modeChip.classList.toggle('rush', rush);
     const ml = modeChip.querySelector('.mlabel');
     if(ml) ml.textContent = rush ? TEXT.dm_mode_rush : TEXT.dm_mode_idle;
-    modeChip.style.borderColor = rush ? 'var(--amber)' : 'var(--teal)';
+    modeChip.style.borderColor = rush ? 'var(--amber)' : '';
   }
   const autoChip = document.getElementById('auto-chip');
   if(autoChip){
     const autoOn = S.autoUntil && Date.now() < S.autoUntil;
-    autoChip.style.display = autoOn ? '' : 'none';
+    autoChip.style.display = autoOn ? 'flex' : 'none';
     if(autoOn){
       const leftMin = Math.ceil((S.autoUntil - Date.now()) / 60000);
       document.getElementById('auto-left').textContent = leftMin >= 60 ? (leftMin/60).toFixed(1)+'h' : leftMin+'分';
@@ -134,79 +136,92 @@ function renderHeader(){
   }
   $('#r-credits').textContent = fmt(S.credits);
   $('#r-nitra').textContent = fmt(S.nitra);
-  $('#clock').textContent = clockStr();
+  const clockParts = clockStr().split(' ');
+  $('#clock').textContent = clockParts[0] || 'D1';
+  const timeEl = document.getElementById('clock-time');
+  if(timeEl) timeEl.textContent = clockParts[1] || '08:00';
+  const dateEl = document.getElementById('clock-date');
+  if(dateEl){
+    const week = ['星期日','星期一','星期二','星期三','星期四','星期五','星期六'];
+    const gameDate = dayToDate(gameDay());
+    dateEl.textContent = dateOfStr(gameDay()) + '　' + week[gameDate.getUTCDay()];
+  }
   const pct = clamp(S.kpi.done/S.kpi.quota*100, 0, 100);
   const claimable = S.kpi.done >= S.kpi.quota;
-  $('#kpi-txt').textContent = '第'+S.kpi.term+'季 ' + TEXT.ui_kpi_progress.replace('{done}', fmt(S.kpi.done)).replace('{quota2}', fmt(S.kpi.quota))+
-    (claimable ? TEXT.ui_kpi_claimable : '');
+  const termEl = document.getElementById('kpi-term');
+  if(termEl) termEl.textContent = '第'+S.kpi.term+'季';
+  $('#kpi-txt').textContent = fmt(S.kpi.done)+' / '+fmt(S.kpi.quota);
   $('#kpi-bar').style.width = pct+'%';
   $('#btn-kpi').style.display = claimable ? 'inline-block' : 'none';
-  /* 稀有矿物条：可折叠收纳（默认收起，细节进资源总览弹窗） */
   const ra = document.getElementById('rares');
   const rareChips = RARES.map(r =>
-    '<span class="chip">' + ic('res_' + MKEY[r]) + r + ' <b>' + fmt(S.rare[r]) + '</b></span>').join('');
-  ra.innerHTML = '<div class="foldbox'+(FOLD.rares?' folded':'')+'" style="width:100%;">'+
-    '<div class="fold-head" data-fold="rares"><span style="color:var(--dim);font-size:12px;">'+TEXT.ui_rares_label+'</span><span class="arrow">▼</span></div>'+
-    '<div class="fold-body"><div class="row" style="margin:4px 0 0;">'+rareChips+
-    '<span class="chip"><img src="assets/trinkets/mod_blank.png" style="width:16px;image-rendering:pixelated">空白模组 <b>'+fmt(S.blanks||0)+'</b></span>'+
-    '<span class="note" style="margin-left:4px;">'+TEXT.ui_rares_tip+'</span></div></div></div>';
+    '<span class="chip">' + ic('res_' + MKEY[r]) + '<span>' + r + '</span><b>' + fmt(S.rare[r]) + '</b></span>').join('');
+  ra.innerHTML = '<div class="rare-label"><span>稀有矿物</span><small>RESOURCE</small></div>'+
+    '<div class="rare-list">'+rareChips+
+    '<span class="chip"><img src="assets/trinkets/mod_blank.png" alt=""><span>空白模组</span><b>'+fmt(S.blanks||0)+'</b></span></div>'+
+    '<span class="rare-tip">这些珍贵的资源，是人类迈向深空的基石。</span>';
 }
 function renderBoard(){
-  /* 手机端：有空闲矿工（有单可接）→ 自动展开任务板（用户 09-16 拍板） */
   if(window.innerWidth <= 700 && FOLD.boardFolded && S.miners.some(m => m.state === 'idle')){
     FOLD.boardFolded = false;
     const bd = $('#board'); if(bd) bd.classList.remove('folded');
     const sum = $('#boardFoldSummary'); if(sum) sum.classList.remove('on');
     const btn = $('#btn-board-compact'); if(btn) btn.textContent = '折叠';
   }
+  const missionDescriptions = {
+    exp:'探索水晶洞穴，开采矿脉资源。',
+    point:'在指定区域建立临时开采点。',
+    refi:'铺设管线并提炼地下墨菱油。',
+    escort:'护送钻探设备深入岩层核心。',
+    salv:'回收失联小队与遗留设备。',
+    elim:'定位巢穴并清除高危目标。',
+  };
   let html = '';
-  /* B-9 序章剧情卡：卡尔的遗单（遗单在板上就置顶显示，派走即消失） */
   if(S.board.some(x=>x.kind==='prologue')){
-    html += '<div class="mcard" style="border-color:var(--gold)">'+
-      '<div style="position:relative;margin:0 0 6px;">'+
-      '<div class="wrow" style="margin:0 0 4px;"><div style="flex:1;min-width:0;"><b style="color:var(--gold)">'+TEXT.st_mission_name+'</b> <span class="note">'+TEXT.st_mission_tag+'</span></div></div>'+
-      '<div class="note">只有卡尔能接这单。点【派遣】见证他的最后一次出征。</div>'+
-      '<button class="btn pri" style="width:100%;margin-top:5px;" id="btn-karl-dispatch">派遣（卡尔 · 剧情单）</button>'+
-      '</div></div>';
+    html += '<div class="mcard compact-card" style="border-color:var(--gold)">'+
+      '<span class="nm" style="flex:1">'+TEXT.st_mission_name+' <span class="note">'+TEXT.st_mission_tag+'</span></span>'+
+      '<button class="btn pri" id="btn-karl-dispatch">派遣卡尔</button></div>';
   }
-  if(!S.board.length) html = '<div style="text-align:center;padding:10px 0;"><img src="assets/icons/misc_bosco.png" alt="" style="width:96px;image-rendering:pixelated;opacity:.85"><div class="note">'+TEXT.ui_mission_empty+'</div></div>';
-  /* 新手引导：战役需要特定任务类型但钻井平台等级不够时提示 */
+  if(!S.board.length){
+    html = '<div class="board-empty"><img src="assets/img/w_pickaxe.png" alt="矿镐"><strong>'+TEXT.ui_mission_empty+'</strong></div>';
+  }
   if(S.campaign && CAMPAIGNS[S.campaign.ci]){
     const cst = CAMPAIGNS[S.campaign.ci].steps[S.campaign.si];
     if(cst && cst.type === 'mission'){
       const mtG2 = mtypeById(cst.target);
       if(mtG2 && mtG2.rig > S.rigLv){
-        html += '<div class="mcard" style="border-color:var(--amber);"><div class="meta" style="color:var(--amber);">⚠ 战役需要「'+mtG2.name+'」任务，但需要钻井平台 Lv.'+mtG2.rig+'。去「钻井平台」页升级后，任务板会刷新出此类任务。</div></div>';
+        html += '<div class="mcard compact-card" style="border-color:var(--amber)"><span class="meta">战役需要「'+mtG2.name+'」，请先将钻井平台升级至 Lv.'+mtG2.rig+'。</span></div>';
       }
     }
   }
   S.board.forEach(m=>{
-    if(m.kind === 'prologue') return;  /* 遗单无 type，由上方专卡渲染，进 generic 循环会崩 */
+    if(m.kind === 'prologue') return;
     const b = biomeById(m.biome), t = mtypeById(m.type);
     if(FOLD.boardCompact){
-      /* 简洁模式：单行卡片，详情进派遣弹窗 */
-      html += '<div class="mcard" style="display:flex;align-items:center;gap:8px;padding:5px 8px;">'+
-        '<span class="nm" style="flex:1;">'+t.name+'·'+b.name+' <span class="hz">'+'★'.repeat(m.hazard)+'</span>'+
+      html += '<div class="mcard compact-card">'+
+        '<span class="nm" style="flex:1">'+t.name+' · '+b.name+' <span class="hz">'+'★'.repeat(m.hazard)+'</span>'+
         (m.clause?' <span class="note">【'+m.clause.name+'】</span>':'')+'</span>'+
-        (m.type==='exp'?'<button class="btn live" data-live="'+m.id+'">▶ 实时</button>':'')+
-        '<button class="btn pri" data-disp="'+m.id+'">'+TEXT.ui_deploy_btn+'</button></div>';
+        (m.type==='exp'?'<button class="btn live" data-live="'+m.id+'">实时下矿</button>':'')+
+        '<button class="btn pri" data-disp="'+m.id+'">派遣小队</button></div>';
       return;
     }
-    /* 优化 #1：官方简报横幅 + 危 N 徽章（颜色随等级递进） */
-    const hzCol = m.hazard>=4 ? 'var(--red)' : m.hazard===3 ? 'var(--amber)' : 'var(--dim)';
-    html += '<div class="mcard">'+
-      '<div style="position:relative;margin:0 0 6px;">'+
-      '<img src="assets/icons/missions/'+(MIS_BANNER[m.type]||('mis_'+m.type))+'.png" alt="" style="width:100%;height:64px;object-fit:cover;display:block;border-radius:2px;">'+
-      '<span class="chipm" style="position:absolute;top:4px;right:4px;border-color:'+hzCol+';color:'+hzCol+'">危 '+m.hazard+'</span></div>'+
-      '<div class="t"><span class="nm">'+t.name+'</span><span class="note">'+b.name+'</span></div>'+
-      '<div class="meta">产出：'+Object.entries(m.r).map(([k,v])=>'<span class="chipm">'+resIcon(k)+'×'+v+'</span>').join(' ')+
-      '<span class="note" data-detbtn style="cursor:pointer;color:var(--teal);margin-left:6px;">详情 ▸</span></div>'+
-      '<div class="det" style="display:none;">'+
-      '<div class="meta">深度档 '+b.tier+'｜建议职业：'+(t.best?(CLASSES[t.best]?CLASSES[t.best].name:t.best):'任意')+'</div>'+
-      (m.clause?('<div class="meta">'+TEXT.ui_board_clause_wrap.replace('{name}', m.clause.name).replace('{desc}', m.clause.d)+'</div>'):'')+
-      '</div>'+
-      '<div class="mission-actions"><button class="btn pri" data-disp="'+m.id+'">'+TEXT.ui_deploy_btn+'</button>'+
-      (m.type==='exp'?'<button class="btn live" data-live="'+m.id+'">▶ 实时下矿</button>':'')+'</div></div>';
+    const rewards = Object.entries(m.r).map(([k,v])=>
+      '<span class="yield-item">'+resIcon(k)+'<span>×'+v+'</span></span>').join('');
+    html += '<article class="mcard mission-card">'+
+      '<div class="mission-cover">'+
+        '<img src="assets/icons/missions/'+(MIS_BANNER[m.type]||('mis_'+m.type))+'.png" alt="">'+
+        '<span class="hazard-chip">危险等级 '+m.hazard+'</span></div>'+
+      '<div class="mission-copy">'+
+        '<div class="t"><span class="nm">'+t.name+'</span><span class="mission-biome">'+b.name+'</span></div>'+
+        '<div class="mission-description">'+(missionDescriptions[m.type]||'执行集团指派的深层采掘任务。')+'</div>'+
+        '<div class="meta"><span class="yield-label">预计产出：</span>'+rewards+
+          '<span class="detail-toggle" data-detbtn>详情 ›</span></div>'+
+        '<div class="det" style="display:none">深度档 '+b.tier+' · 建议职业：'+
+          (t.best?(CLASSES[t.best]?CLASSES[t.best].name:t.best):'任意')+
+          (m.clause?' · '+m.clause.name+'：'+m.clause.d:'')+'</div>'+
+        '<div class="mission-actions"><button class="btn pri" data-disp="'+m.id+'">派遣小队</button>'+
+          (m.type==='exp'?'<button class="btn live" data-live="'+m.id+'">实时下矿</button>':'')+
+        '</div></div></article>';
   });
   $('#board').innerHTML = html;
   const kb = $('#btn-karl-dispatch');
@@ -224,7 +239,7 @@ function renderBoard(){
   $('#board').querySelectorAll('[data-detbtn]').forEach(el=>{
     el.onclick = () => {
       const det = el.closest('.mcard').querySelector('.det');
-      if(det){ det.style.display = det.style.display==='none' ? 'block' : 'none'; el.textContent = det.style.display==='none' ? '详情 ▸' : '收起 ▴'; }
+      if(det){ det.style.display = det.style.display==='none' ? 'block' : 'none'; el.textContent = det.style.display==='none' ? '详情 ›' : '收起 ⌃'; }
     };
   });
   $('#board').querySelectorAll('[data-disp]').forEach(el=>{
@@ -238,13 +253,18 @@ function renderDeps(){
   let html = '';
   if(S.realtime){
     const p = S.realtime, m = p.mission, miner = S.miners.find(x=>x.id===p.minerId);
-    html += '<div class="dep realtime"><div class="t"><span class="nm">▶ 实时任务 · '+biomeById(m.biome).name+'</span>'+
+    html += '<div class="dep realtime"><div class="t"><span class="nm">实时任务 · '+biomeById(m.biome).name+'</span>'+
       '<span class="hz">'+'★'.repeat(m.hazard)+'</span></div>'+
       '<div class="meta">'+(miner?minerName(miner):'矿工')+' 正在等待你的直接指挥</div>'+
       '<div class="mission-actions"><button class="btn live" data-rt-resume>继续任务</button>'+
       '<button class="btn warn" data-rt-recall>召回</button></div></div>';
   }
-  if(!S.deps.length && !S.realtime) html = '<div style="text-align:center;padding:8px 0;"><img src="assets/icons/misc_bosco.png" alt="" style="width:72px;image-rendering:pixelated;opacity:.8"><div class="note">'+TEXT.ui_deps_empty+'</div></div>';
+  if(!S.deps.length && !S.realtime){
+    html = '<div class="dispatch-empty"><div class="dispatch-holo-wrap"><img class="dispatch-holo" src="assets/img/w_pickaxe.png" alt="矿镐"></div>'+
+      '<strong>当前没有进行中的派遣任务</strong>'+
+      '<p>派遣矿工前往未知的深处，挖掘属于集团的财富。</p>'+
+      '<button class="btn pri" data-select-mission>选择任务并派遣</button></div>';
+  }
   const depsSorted = S.deps.slice().sort((a,b)=>(b.paused?1:0)-(a.paused?1:0));
   depsSorted.forEach(d=>{
     const done = clamp(d.done || 0, 0, d.dur);
@@ -262,6 +282,32 @@ function renderDeps(){
       '</div>';
   });
   $('#deps').innerHTML = html;
+  const selectMission = $('#deps').querySelector('[data-select-mission]');
+  if(selectMission) selectMission.onclick = () => {
+    let missions = S.board.filter(m => m && m.type);
+    if(!missions.length){
+      genBoard();
+      renderBoard();
+      missions = S.board.filter(m => m && m.type);
+    }
+    if(!missions.length) return;
+    const choices = missions.map(m => {
+      const biome = biomeById(m.biome);
+      const type = mtypeById(m.type);
+      return '<button class="btn opt mission-select-option" data-select-dispatch="'+m.id+'">'+
+        '<b>'+type.name+'</b><span>'+biome.name+' · 危险等级 '+m.hazard+'</span></button>';
+    }).join('');
+    showModal('<h3 class="mission-select-title">选择派遣任务</h3>'+
+      '<p class="note">选择任务后继续配置矿工与补给。</p>'+
+      '<div class="mission-select-list">'+choices+'</div>', false);
+    $('#modal-box').querySelectorAll('[data-select-dispatch]').forEach(option => {
+      option.onclick = () => {
+        const missionId = option.dataset.selectDispatch;
+        closeModal(true);
+        openDispatch(missionId);
+      };
+    });
+  };
   $('#deps').querySelectorAll('[data-ev]').forEach(el=>{
     el.onclick = () => { const d = S.deps.find(x=>x.id===el.dataset.ev); if(d) showEventModal(d); };
   });
@@ -271,35 +317,41 @@ function renderDeps(){
   if(recall) recall.onclick = showPendingRealtime;
 }
 function renderRoster(){
+  const roleEnglish = {scout:'SCOUT', engineer:'ENGINEER', gunner:'GUNNER', driller:'DRILLER'};
   let html = '';
   Object.keys(CLASSES).forEach(c=>{
     const C = CLASSES[c];
     const hired = S.miners.some(m=>m.cls===c);
     const rigOk = S.rigLv >= C.rig;
-    html += '<h3 class="sec">'+ic('class_'+c)+C.name+'（凭证 Lv.'+S.licenses[c]+'：'+C.w[S.licenses[c]-1]+'）</h3>';
+    html += '<section class="roster-unit">'+
+      '<div class="roster-title role-'+c+'">'+ic('class_'+c)+
+      '<div class="role-copy"><strong>'+C.name+'</strong><small>'+roleEnglish[c]+'</small></div>'+
+      '<span class="roster-level">Lv.'+S.licenses[c]+'</span></div>';
     if(!hired){
-      html += '<div class="miner"><div class="mtop"><b class="locked">🔒 '+C.name+'</b>'+
-        '<span class="note">'+(rigOk ? '可招募' : '需要钻井平台 Lv.'+C.rig)+'</span></div>'+
-        (rigOk ? '<div class="row"><button class="btn pri" data-recruit="'+c+'">'+TEXT.ui_recruit_btn+C.short+'（'+hireCost()+' 代币）</button></div>' : '')+
-        '</div>';
+      html += '<div class="miner locked-card"><div class="locked-avatar"></div>'+
+        '<div class="locked-copy"><b>未解锁</b><span>建议先升级钻井平台以招募该职业。</span></div>'+
+        (rigOk ? '<button class="btn pri" data-recruit="'+c+'">招募 · '+hireCost()+'</button>' : '')+
+        '</div></section>';
       return;
     }
     S.miners.filter(m=>m.cls===c).forEach(m=>{
-      const st = m.state==='idle' ? '<span class="st-idle">空闲</span>'
-               : m.state==='mission' ? '<span class="st-mission">任务中</span>'
-               : '<span class="st-med">医疗站（还剩 '+Math.max(0,Math.ceil(m.medUntil-S.gm))+' 分钟）</span>';
-      const promo = (m.lv >= 25 && m.state==='idle') ?
-        '<button class="btn pri" data-promo="'+m.id+'" style="padding:3px 8px;font-size:12px;">晋升 '+frameOf(m.stars+1)+'（'+promoteCost(m)+' 代币）</button>' : '';
-      html += '<div class="miner"><div class="mtop"><div style="display:flex;align-items:center;gap:6px;">'+
-        avatarHtml(m.cls, m.state)+
-        '<div data-minfo="'+m.id+'">'+frameHtml(m.stars)+'<b>'+minerName(m)+'</b> Lv.'+(m.lv>=25?'25(MAX)':m.lv)+' '+st+'</div></div>'+promo+'</div>'+
-        '<div class="bar" style="margin-bottom:4px;" title="XP '+Math.floor(m.xp)+'/'+(m.lv*30)+'｜任务 '+m.missions+' 次'+(m.stars?('｜晋升加成 +'+(m.stars*8)+'%'):'')+'"><i style="width:'+clamp(m.xp/(m.lv*30)*100,0,100)+'%;background:linear-gradient(90deg,var(--green),var(--gold))"></i></div>'+
-        '<div class="mrow"><span class="mb"><span class="mbar"><i data-mid="'+m.id+'" style="width:'+m.morale+'%;background:'+
-        (m.morale>=60?'var(--green)':m.morale>=30?'var(--amber)':'var(--red)')+'"></i></span></span><span class="note">士气</span></div>'+
-        '<div class="dstage"><div class="spr anim-spr" data-anim="dwarf_'+m.cls+'_'+(m.state==='mission'?'walk':m.state==='med'?'med':'idle')+'"></div></div></div>';
+      const st = m.state==='idle' ? '<span class="miner-status st-idle">空闲</span>'
+               : m.state==='mission' ? '<span class="miner-status st-mission">任务中</span>'
+               : '<span class="miner-status st-med">医疗中</span>';
+      const promo = (m.lv >= 25 && m.state==='idle')
+        ? '<button class="btn pri" data-promo="'+m.id+'">晋升</button>' : '';
+      html += '<div class="miner"><div class="roster-member">'+avatarHtml(m.cls, m.state)+
+        '<div class="miner-info" data-minfo="'+m.id+'">'+
+          '<div class="miner-name-line">'+frameHtml(m.stars)+'<b>'+minerName(m)+'</b>'+st+'</div>'+
+          '<div class="miner-meta">Lv.'+(m.lv>=25?'25 MAX':m.lv)+' · '+C.w[S.licenses[c]-1]+' · 任务 '+m.missions+'</div>'+
+          '<div class="morale-line"><span>士气</span><span class="mbar"><i data-mid="'+m.id+'" style="width:'+m.morale+'%;background:'+
+            (m.morale>=60?'var(--green)':m.morale>=30?'var(--amber)':'var(--red)')+'"></i></span><span class="note">'+Math.floor(m.morale)+'/100</span></div>'+
+        '</div><div class="kit-slots" aria-hidden="true"><span class="kit-slot">PRI</span><span class="kit-slot">SEC</span><span class="kit-slot">KIT</span></div>'+
+        promo+'<span class="roster-chevron">›</span></div></div>';
     });
+    html += '</section>';
   });
-  html += '<div class="note">士气 <25 拒绝下矿。全员可抢救。25 级可晋升，详情见帮助页。</div>';
+  html += '<div class="roster-note">士气低于 25 时矿工会拒绝下矿；25 级可申请晋升。</div>';
   $('#side').innerHTML = html;
   $('#side').querySelectorAll('[data-promo]').forEach(el=>{
     el.onclick = () => promoteMiner(el.dataset.promo);
@@ -1121,63 +1173,33 @@ function renderCampaign(){
   const c = S.campaign;
   ensureCampaignQueue();
   const camp = CAMPAIGNS[c.ci];
-  let html = '';
-  /* 终局突入按钮：清账行动第4步 */
-  if(camp && camp.id === 'finale' && c.si === 3){
-    html += '<div class="row" style="margin-top:4px;"><button class="btn warn" style="width:100%;font-size:13px;font-weight:bold;padding:8px" onclick="showFinaleBoss()">🚨 终局突入 — 深入藤络树洞最深层（4 人满编 · 危5+ · 加固）</button></div>';
-  }
-  /* B-7 编年史 UI 行（战役分支用 html= 赋值，故编年史行最后再拼入）；无尽期常驻 fest_roguecore 横幅 */
-  const chLine = (isEndless() ? animDiv('fest_roguecore', 288, 96) : '') +
-    '<div class="note" style="margin-bottom:4px;"><b style="color:var(--amber)">'+TEXT.ch_ui_title+'</b>　'+
-    TEXT.ch_ui_sub.replace('{day}', gameDay()).replace('{date}', dateOfStr(gameDay()))+
-    (isEndless() ? '　<b style="color:var(--gold)">编年史·完 · 无尽模式</b>' : '')+'</div>';
+  const hol = holidayForNow();
+  let title = '等待新的主线任务';
+  let detail = '集团任务队列正在同步。';
+  let pct = 0;
+  let finale = '';
   if(camp){
     const st = camp.steps[c.si];
-    const pct = clamp(c.prog/st.need*100, 0, 100);
     const cnd = CHRONICLE.nodes[c.ci];
     const locked = cnd ? gameDay() < cnd.day : false;
+    title = '战役【'+camp.name+'】';
     if(locked){
-      html = '<b style="color:var(--amber)">'+TEXT.ui_camp_next.replace('{name}', camp.name).replace('{day}', cnd.day).replace('{today}', gameDay())+'</b>'+
-        '<div class="note" style="margin-top:3px;">节点：'+cnd.date+'（'+cnd.name+'）。'+TEXT.ch_lock_hint+'</div>';
-    } else {
-      html = '<b style="color:var(--amber)">'+TEXT.ui_camp_now.replace('{name}', camp.name)+'</b>　<span>'+
-        TEXT.ui_camp_prog.replace('{txt}', st.txt).replace('{prog}', Math.floor(c.prog)).replace('{need}', st.need).replace('{reward}', camp.rwTxt)+'</span>'+
-        '<div class="bar" style="margin-top:5px;"><i style="width:'+pct+'%"></i></div>';
-      /* 新手引导：任务类型被钻井平台等级锁住时提示 */
+      detail = '将在 D'+cnd.day+' · '+cnd.date+' 解锁。'+TEXT.ch_lock_hint;
+    } else if(st){
+      pct = clamp(c.prog/st.need*100, 0, 100);
+      detail = st.txt+'（'+Math.floor(c.prog)+'/'+st.need+'）<span class="reward">奖励：'+camp.rwTxt+'</span>';
       const mtG = mtypeById(st.target);
-      if(mtG && mtG.rig > S.rigLv){
-        html += '<div class="note" style="color:var(--amber);margin-top:4px;">⚠ 「'+mtG.name+'」需要钻井平台 Lv.'+mtG.rig+'（当前 Lv.'+S.rigLv+'）——去「钻井平台」页升级。</div>';
-      }
+      if(mtG && mtG.rig > S.rigLv) detail += '<span class="reward">需钻井平台 Lv.'+mtG.rig+'</span>';
     }
-  } else {
-    html = '<b style="color:var(--amber)">'+TEXT.ui_camp_empty+'</b>';
-  }
-  /* 节日战役（现实月份联动） */
-  const hol = holidayForNow();
-  if(hol){
-    const act = S.holidayAct;
-    /* C §9：节日横幅按 HOLIDAYS.fest 字段取用 */
-    const fest = hol.h.fest ? animDiv(hol.h.fest, 288, 96) : '';
-    if(act && act.key === hol.key){
-      const hd = hol.h, hst = hd.steps[act.si];
-      const hpct = clamp(act.prog/hst.need*100, 0, 100);
-      html += '<div style="margin-top:6px; border-top:1px dashed var(--line); padding-top:5px;">'+fest+
-        '<b style="color:var(--teal)">'+TEXT.ui_camp_hol_now.replace('{name}', hd.name)+'</b>　<span>'+TEXT.tr_season_banner.replace('{festival}', hd.name)+' '+hst.txt+
-        '（'+Math.floor(act.prog)+'/'+hst.need+'）</span></div>';
-    } else if(!act && !(S.holidayDone||{})[hol.key]){
-      html += '<div style="margin-top:6px;">'+fest+'<b style="color:var(--teal)">'+TEXT.ui_camp_hol_now.replace('{name}', hol.h.name)+'</b>　<span class="note">'+TEXT.ui_camp_hol_open+'</span></div>';
+    if(camp.id === 'finale' && c.si === 3){
+      finale = '<button class="btn warn" onclick="showFinaleBoss()">终局突入</button>';
     }
   }
-  /* 收纳折叠：战役横幅可折叠为一行 */
-  /* 减字规则2：折叠头=一行摘要（日期｜战役｜节日），详情在展开区 */
-  let summary = '📅 D'+gameDay()+' · '+dateOfStr(gameDay());
-  const cc2 = CAMPAIGNS[c.ci];
-  if(cc2 && gameDay() < cc2.day) summary += ' ｜ '+cc2.name+' 🔒';
-  if(hol) summary += ' ｜ 🎄'+hol.h.name;
-  if(isEndless()) summary += ' ｜ 无尽';
-  el.innerHTML = '<div class="foldbox'+(FOLD.camp?' folded':'')+'">'+
-    '<div class="fold-head" data-fold="camp"><span style="color:var(--dim);font-size:11px;">'+summary+'</span><span class="arrow">▼</span></div>'+
-    '<div class="fold-body">'+chLine+html+'</div></div>';
+  if(hol) detail += '<span class="reward">当期节日：'+hol.h.name+'</span>';
+  el.innerHTML = '<div class="campaign-inner"><div class="campaign-emblem" aria-hidden="true"></div>'+
+    '<div class="campaign-content"><div class="campaign-kicker"><b>主线任务</b><span>D'+gameDay()+' · '+dateOfStr(gameDay())+'</span></div>'+
+    '<div class="campaign-title">'+title+'</div><div class="campaign-detail">'+detail+'</div>'+
+    '<div class="bar"><i style="width:'+pct+'%"></i></div>'+finale+'</div></div>';
 }
 function updateTabBadges(){
   const set = (name, n) => {

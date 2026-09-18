@@ -26,7 +26,7 @@
       body: 'class_driller', portrait: 'portrait_driller', icon: 'icon_driller',
       hp: 135, shield: 25, speed: 208, jump: 505, mine: 1.0,
       primary: 'crspr', secondary: 'subata',
-      tool: { id: 'c4', name: 'C4 炸药包', hud: 'hud_detpack', charges: 2, cd: 3 },
+      tool: { id: 'c4', name: 'C4 炸药包', img: 'hud_detpack', hud: 'hud_detpack', charges: 2, cd: 3 },
       pick: 'w_drill', drill: 1,
       blurb: '双持钻机开路，火焰清场。挖掘速度最快。'
     },
@@ -35,7 +35,7 @@
       body: 'class_engineer', portrait: 'portrait_engineer', icon: 'icon_engineer',
       hp: 115, shield: 25, speed: 210, jump: 515, mine: 0.85,
       primary: 'warthog', secondary: 'pgl',
-      tool: { id: 'platform', name: '平台发射器', hud: 'hud_platgun', charges: 14, cd: 0.35 },
+      tool: { id: 'platform', name: '平台发射器', img: 'w_platgun', hud: 'hud_platgun', charges: 14, cd: 0.35 },
       extra: { id: 'sentry', name: '哨戒炮', hud: 'hud_sentry', charges: 2, cd: 1 },
       pick: 'w_pickaxe',
       blurb: '平台开路、哨戒炮压制，近战火力凶猛。'
@@ -45,7 +45,7 @@
       body: 'class_gunner', portrait: 'portrait_gunner', icon: 'icon_gunner',
       hp: 145, shield: 30, speed: 192, jump: 495, mine: 0.8,
       primary: 'leadstorm', secondary: 'bulldog',
-      tool: { id: 'shield', name: '护盾发生器', hud: 'hud_zipline', charges: 3, cd: 2 },
+      tool: { id: 'shield', name: '护盾发生器', img: 'hud_zipline', hud: 'hud_zipline', charges: 3, cd: 2 },
       pick: 'w_pickaxe',
       blurb: '转管机枪压制虫潮，护盾罩住阵地。血最厚。'
     },
@@ -54,7 +54,7 @@
       body: 'class_scout', portrait: 'portrait_scout', icon: 'icon_scout',
       hp: 95, shield: 25, speed: 252, jump: 560, mine: 0.9,
       primary: 'gk2', secondary: 'flaregun',
-      tool: { id: 'grapple', name: '抓钩', hud: 'hud_grapple', charges: 99, cd: 3.2 },
+      tool: { id: 'grapple', name: '抓钩', img: 'hud_grapple', hud: 'hud_grapple', charges: 99, cd: 3.2 },
       pick: 'w_pickaxe',
       blurb: '抓钩飞索、照明弹开路，跑得最快也最脆。'
     }
@@ -77,6 +77,7 @@
     this.shieldTimer = 0;
     this.weapons = [c.primary, c.secondary];
     this.cur = 0;
+    this.toolSelected = false;
     this.mag = [W[c.primary].mag, W[c.secondary].mag];
     this.ammo = [W[c.primary].ammo, W[c.secondary].ammo];
     this.reload = 0;
@@ -246,14 +247,16 @@
       this.mineTarget = null;
       if (this.cls.drill) DRG.audio.loop('drill', { stop: true });
     }
-    if (I.down[0]) this.fire(dt, m); else this.releaseFire(dt, m);
     if (I.hit('Digit1')) this.switchTo(0, m);
     if (I.hit('Digit2')) this.switchTo(1, m);
     if (I.wheel) this.switchTo(1 - this.cur, m);
-    if (I.hit('KeyR') && this.mag[this.cur] < W[this.weapons[this.cur]].mag) this.startReload(m);
+    var toolToggled = I.hit('KeyQ') && !I.key('ShiftLeft', 'ShiftRight');
+    if (toolToggled) this.switchTool(m);
+    if (I.down[0] && !this.toolSelected) this.fire(dt, m); else this.releaseFire(dt, m);
+    if (!toolToggled && this.toolSelected && I.clicked[0]) this.useTool(m);
+    if (!this.toolSelected && I.hit('KeyR') && this.mag[this.cur] < W[this.weapons[this.cur]].mag) this.startReload(m);
     if (I.hit('KeyF')) this.throwFlare(m);
     if (I.hit('KeyG')) this.throwGrenade(m);
-    if (I.hit('KeyQ')) this.useTool(m);
     if (I.hit('KeyX') && this.cls.extra) this.useExtra(m);
     if (this.reload > 0) {
       this.reload -= dt;
@@ -408,10 +411,19 @@
 
   /* ---------------- shooting ---------------- */
   Player.prototype.switchTo = function (i, m) {
-    if (i === this.cur || this.reload > 0) return;
-    this.cur = i; this.spin = 0;
+    if ((i === this.cur && !this.toolSelected) || this.reload > 0) return;
+    this.cur = i; this.toolSelected = false; this.spin = 0;
     DRG.audio.sfx('ui');
     m.toast(W[this.weapons[i]].name, '#ffd76a', 0.9);
+  };
+
+  Player.prototype.switchTool = function (m) {
+    if (this.reload > 0) return;
+    this.toolSelected = !this.toolSelected;
+    this.spin = 0;
+    this.releaseFire(0, m);
+    DRG.audio.sfx('ui');
+    m.toast(this.toolSelected ? this.cls.tool.name + ' · 左键使用' : W[this.weapons[this.cur]].name, this.toolSelected ? '#8ad4ff' : '#ffd76a', 1.1);
   };
 
   Player.prototype.startReload = function (m) {
@@ -678,20 +690,24 @@
       return;
     }
 
-    // held gear: pickaxe/drill while mining, otherwise the current gun
+    // held gear: pickaxe/drill while mining, selected class tool, otherwise the current gun
     var handAng = this.aim;
     var img, gunH = 20;
     if (this.mining > 0.05) {
       img = A().get(c.pick);
       if (c.drill) { handAng = this.aim + Math.sin(this.t * 30) * 0.09; gunH = 26; }
       else { handAng = this.aim - 1.15 + Math.sin(Math.min(1, this.swing) * Math.PI) * 1.5; gunH = 30; }
+    } else if (this.toolSelected) {
+      img = A().get(c.tool.img || c.tool.hud);
+      gunH = c.tool.id === 'platform' ? 24 : 22;
+      if (moving) handAng += Math.sin(cycle) * 0.04;
     } else {
       var wp = W[this.weapons[this.cur]];
       img = A().get(wp.img);
       gunH = wp.flame ? 24 : (wp.mag > 100 ? 26 : 20);
       handAng = this.aim - this.recoil * 0.28 * (Math.cos(this.aim) > 0 ? 1 : -1);
       if (this.spin > 0.05) handAng += Math.sin(this.t * 40) * 0.03 * this.spin;
-      if (moving) handAng += Math.sin(cycle) * 0.06;           // 走动时武器自然晃动
+      if (moving) handAng += Math.sin(cycle) * 0.06;
     }
 
     // 身体朝向由移动方向决定（走动时不再出现“倒着平移”），武器朝向跟准星

@@ -107,7 +107,7 @@
       return {
         credits: 0, xp: 0, missions: 0, kills: 0, morkite: 0, deaths: 0,
         best: {}, seenIntro: false,
-        opts: { master: 0.85, sfx: 0.9, voice: 1.0, music: 0.5, darkness: 1.0, shake: 1.0, particles: 1.0, fps: false, quality: 1 }
+        opts: { master: 0, sfx: 0.9, voice: 1.0, music: 0.5, darkness: 1.0, shake: 1.0, particles: 1.0, fps: false, quality: 1 }
       };
     },
     load: function () {

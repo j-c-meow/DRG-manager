@@ -6,7 +6,7 @@
   "scripts": {
     "build": "node scripts/build.mjs && vite build && tsc --noEmit",
     "dev": "npm run build && wrangler dev",
-    "deploy": "npm run build && wrangler deploy"
+    "deploy": "bash scripts/deploy.sh"
   },
   "devDependencies": {
     "@types/node": "^26.6.1",

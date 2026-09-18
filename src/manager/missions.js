@@ -727,11 +727,11 @@ function renderFullLog(){
 }
 /* ---------------- BGM 背景音乐系统（B-8） ---------------- */
 const BGM = {
-  audio: null, ctx: null, vol: 0.25, muted: false,
+  audio: null, ctx: null, vol: 0.25, muted: true,
   tracks: { main: 'assets/audio/bgm_main.mp3', bar: 'assets/audio/bgm_bar.mp3' },
   icon(){ return this.muted ? '\u{1F507}' : '\u{1F3B5}'; },
   init(){
-    try{ this.muted = localStorage.getItem('drg_bgm_muted') === '1'; }catch(e){}
+    try{ const saved = localStorage.getItem('drg_bgm_muted'); this.muted = saved === null ? true : saved === '1'; }catch(e){}
     this.audio = new Audio();
     this.audio.loop = true;
     this.audio.volume = this.vol;

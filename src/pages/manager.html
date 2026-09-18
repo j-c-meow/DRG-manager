@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0c1116">
 <link rel="icon" type="image/png" href="assets/pwa/icon-192.png">
-<link rel="stylesheet" href="styles/manager.css?v=embed1">
+<link rel="stylesheet" href="styles/manager.css">
 <link rel="stylesheet" href="assets/font/fonts.css">
-<link id="realtime-style" rel="stylesheet" href="styles/realtime.css?v=unified1" disabled>
+<link id="realtime-style" rel="stylesheet" href="styles/realtime.css" disabled>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="manifest" href="manifest.webmanifest">
@@ -16,57 +16,117 @@
 </head>
 <body>
 <div id="app">
-  <header>
-    <div>
-      <h1>深岩银河集团 · 17号钻台管理终端</h1>
+  <header class="command-header">
+    <div class="topbar">
+      <div class="brand-lockup">
+        <img class="brand-mark" src="assets/ui/brand-mark.svg" alt="">
+        <div class="brand-copy">
+          <strong>深岩银河集团</strong>
+          <span>DEEP ROCK GALAXY CORP.</span>
+        </div>
+      </div>
+
+      <div class="terminal-name">
+        <strong>17号钻台管理终端</strong>
+        <span>开采资源 · 建设未来</span>
+      </div>
+
+      <div class="clock-console">
+        <div><b id="clock">D1</b><strong id="clock-time">08:00</strong></div>
+        <span id="clock-date">2020-05-13　星期三</span>
+      </div>
+
+      <div class="pause-console" id="spd-chip">
+        <button class="btn pause-button" id="btn-pause" title="暂停 / 继续时间">
+          <span class="pause-glyph" aria-hidden="true"></span><b>暂停中</b>
+        </button>
+      </div>
+
+      <div class="mode-console" id="mode-chip" title="点击切换挂机与急行模式">
+        <div class="mspr" aria-hidden="true"></div>
+        <div><span>运行模式</span><b class="mlabel" id="mode-label">挂机</b></div>
+      </div>
+
+      <div class="top-resources">
+        <div class="resource-chip" id="chip-credits" title="代币">
+          <span class="coin-symbol">◆</span><span>代币</span><b id="r-credits">0</b>
+        </div>
+        <div class="resource-chip" id="chip-nitra" title="硝石">
+          <img src="assets/icons/res_nitra.png" alt=""><span>硝石</span><b id="r-nitra">0</b>
+        </div>
+        <button class="utility-chip" id="btn-idle-report" title="托管期间的收益汇总">
+          <span class="orbit-symbol" aria-hidden="true"></span><span>挂机收益</span>
+        </button>
+        <button class="utility-chip" id="btn-auto" title="开启或关闭三小时自动派遣">
+          <span class="ticket-symbol" aria-hidden="true"></span><span>挂机券</span><b>12</b>
+        </button>
+        <div class="utility-chip auto-running" id="auto-chip" title="挂机模式运行中，点击取消">
+          <span class="orbit-symbol" aria-hidden="true"></span><span>托管中</span><b id="auto-left">--</b>
+        </div>
+        <button class="overview-button" id="btn-res-overview"><span class="chart-symbol" aria-hidden="true"></span>资源总览</button>
+        <button class="sound-button" id="btn-bgm" title="音乐开关">音</button>
+        <button class="settings-button" id="btn-settings" title="系统设置"><span aria-hidden="true"></span></button>
+      </div>
     </div>
-    <div class="chip" id="clock">D1 08:00</div>
-    <div class="chip" id="spd-chip">
-      <button class="btn" id="btn-pause" title="暂停 / 继续时间">⏸ 暂停</button>
-    </div>
-    <div class="chip" id="mode-chip" title="点击切换：挂机=正常流速全额收益 / 急行=任务10秒级·产出×0.35·硝石×4·事件手动·禁深潜与暂停">
-      <div class="mspr"></div><b class="mlabel" id="mode-label">挂机</b>
-    </div>
-    <div class="chip" id="auto-chip" style="display:none;cursor:pointer;" title="挂机模式运行中，点击取消">🤖 <b id="auto-left">--</b></div>
-    <div class="chip"><button class="btn" id="btn-auto" style="padding:3px 8px;font-size:12px;" title="挂机券：3 小时内自动派遣、自动处理事件">🤖 挂机券</button></div>
-    <div class="chip"><button class="btn" id="btn-idle-report" style="padding:3px 8px;font-size:12px;" title="托管期间的收益汇总面板">📊 收益</button></div>
-    <button class="btn" id="btn-bgm" style="padding:3px 8px;font-size:12px;" title="音乐开关">🎵</button>
-    <div class="chip" id="chip-credits" style="cursor:pointer" title="代币"><b>◈</b> <b id="r-credits">0</b></div>
-    <div class="chip" id="chip-nitra" style="cursor:pointer" title="硝石"><img class="cicon" src="assets/icons/res_nitra.png"> <b id="r-nitra">0</b></div>
-    <div class="chip"><button class="btn" id="btn-res-overview" style="padding:2px 8px;font-size:12px;">资源总览</button></div>
-    <div class="kpiwrap">
-      <div class="note">季度 KPI：<span id="kpi-txt"></span> <button class="btn pri" id="btn-kpi" style="display:none;padding:2px 8px;font-size:12px;">领取季度奖金</button></div>
-      <div class="bar"><i id="kpi-bar" style="width:0%"></i></div>
+
+    <div class="objective-deck">
+      <section class="objective-card kpi-console">
+        <div class="objective-kicker"><span>本季度目标</span><b id="kpi-term">第1季</b></div>
+        <div class="kpi-readout">
+          <span class="target-diamond" aria-hidden="true"></span>
+          <strong>KPI</strong>
+          <b id="kpi-txt">0 / 500</b>
+          <button class="btn pri kpi-claim" id="btn-kpi">领取</button>
+        </div>
+        <div class="bar kpi-bar"><i id="kpi-bar"></i></div>
+      </section>
+
+      <section class="objective-card campaign-console panel" id="campbar"></section>
+
+      <aside class="hero-message">
+        <strong>向地心进发</strong>
+        <b>开采人类的第二家园</b>
+        <span>BUILDING A BRIGHTER TOMORROW</span>
+      </aside>
     </div>
   </header>
-  <div id="campbar" class="panel" style="margin-top:8px; padding:8px 12px;"></div>
-  <div id="rares" class="row" style="margin:8px 0 0;"></div>
-  <div id="swarmalert" style="display:none;margin-top:8px;padding:7px 12px;font-size:13px;background:#331309;border:1px solid var(--amber);border-radius:3px;color:var(--amber);align-items:center;gap:8px;">
-    <span id="swarmalert-ic" style="flex:none;width:32px;height:32px;"></span>
-    <span style="flex:1;">⚠ 洞穴在震动：有队伍正悬挂虫潮事件，等待管理层决策！</span>
+
+  <div id="rares" class="resource-ribbon"></div>
+
+  <div id="swarmalert" class="swarm-alert">
+    <span id="swarmalert-ic"></span>
+    <span>洞穴在震动：有队伍正悬挂虫潮事件，等待管理层决策。</span>
   </div>
 
   <main>
-    <section class="panel m-main">
-      <h2>任务板 <button class="btn" id="btn-refresh">刷新任务板</button> <button class="btn" id="btn-board-compact">简洁</button></h2>
+    <section class="panel mission-panel m-main">
+      <h2>
+        <span class="panel-title">任务板 <small>MISSION</small></span>
+        <span class="panel-actions">
+          <button class="btn" id="btn-refresh"><span class="refresh-symbol" aria-hidden="true"></span>刷新任务</button>
+          <button class="btn" id="btn-board-compact">简洁</button>
+        </span>
+      </h2>
       <div id="boardFoldSummary"></div>
       <div class="bd" id="board"></div>
     </section>
 
     <section class="m-mid">
-      <div class="panel">
-        <h2>派遣通道</h2>
+      <div class="panel dispatch-panel">
+        <h2><span class="panel-title">派遣通道 <small>DISPATCH</small></span><span class="panel-code">DRG</span></h2>
         <div class="bd" id="deps"></div>
       </div>
-      <div class="panel" id="logPanel" style="margin-top:10px;">
-        <h2><span class="fold-head" data-fold="log" style="flex:1;">管理终端日志 <span class="arrow">▼</span></span>
-          <span class="logbar"><button class="btn btn-log-expand" id="btn-log-modal">放大</button></span></h2>
-        <div id="logMini" data-foldlog="open">▸ 点击展开日志</div>
+      <div class="panel log-panel" id="logPanel">
+        <h2>
+          <span class="fold-head panel-title" data-fold="log">管理终端日志 <small>OPERATION LOG</small><span class="arrow">▼</span></span>
+          <span class="logbar"><button class="btn btn-log-expand" id="btn-log-modal">全部日志</button></span>
+        </h2>
+        <div id="logMini" data-foldlog="open">点击展开日志</div>
         <div class="bd"><div id="log"></div></div>
       </div>
     </section>
 
-    <section class="panel m-side">
+    <section class="panel roster-panel m-side">
       <div class="tabs" id="tabs">
         <div class="tab on" data-tab="roster">名册</div>
         <div class="tab" data-tab="gear">装备</div>
@@ -82,20 +142,11 @@
     </section>
   </main>
 
-  <footer>
-    深岩银河集团（本地分部）对烧伤、冻伤、虫噬及一切"看起来不至于"的伤害不予理赔。<br>
-    本作为粉丝非商用二创作品，与 Ghost Ship Games 无关；《Deep Rock Galactic》素材版权归 Ghost Ship Games 所有。挖到手软，赚到盆满！
-    <div style="margin-top:10px;padding-top:10px;border-top:1px dashed var(--line);font-size:12px;color:var(--dim);line-height:1.9;">
-      <b style="color:var(--amber)">鸣谢</b>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:2px 18px;margin-top:6px;text-align:left;">
-        <div><span style="color:var(--teal)">创意及开发</span>　j-c-meow</div>
-        <div><span style="color:var(--teal)">部署和技术指导</span>　iriscat</div>
-        <div><span style="color:var(--teal)">技术指导</span>　jiuduo 及深岩银河汉化组</div>
-        <div><span style="color:var(--teal)">测试</span>　iris 群 cat ship games 的群友</div>
-        <div style="grid-column:1/-1"><span style="color:var(--teal)">素材支持特别鸣谢</span>　<img src="assets/anim/pixel_lcyf166.png" alt="lcyf166 像素形象" style="width:20px;height:20px;image-rendering:pixelated;vertical-align:-5px;border:1px solid var(--line);border-radius:2px;background:#0a0e12;"> lcyf166、寒曦月璃、Ghostship</div>
-        <div style="grid-column:1/-1"><span style="color:var(--teal)">内容涉及额外特别鸣谢</span>　灭吟弄月、BGM、自行院长、远藤沙耶、希诺百万、云梦衣、脆脆鲨、稚八方、kevin 等</div>
-      </div>
-    </div>
+  <footer class="terminal-footer">
+    <div class="footer-brand"><img src="assets/ui/brand-mark.svg" alt=""><b>DRG</b><span>DEEP ROCK GALAXY CORP.</span></div>
+    <div class="footer-links"><span>矿产</span><span>人类</span><span>科技</span><span>未来</span></div>
+    <div class="footer-status"><span class="status-light"></span>系统正常运行</div>
+    <div class="footer-version">v1.0.0　　在更深处，遇见更大的明天。</div>
   </footer>
 </div>
 
@@ -111,14 +162,14 @@
   <!-- REALTIME_SHELL -->
 </section>
 
-<script src="scripts/app.js?v=atlas3"></script>
+<script src="scripts/app.js"></script>
 <script src="scripts/manager/game-data.js"></script>
 <script src="scripts/manager/state.js"></script>
 <script src="scripts/manager/missions.js"></script>
 <script src="scripts/realtime/core.js"></script>
-<script src="scripts/realtime/assets.js?v=atlas2"></script>
-<script src="scripts/realtime/audio.js?v=lazy1"></script>
-<script src="scripts/realtime/input.js?v=touch3"></script>
+<script src="scripts/realtime/assets.js"></script>
+<script src="scripts/realtime/audio.js"></script>
+<script src="scripts/realtime/input.js"></script>
 <script src="scripts/realtime/gfx.js"></script>
 <script src="scripts/realtime/lighting.js"></script>
 <script src="scripts/realtime/particles.js"></script>
@@ -127,13 +178,13 @@
 <script src="scripts/realtime/enemies.js"></script>
 <script src="scripts/realtime/player.js"></script>
 <script src="scripts/realtime/mission.js"></script>
-<script src="scripts/realtime/hud.js?v=touch3"></script>
-<script src="scripts/realtime/ui.js?v=atlas2"></script>
-<script src="scripts/realtime/integration.js?v=atlas1"></script>
-<script src="scripts/manager/realtime-controller.js?v=unified1"></script>
-<script src="scripts/manager/ui.js?v=unified1"></script>
-<script src="scripts/manager/main.js?v=unified1"></script>
-<script src="scripts/realtime/game.js?v=lazy1"></script>
+<script src="scripts/realtime/hud.js"></script>
+<script src="scripts/realtime/ui.js"></script>
+<script src="scripts/realtime/integration.js"></script>
+<script src="scripts/manager/realtime-controller.js"></script>
+<script src="scripts/manager/ui.js"></script>
+<script src="scripts/manager/main.js"></script>
+<script src="scripts/realtime/game.js"></script>
 <script src="scripts/realtime/autopilot.js"></script>
 </body>
 </html>

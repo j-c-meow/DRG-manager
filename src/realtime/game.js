@@ -48,8 +48,8 @@
           if (DRG.assets.failed.length) {
             var w = document.getElementById('toast-boot');
             w.style.display = 'block';
-            w.textContent = '注意：' + DRG.assets.failed.length + ' 个素材未能加载（可能是从 file:// 打开）。建议用本地 HTTP 服务器运行。';
-            console.warn('[DRG] missing assets', DRG.assets.failed);
+            w.textContent = '注意：' + DRG.assets.failed.length + ' 个素材未能加载。请刷新重试；若问题持续，请检查 CDN 或浏览器是否拦截了图片资源。';
+            console.warn('[DRG] missing assets', DRG.assets.failed.slice());
           }
           setTimeout(function () {
             G.ready = true;
@@ -187,6 +187,7 @@
           while (left > 0.0001 && guard++ < 4) {
             var s = Math.min(step, left);
             m.update(s, G.view);
+            if (guard === 1) I.consumeTransient();
             left -= s;
           }
           if (m.state === 'success' || m.state === 'failed') {

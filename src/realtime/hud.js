@@ -116,10 +116,10 @@
       var slots = [];
       for (var i = 0; i < 2; i++) {
         var wp = DRG.WEAPONS[p.weapons[i]];
-        slots.push({ icon: wp.hud, key: String(i + 1), sel: p.cur === i, mag: p.mag[i], ammo: p.ammo[i], name: wp.name, flame: wp.flame });
+        slots.push({ icon: wp.hud, key: String(i + 1), sel: !p.toolSelected && p.cur === i, mag: p.mag[i], ammo: p.ammo[i], name: wp.name, flame: wp.flame });
       }
       slots.push({ icon: p.cls.drill ? 'hud_drill' : 'hud_pickaxe', key: 'RMB', name: p.cls.drill ? '钻机' : '镐', tool: true });
-      slots.push({ icon: p.cls.tool.hud, key: 'Q', name: p.cls.tool.name, tool: true, n: p.cls.tool.id === 'grapple' ? null : p.toolCharges });
+      slots.push({ icon: p.cls.tool.hud, key: 'Q', name: p.cls.tool.name, tool: true, sel: p.toolSelected, n: p.cls.tool.id === 'grapple' ? null : p.toolCharges });
       if (p.cls.extra) slots.push({ icon: p.cls.extra.hud, key: 'X', name: p.cls.extra.name, tool: true, n: p.extraCharges });
       slots.push({ icon: 'hud_flaregun', key: 'F', name: '照明弹', tool: true, n: p.flares });
 

@@ -239,8 +239,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   const pauseBtn = document.getElementById('btn-pause');
   if(pauseBtn) pauseBtn.onclick = () => {
     speed = (speed === 0) ? 1 : 0;
-    pauseBtn.innerHTML = (speed === 0) ? '▶ 继续' : '⏸ 暂停';
-    log(speed === 0 ? '⏸ 时间暂停。钻台进入待机——矿工们向你致谢。' : '▶ 时间继续流动。挖起来，矿工们！', 'sys');
+    renderHeader();
+    log(speed === 0 ? '时间暂停。钻台进入待机。' : '时间继续流动。开始采掘。', 'sys');
   };
   $('#btn-refresh').onclick = () => { genBoard(); log(TEXT.log_board_refresh, 'sys'); renderAll(); boardBtnSync(); };
   $('#btn-kpi').onclick = claimKPI;
@@ -316,7 +316,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         .then(keys => Promise.all(keys.filter(key => key.startsWith('drg-rig-')).map(key => caches.delete(key))));
     }
   } else if ('serviceWorker' in navigator && location.protocol !== 'file:' && !/MicroMessenger/i.test(navigator.userAgent)) {
-    navigator.serviceWorker.register('sw.js');
+    const buildVersion = document.querySelector('meta[name="drg-build-version"]')?.content;
+    navigator.serviceWorker.register('sw.js' + (buildVersion ? '?v=' + encodeURIComponent(buildVersion) : ''));
   }
   /* 挂机券：3 小时自动游玩（自动事件决策 + 自动派遣空闲矿工） */
   const toggleAuto = () => {
@@ -341,7 +342,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     S.mode = (S.mode === 'rush') ? 'idle' : 'rush';
     if(S.mode === 'rush' && S.autoUntil && Date.now() < S.autoUntil){ S.autoUntil = 0; log(TEXT.dm_auto_off, 'sys'); }   /* R1：券激活中切急行 → 自动取消 */
     /* 急行切换自动恢复时间流动（jiuduo：暂停+切急行=永远冻结） */
-    if(S.mode === 'rush' && speed === 0){ speed = 1; const pb = document.getElementById('btn-pause'); if(pb) pb.innerHTML = '⏸ 暂停'; }
+    if(S.mode === 'rush' && speed === 0){ speed = 1; renderHeader(); }
     /* 在途任务：时长按新模式比例转换（非序章/非深潜） */
     S.deps.forEach(d => {
       if(d.kind === 'prologue' || d.isDive || d.paused) return;
@@ -377,6 +378,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     bgmBtn.textContent = BGM.icon();
     bgmBtn.onclick = () => { BGM.toggleMute(); bgmBtn.textContent = BGM.icon(); };
   }
+  const settingsBtn = document.getElementById('btn-settings');
+  if(settingsBtn) settingsBtn.onclick = () => {
+    const sysTab = document.querySelector('#tabs .tab[data-tab="sys"]');
+    if(sysTab) sysTab.click();
+    document.querySelector('.roster-panel')?.scrollIntoView({behavior:'smooth', block:'start'});
+  };
   window.addEventListener('beforeunload', save);
   }catch(initErr){ window.__initErr = (initErr.stack || initErr.message); renderAll(); }
 });

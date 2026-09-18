@@ -1,4 +1,4 @@
-const CACHE = 'drg-rig-v20-atlas';
+const CACHE = 'drg-rig-__BUILD_VERSION__';
 const ASSETS = [
   './',
   './index.html',

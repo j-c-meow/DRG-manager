@@ -49,16 +49,20 @@
       canvas.addEventListener('wheel', function (e) { I.wheel += Math.sign(e.deltaY); e.preventDefault(); }, { passive: false });
       bindTouch(canvas);
     },
+    /** consume edge-triggered input after one simulation step */
+    consumeTransient: clearTransient,
     /** call at the end of every frame */
-    endFrame: function () {
-      I.pressed = {}; I.released = {}; I.wheel = 0;
-      I.clicked = [false, false, false];
-      I.anyKey = false;
-    },
+    endFrame: clearTransient,
     key: function () { for (var i = 0; i < arguments.length; i++) if (I.keys[arguments[i]]) return true; return false; },
     hit: function () { for (var i = 0; i < arguments.length; i++) if (I.pressed[arguments[i]]) return true; return false; },
     resetTouch: resetTouch
   };
+
+  function clearTransient() {
+    I.pressed = {}; I.released = {}; I.wheel = 0;
+    I.clicked = [false, false, false];
+    I.anyKey = false;
+  }
 
   function norm(e) { return e.code || e.key; }
 
