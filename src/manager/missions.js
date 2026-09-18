@@ -222,8 +222,10 @@ function startMemeEvent(d, id){
   const desc = T[id+'_desc'] || '';
   const aBtn = T[id+'_a_btn'] || L('选项 A');
   const bBtn = T[id+'_b_btn'] || L('选项 B');
-  /* 头图：ev_doretta 用场景立绘，其余按事件 id 取 C 二期 meme_* 头图 */
-  const animPre = (id === 'ev_doretta') ? animDiv('doretta_head', 100, 70) : animDiv(id.replace(/^ev_/, 'meme_'), 288, 96);
+  /* 头图：ev_doretta 用场景立绘，有 meme_* 头图的按事件 id 取；扩容包无专属头图则回退警示图标 */
+  const animKey = id.replace(/^ev_/, 'meme_');
+  const animPre = (id === 'ev_doretta') ? animDiv('doretta_head', 100, 70)
+    : ((typeof ANIM !== 'undefined' && ANIM[animKey]) ? animDiv(animKey, 288, 96) : animDiv('swarm_alert_icon', 72, 72));
   let html = animPre + desc;
   if(!S.flags.memeSeen){
     S.flags.memeSeen = true;
@@ -508,6 +510,37 @@ function resolveEvent(d, c){
         case 'ev_slogan':     team.forEach(m => m.morale = clamp(m.morale+10,10,100)); d.dur += Math.round(d.dur*0.1); break;
         case 'ev_molly':      d.dur += Math.round(d.dur*0.2); d.mineralMul = (d.mineralMul||1)*1.1; break;
         case 'ev_goldbug':    S.credits += Math.round(150*HZ); d.dur += Math.round(d.dur*0.15); break;
+        /* —— 扩容包 v1.2（30 事件）：数值对齐既有量级（士气 ±4~15 / 时长 ±5%~20% / 代币 ±15~100×HZ / 稀有掉落 +0.10~0.12）—— */
+        case 'ev_lootpet':    team.forEach(m => m.morale = clamp(m.morale+10,10,100)); d.mineralMul = (d.mineralMul||1)*0.95; break;
+        case 'ev_lookupleech':d.dur += Math.round(d.dur*0.1); team.forEach(m => m.morale = clamp(m.morale+8,10,100)); break;
+        case 'ev_huuli':      d.rareBoost = (d.rareBoost||0) + 0.12; d.dur += Math.round(d.dur*0.15); break;
+        case 'ev_crisp':      d.rareBoost = (d.rareBoost||0) + 0.10; d.dur += Math.round(d.dur*0.2); break;
+        case 'ev_frogbelly':  S.credits += Math.round(70*HZ); team.forEach(m => m.morale = clamp(m.morale-6,10,100)); break;
+        case 'ev_supplydrop': d.dur += Math.round(d.dur*0.1); team.forEach(m => m.morale = clamp(m.morale+5,10,100)); break;
+        case 'ev_grebeard':   d.dur += Math.round(d.dur*0.15); team.forEach(m => m.morale = clamp(m.morale+8,10,100)); break;
+        case 'ev_trapfun':    d.dur += Math.round(d.dur*0.1); team.forEach(m => m.morale = clamp(m.morale+8,10,100)); break;
+        case 'ev_bosco':      d.dur = Math.max(60, Math.round(d.dur*0.88)); team.forEach(m => m.morale = clamp(m.morale+6,10,100)); break;
+        case 'ev_redsugar':   team.forEach(m => m.morale = clamp(m.morale+8,10,100)); S.credits -= Math.round(20*HZ); break;
+        case 'ev_surf':       team.forEach(m => m.morale = clamp(m.morale+12,10,100)); d.dur += Math.round(d.dur*0.05); if(Math.random() < 0.15){ const v = pick(d.minerIds); if(v) hurt(v, HZ); } break;
+        case 'ev_lastcall':   d.dur = Math.max(60, Math.round(d.dur*0.92)); team.forEach(m => m.morale = clamp(m.morale-4,10,100)); break;
+        case 'ev_jukebox':    team.forEach(m => m.morale = clamp(m.morale+12,10,100)); d.dur += Math.round(d.dur*0.15); break;
+        case 'ev_dance':      team.forEach(m => m.morale = clamp(m.morale+10,10,100)); d.dur += Math.round(d.dur*0.1); break;
+        case 'ev_incinerator':team.forEach(m => m.morale = clamp(m.morale+12,10,100)); S.credits -= Math.round(20*HZ); break;
+        case 'ev_jetboot':    team.forEach(m => m.morale = clamp(m.morale+12,10,100)); d.dur += Math.round(d.dur*0.1); break;
+        case 'ev_mask':       team.forEach(m => m.morale = clamp(m.morale+12,10,100)); d.dur += Math.round(d.dur*0.05); break;
+        case 'ev_pointer':    S.credits -= Math.round(45*HZ); team.forEach(m => m.morale = clamp(m.morale+10,10,100)); break;
+        case 'ev_karlfund':   S.credits -= Math.round(50*HZ); team.forEach(m => m.morale = clamp(m.morale+15,10,100)); break;
+        case 'ev_appeal':     team.forEach(m => m.morale = clamp(m.morale+10,10,100)); d.dur += Math.round(d.dur*0.1); break;
+        case 'ev_friday':     S.credits -= Math.round(80*HZ); team.forEach(m => m.morale = clamp(m.morale+15,10,100)); break;
+        case 'ev_audit':      d.dur += Math.round(d.dur*0.2); S.credits += Math.round(80*HZ); team.forEach(m => m.morale = clamp(m.morale-10,10,100)); break;
+        case 'ev_tax':        S.credits -= Math.round(100*HZ); team.forEach(m => m.morale = clamp(m.morale-4,10,100)); break;
+        case 'ev_overtime':   S.credits -= Math.round(70*HZ); d.dur = Math.max(60, Math.round(d.dur*0.85)); team.forEach(m => m.morale = clamp(m.morale+10,10,100)); break;
+        case 'ev_teambuild':  d.dur += Math.round(d.dur*0.15); team.forEach(m => m.morale = clamp(m.morale+10,10,100)); break;
+        case 'ev_coffee':     S.credits -= Math.round(80*HZ); d.dur = Math.max(60, Math.round(d.dur*0.88)); team.forEach(m => m.morale = clamp(m.morale+6,10,100)); break;
+        case 'ev_printer':    S.credits -= Math.round(40*HZ); team.forEach(m => m.morale = clamp(m.morale+6,10,100)); break;
+        case 'ev_memorial':   S.credits -= Math.round(60*HZ); team.forEach(m => m.morale = clamp(m.morale+12,10,100)); break;
+        case 'ev_dock':       d.dur += Math.round(d.dur*0.1); S.credits -= Math.round(15*HZ); team.forEach(m => m.morale = clamp(m.morale+6,10,100)); break;
+        case 'ev_steelbear':  S.credits -= Math.round(50*HZ); team.forEach(m => m.morale = clamp(m.morale+10,10,100)); break;
       }
     } else {
       showRes('b_result');
@@ -522,6 +555,37 @@ function resolveEvent(d, c){
         case 'ev_slogan':     d.rewardBonus = (d.rewardBonus||1)*1.08; team.forEach(m => m.morale = clamp(m.morale-12,10,100)); break;
         case 'ev_molly':      d.dur = Math.max(60, Math.round(d.dur*0.9)); if(Math.random() < 0.3){ const v = pick(d.minerIds); if(v) hurt(v, HZ); } break;
         case 'ev_goldbug':    team.forEach(m => m.morale = clamp(m.morale-4,10,100)); break;
+        /* —— 扩容包 v1.2（30 事件）B 选项 —— */
+        case 'ev_lootpet':    S.credits += Math.round(40*HZ); team.forEach(m => m.morale = clamp(m.morale-5,10,100)); break;
+        case 'ev_lookupleech':S.credits += Math.round(30*HZ); if(Math.random() < 0.2){ const v = pick(d.minerIds); if(v) hurt(v, HZ); } break;
+        case 'ev_huuli':      team.forEach(m => m.morale = clamp(m.morale-4,10,100)); break;
+        case 'ev_crisp':      S.credits += Math.round(60*HZ); team.forEach(m => m.morale = clamp(m.morale-6,10,100)); break;
+        case 'ev_frogbelly':  d.dur += Math.round(d.dur*0.15); team.forEach(m => m.morale = clamp(m.morale+8,10,100)); break;
+        case 'ev_supplydrop': d.dur = Math.max(60, Math.round(d.dur*0.92)); if(Math.random() < 0.25){ const v = pick(d.minerIds); if(v) hurt(v, HZ); } break;
+        case 'ev_grebeard':   d.dur = Math.max(60, Math.round(d.dur*0.9)); if(Math.random() < 0.2){ const v = pick(d.minerIds); if(v) hurt(v, HZ); } break;
+        case 'ev_trapfun':    S.credits += Math.round(35*HZ); team.forEach(m => m.morale = clamp(m.morale-6,10,100)); break;
+        case 'ev_bosco':      S.credits += Math.round(40*HZ); team.forEach(m => m.morale = clamp(m.morale-6,10,100)); break;
+        case 'ev_redsugar':   S.credits += Math.round(45*HZ); team.forEach(m => m.morale = clamp(m.morale-8,10,100)); break;
+        case 'ev_surf':       S.credits += Math.round(20*HZ); team.forEach(m => m.morale = clamp(m.morale-6,10,100)); break;
+        case 'ev_lastcall':   d.dur += Math.round(d.dur*0.12); team.forEach(m => m.morale = clamp(m.morale+10,10,100)); break;
+        case 'ev_jukebox':    S.credits += Math.round(45*HZ); team.forEach(m => m.morale = clamp(m.morale-6,10,100)); break;
+        case 'ev_dance':      d.dur = Math.max(60, Math.round(d.dur*0.95)); team.forEach(m => m.morale = clamp(m.morale-5,10,100)); break;
+        case 'ev_incinerator':S.credits += Math.round(15*HZ); team.forEach(m => m.morale = clamp(m.morale-5,10,100)); break;
+        case 'ev_jetboot':    S.credits += Math.round(50*HZ); team.forEach(m => m.morale = clamp(m.morale-5,10,100)); break;
+        case 'ev_mask':       S.credits += Math.round(40*HZ); team.forEach(m => m.morale = clamp(m.morale-8,10,100)); break;
+        case 'ev_pointer':    d.dur += Math.round(d.dur*0.08); team.forEach(m => m.morale = clamp(m.morale-4,10,100)); break;
+        case 'ev_karlfund':   d.dur = Math.max(60, Math.round(d.dur*0.95)); team.forEach(m => m.morale = clamp(m.morale-8,10,100)); break;
+        case 'ev_appeal':     S.credits += Math.round(15*HZ); team.forEach(m => m.morale = clamp(m.morale-6,10,100)); break;
+        case 'ev_friday':     S.credits -= Math.round(20*HZ); team.forEach(m => m.morale = clamp(m.morale-8,10,100)); break;
+        case 'ev_audit':      S.credits -= Math.round(60*HZ); team.forEach(m => m.morale = clamp(m.morale+8,10,100)); break;
+        case 'ev_tax':        S.credits -= Math.round(25*HZ); team.forEach(m => m.morale = clamp(m.morale+6,10,100)); break;
+        case 'ev_overtime':   d.dur = Math.max(60, Math.round(d.dur*0.85)); team.forEach(m => m.morale = clamp(m.morale-10,10,100)); break;
+        case 'ev_teambuild':  S.credits += Math.round(40*HZ); team.forEach(m => m.morale = clamp(m.morale-8,10,100)); break;
+        case 'ev_coffee':     team.forEach(m => m.morale = clamp(m.morale+8,10,100)); d.dur += Math.round(d.dur*0.1); break;
+        case 'ev_printer':    d.dur += Math.round(d.dur*0.12); team.forEach(m => m.morale = clamp(m.morale-6,10,100)); break;
+        case 'ev_memorial':   S.credits += Math.round(30*HZ); team.forEach(m => m.morale = clamp(m.morale-8,10,100)); break;
+        case 'ev_dock':       S.credits -= Math.round(60*HZ); team.forEach(m => m.morale = clamp(m.morale-6,10,100)); break;
+        case 'ev_steelbear':  S.credits += Math.round(90*HZ); team.forEach(m => m.morale = clamp(m.morale-4,10,100)); break;
       }
     }
   }
