@@ -275,7 +275,7 @@ function renderDeps(){
     /* 矿道矿脉点位：按任务 id 播种，同一任务稳定、不同任务错落（硝/金交替嵌在未挖掘岩壁里，挖到即消失） */
     let hs = 0; for(let j=0;j<d.id.length;j++) hs = (hs*31 + d.id.charCodeAt(j))>>>0;
     const mPos = [12+hs%16, 34+(hs>>>4)%18, 58+(hs>>>8)%16, 82+(hs>>>12)%14];
-    html += '<div class="dep'+(d.paused?' evt':'')+'" data-dep="'+d.id+'">'+
+    html += '<div class="dep'+(d.paused?' evt':'')+'" data-dep="'+d.id+'" data-biome="'+d.m.biome+'">'+
       '<div class="t"><span class="nm">'+mtypeById(d.m.type).name+' · '+biomeById(d.m.biome).name+'</span>'+
       '<span class="hz">'+'★'.repeat(d.m.hazard)+'</span></div>'+
       '<div class="meta">'+team+'　剩余 '+remainTxt+'</div>'+
