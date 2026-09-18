@@ -260,7 +260,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   BGM.init();   /* 修复：此前 init 从未调用，BGM 默认无声（首次任意点击即响） */
   if(!load()){
     newGame();
-    playPrologue();
+    /* 首次进入先选语言、选完再进序章——否则选择器会在首次 renderAll 后顶掉序章弹窗（09-19 实测） */
+    if(localStorage.getItem('drg_lang') === null && typeof showLangChooser === 'function'){
+      showLangChooser(() => playPrologue());
+    } else {
+      playPrologue();
+    }
   }
   else {
     realtimeSummary = consumeRealtimeResult();
@@ -279,8 +284,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   }catch(e){}
   renderAll();
   if(realtimeSummary) showRealtimeSummary(realtimeSummary);
-  /* 首次进入（localStorage 无 drg_lang）弹出语言选择；主循环照常运行 */
-  try{ if(localStorage.getItem('drg_lang') === null && typeof showLangChooser === 'function') showLangChooser(); }catch(e){}
+  /* 老档未选过语言的（序章早已结束，无弹窗可顶）：进游戏后补一次语言选择 */
+  if(S.flags.prologueDone && localStorage.getItem('drg_lang') === null && typeof showLangChooser === 'function') showLangChooser();
   /* 收纳折叠：全局委托（含动态渲染的折叠头） */
   document.addEventListener('click', e => {
     const h = e.target.closest('[data-fold]');
