@@ -344,6 +344,7 @@ const TEXT_EN = {
 
   log_trinket_off: "Trinket removed and returned to the display case.",
   log_trinket_on: "Equipped trinket【{name}】.",
+  log_trinket_on2: "Second trinket slot equipped【{name}】.",
   log_mod_off: "Mod unequipped (kept in the warehouse).",
   log_mod_in: "Mod stored:【{name}】",
   log_mod_dup: "Duplicate【{name}】drawn; one free reroll applied per corporate policy.",
@@ -425,6 +426,11 @@ const TEXT_EN = {
   tr_equip_msg: "{miner} equipped {name}. On the performance sheet it's a row of data; in the bar it's a story.",
   tr_season_banner: "Current holiday campaign: {festival} — limited trinkets; miss it and wait a year (or for a corporate rollback; don't count on it).",
   tr_lock_hint: "Trinkets drop from Deep Dive finales, holiday campaigns and trinket boxes. The good stuff never enters the store — that's the Corporation's romance, top-tier.",
+  tr_slot2_locked: "Second trinket slot 🔒: unlocks when any miner reaches promotion ★3 (current highest promotion: ★{n}).",
+  tr_slot2_empty: "Second trinket slot unlocked and empty — the promoted elite's second slot. Don't waste it.",
+  tr_ui_btn_equip2: "Equip · Slot 2",
+  tr_slot2_dup: "The same trinket cannot be worn in both slots — Corporation rules; mind your face.",
+  tr_slot2_locked_log: "Second trinket slot is locked: requires any miner promoted to ★3.",
 
   /* ================= 15. ev_lcyf / ev_cat 社区彩蛋 ================= */
   ev_lcyf_title: "Mining Consultant Visit",
@@ -964,7 +970,7 @@ const I18N_EN = {
   '▸ 携带规则与升级详情':'▸ Carry rules & upgrade details', '▾ 携带规则与升级详情':'▾ Carry rules & upgrade details',
   '每职业 3 级，每把武器 1 个模组槽。抽到重复模组自动折算 30% 造价的代币。':'3 levels per class; 1 mod slot per weapon. Duplicates auto-refund 30% of cost in credits.',
   '功绩点来源：深潜（每周最多 10）+ 季度 KPI +5 + 危5 任务 +1 + 精英虫 +1。空闲精英每游戏日收集 1 个匠器（下阶段开放）。':'Merit sources: Deep Dives (max 10/week) + quarterly KPI +5 + hazard-5 missions +1 + elite bugs +1. Idle elites collect 1 relic per game day (next phase).',
-  '已佩戴：':'Equipped: ', '来源见帮助页。':'See the Help tab for sources.',
+  '已佩戴：':'Equipped: ', '已佩戴·第二槽：':'Equipped (slot 2): ', '来源见帮助页。':'See the Help tab for sources.',
   '锻造台 · 模组抽卡':'Forge · Mod Gacha', ' 个':'×', '3 选 1':'3-pick',
   '✦ 三提石任务获取 · 重复自动折 30%':'✦ From Tritilyte missions · duplicates refund 30%', '抽卡':'Draw',
   '凭证':'License', '（两池前 ':' (first ', ' 把已解锁）':' of both pools unlocked)',

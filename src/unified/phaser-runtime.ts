@@ -44,6 +44,14 @@ export class PhaserMissionRuntime {
       input: { keyboard: false, mouse: false, touch: false, gamepad: false },
       scene: new MissionDriverScene(this),
     });
+    /* 用户实录（09-19）：Phaser 4 对 config 传入的场景实例不保证自动 start——
+       场景不 active 则 MissionDriver.update 永不触发，实时任务冻结在第 1 帧（黑屏/没反应）。
+       READY 事件后显式启动驱动场景。 */
+    const startDriver = (): void => {
+      this.phaser?.scene.start('MissionDriver');
+    };
+    if (this.phaser.isBooted) startDriver();
+    else this.phaser.events.once(Phaser.Core.Events.READY, startDriver);
   }
 
   setVisible(visible: boolean): void {

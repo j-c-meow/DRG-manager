@@ -68,7 +68,7 @@ function newGame(){
     market:{day:0, prices:{}, prev:{}}, lastDay:1, dayStats:{missions:0, credits:0, morkite:0, injured:0},
     elite:{owned:[], carry:null, rewindWeek:''},
     merit:0,
-    trinkets:{}, trinketEq:null,
+    trinkets:{}, trinketEq:null, trinketEq2:null,
     blanks:0, modsOwned:{}, equipped:{}, drawSinceT1:0, rerolled:false,
     dive:{week:'', normal:{stage:0, done:false}, elite:{locked:true, stage:0, done:false}, modifiers:[]},
     log:[], flags:{}, speed:1, stats:{missions:0, inj:0}, mode:'idle', idleReport:null, muleLv:1,
@@ -146,6 +146,7 @@ function load(){
     if(!S.elite){ S.elite = {owned:[], carry:null, rewindWeek:''}; }
     if(S.merit === undefined) S.merit = 0;
     if(!S.trinkets){ S.trinkets = {}; S.trinketEq = null; }
+    if(S.trinketEq2 === undefined) S.trinketEq2 = null;   /* 第二饰品槽（09-19 拍板）：老档补默认值，不动旧字段 */
     if(S.realtime === undefined) S.realtime = null;
     const assignedMinerIds = new Set((Array.isArray(S.deps) ? S.deps : []).flatMap(d => Array.isArray(d.minerIds) ? d.minerIds : []));
     if(S.realtime && S.realtime.minerId) assignedMinerIds.add(S.realtime.minerId);

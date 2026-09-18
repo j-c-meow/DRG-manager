@@ -392,21 +392,34 @@ function renderGear(){
   } else {
     html += '<div class="note">'+TEXT.el_ui_locked.replace('Lv10', 'Lv10（当前 Lv.'+S.rigLv+'）')+'</div>';
   }
-  /* 饰品（B-5）：全队佩戴 */
+  /* 饰品（B-5）：全队佩戴；第二饰品槽（09-19 拍板）：任一矿工晋升≥3★解锁，效果叠加 */
   html += '<h3 class="sec">'+TEXT.tr_ui_title+'</h3><div class="note">'+TEXT.tr_ui_sub+'</div>';
   const eqTr = equippedTrinket();
   html += eqTr ? '<div class="row"><span style="flex:1"><img src="assets/trinkets/'+eqTr.id+'.png" style="width:28px;image-rendering:pixelated;vertical-align:middle"> '+L('已佩戴：')+L(eqTr)+L('（')+effectText(eqTr.effect||{})+L('）')+'</span>'+
     '<button class="btn" id="btn-uneq-tr">'+TEXT.tr_ui_btn_unequip+'</button></div>'
     : '<div class="note">'+TEXT.tr_lock_hint+'</div>';
+  /* 第二饰品槽：未解锁=锁样式+条件提示；解锁=空槽可佩/已佩可取下 */
+  if(!trinketSlot2Unlocked()){
+    html += '<div class="row" style="opacity:.55"><span style="flex:1">🔒 '+TEXT.tr_slot2_locked.replace('{n}', bestPromotionStars())+'</span></div>';
+  } else {
+    const eqTr2 = equippedTrinkets().find(t => t.id === S.trinketEq2) || null;
+    html += eqTr2 ? '<div class="row"><span style="flex:1"><img src="assets/trinkets/'+eqTr2.id+'.png" style="width:28px;image-rendering:pixelated;vertical-align:middle"> '+L('已佩戴·第二槽：')+L(eqTr2)+L('（')+effectText(eqTr2.effect||{})+L('）')+'</span>'+
+      '<button class="btn" id="btn-uneq-tr2">'+TEXT.tr_ui_btn_unequip+'</button></div>'
+      : '<div class="note">'+TEXT.tr_slot2_empty+'</div>';
+  }
   const ownedTr = Object.keys(S.trinkets||{});
   if(ownedTr.length){
     ownedTr.forEach(id => {
-      if(S.trinketEq === id) return;
+      if(S.trinketEq === id || S.trinketEq2 === id) return;
       const t = TRINKET_INDEX[id];
       if(!t) return;
+      const tr2Ready = trinketSlot2Unlocked() && id !== S.trinketEq;
       html += '<div class="row"><span style="flex:1"><img src="assets/trinkets/'+t.id+'.png" style="width:28px;image-rendering:pixelated;vertical-align:middle"> ['+L(t)+L('｜')+L(t.desc)+']'+
         ((S.trinkets[id]||0)>1?' <span class="note">×'+S.trinkets[id]+'</span>':'')+'</span>'+
-        '<button class="btn" data-eq-tr="'+id+'">'+TEXT.tr_ui_btn_equip+'</button></div>';
+        '<span style="flex:none;display:flex;gap:4px;">'+
+        '<button class="btn" data-eq-tr="'+id+'">'+TEXT.tr_ui_btn_equip+'</button>'+
+        '<button class="btn" data-eq-tr2="'+id+'" '+(tr2Ready?'':'disabled')+' title="'+(trinketSlot2Unlocked()?TEXT.tr_slot2_dup:TEXT.tr_slot2_locked_log)+'">'+TEXT.tr_ui_btn_equip2+'</button>'+
+        '</span></div>';
     });
   } else if(!eqTr) {
     html += '<div class="note">'+L('来源见帮助页。')+'</div>';
@@ -523,14 +536,31 @@ function renderGear(){
     const box = $('#side').querySelector('[data-gearrule]');
     if(box){ const open = box.style.display === 'none'; box.style.display = open ? 'block' : 'none'; gf.textContent = open ? '▾ 携带规则与升级详情' : '▸ 携带规则与升级详情'; }
   };
-  /* 饰品佩戴/取下 */
+  /* 饰品佩戴/取下（第二槽：晋升≥3★ 门禁 + 同名唯一沿用） */
   const ut = $('#btn-uneq-tr');
   if(ut) ut.onclick = () => { S.trinketEq = null; log(TEXT.log_trinket_off, ''); renderAll(); save(); };
+  const ut2 = $('#btn-uneq-tr2');
+  if(ut2) ut2.onclick = () => { S.trinketEq2 = null; log(TEXT.log_trinket_off, ''); renderAll(); save(); };
   $('#side').querySelectorAll('[data-eq-tr]').forEach(el=>{
     el.onclick = () => {
-      S.trinketEq = el.dataset.eqTr;
+      const id = el.dataset.eqTr;
+      if(!(S.trinkets||{})[id]) return;
+      if(id === S.trinketEq2){ log(TEXT.tr_slot2_dup, 'bad'); return; }
+      S.trinketEq = id;
       const t = TRINKET_INDEX[S.trinketEq];
       log(TEXT.log_trinket_on.replace('{name}', L(t))+'：'+effectText(t.effect||{}), 'good');
+      renderAll(); save();
+    };
+  });
+  $('#side').querySelectorAll('[data-eq-tr2]').forEach(el=>{
+    el.onclick = () => {
+      if(!trinketSlot2Unlocked()){ log(TEXT.tr_slot2_locked_log, 'bad'); return; }
+      const id = el.dataset.eqTr2;
+      if(!(S.trinkets||{})[id]) return;
+      if(id === S.trinketEq || id === S.trinketEq2){ log(TEXT.tr_slot2_dup, 'bad'); return; }
+      S.trinketEq2 = id;
+      const t = TRINKET_INDEX[S.trinketEq2];
+      log(TEXT.log_trinket_on2.replace('{name}', L(t))+'：'+effectText(t.effect||{}), 'good');
       renderAll(); save();
     };
   });
