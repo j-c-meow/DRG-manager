@@ -272,11 +272,14 @@ function renderDeps(){
     const team = d.minerIds.map(id=>minerName(S.miners.find(x=>x.id===id))).join('、');
     const remainTxt = d.paused ? '待管理层决策' : fmtDur(Math.ceil(Math.max(0, d.dur-done)));
     const cls0 = d.minerIds.length ? ((S.miners.find(x=>x.id===d.minerIds[0])||{}).cls || 'scout') : 'scout';
+    /* 矿道矿脉点位：按任务 id 播种，同一任务稳定、不同任务错落（硝/金交替嵌在未挖掘岩壁里，挖到即消失） */
+    let hs = 0; for(let j=0;j<d.id.length;j++) hs = (hs*31 + d.id.charCodeAt(j))>>>0;
+    const mPos = [12+hs%16, 34+(hs>>>4)%18, 58+(hs>>>8)%16, 82+(hs>>>12)%14];
     html += '<div class="dep'+(d.paused?' evt':'')+'" data-dep="'+d.id+'">'+
       '<div class="t"><span class="nm">'+mtypeById(d.m.type).name+' · '+biomeById(d.m.biome).name+'</span>'+
       '<span class="hz">'+'★'.repeat(d.m.hazard)+'</span></div>'+
       '<div class="meta">'+team+'　剩余 '+remainTxt+'</div>'+
-      '<div class="prog"><i style="width:'+pct+'%"></i>'+
+      '<div class="prog" style="--m1:'+mPos[0]+'%;--m2:'+mPos[1]+'%;--m3:'+mPos[2]+'%;--m4:'+mPos[3]+'%"><i style="width:'+pct+'%"></i>'+
       '<span class="digger anim-spr" data-anim="dwarf_'+cls0+'_dig" style="left:'+pct+'%;width:24px;height:24px;"></span></div>'+
       (d.paused?'<div class="evtbox"><div class="q">'+TEXT.ui_deps_event+'</div><button class="btn warn" data-ev="'+d.id+'">'+TEXT.ui_deps_event_btn+'</button></div>':'')+
       '</div>';

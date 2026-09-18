@@ -896,7 +896,7 @@ body.realtime-open{overflow:hidden;padding-bottom:0}
 }
 
 @media(max-width:700px){
-  body{padding-bottom:54px;font-size:12px}
+  body{padding-bottom:calc(108px + env(safe-area-inset-bottom));font-size:12px}
   #app{padding:5px}
   .topbar{grid-template-columns:minmax(0,1fr) 112px 72px}
   .brand-lockup{height:54px;padding:0 7px}.brand-mark{width:39px;height:36px}.brand-copy strong{font-size:14px}.brand-copy span{font-size:7px}
@@ -926,12 +926,20 @@ body.realtime-open{overflow:hidden;padding-bottom:0}
   main>section.m-main,main>section.m-side{display:block}
   body[data-mtab="roster"] main>section.m-main{display:block}
   body:not([data-mtab="roster"]) main>section.m-main{display:none}
-  .mission-panel,.roster-panel{min-height:calc(100vh - 205px)}
+  .mission-panel,.roster-panel{min-height:calc(100vh - 262px)}
   .mission-card{grid-template-columns:95px minmax(0,1fr);min-height:118px}
   .mission-cover{min-height:116px}
   .mission-description{display:none}
-  .tabs{position:fixed;z-index:40;right:0;bottom:0;left:0;min-height:50px;overflow-x:auto;background:#07151d}
-  .tabs .tab{min-width:58px;padding:11px 3px}
+  /* 用户 09-18 拍板：底部菜单栏常驻 + 放大按键——两行网格（5+4），键位加高加大，
+     适配 iPhone 底部安全区；不再横向滚动找页签 */
+  .tabs{
+    position:fixed;z-index:40;right:0;bottom:0;left:0;
+    display:grid;grid-template-columns:repeat(5,1fr);align-items:stretch;
+    background:#07151d;border-top:1px solid #16404f;
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  .tabs .tab{min-width:0;min-height:48px;padding:10px 2px;font-size:13px}
+  .tabs .tab.on::after{bottom:0}
   .panel h2{min-height:38px}.panel-title{font-size:15px}
   .btn{padding:5px 9px}
   .modal{padding:8px}.modal .box{width:96vw;max-height:91vh;padding:13px}
@@ -952,7 +960,30 @@ body.realtime-open{overflow:hidden;padding-bottom:0}
   .realtime-shell-close{padding:5px 8px;font-size:10px}
 }
 
-/* 派遣通道：矿道进度条 + 挖掘小人（移植自 53f51c8：从 700px 断点提为全局，桌面同样显示；
-   置于作用域末尾赢得级联。进度条充填纹样沿用 iris 全局 .dep .prog>i 青色斜纹 + stripeRoll） */
-.dep .prog{position:relative;height:18px;overflow:visible}
+/* 派遣通道：矿道进度条 + 挖掘小人（移植自 53f51c8：全局生效，桌面同样显示；
+   用户 09-18 拍板美术口径：矿道=挖一条矿洞，未挖掘段是带矿物脉的岩壁，隧道推进逐段吃掉矿脉。
+   矿脉素材用官方解包件 res_nitra/res_gold，位置由 ui.js 按任务 id 播种（--m1..--m4）） */
+.dep .prog{
+  position:relative;height:20px;overflow:visible;
+  border:1px solid #245263;
+  background:
+    url("../assets/icons/res_nitra.png") var(--m1,15%) 50%/14px 14px no-repeat,
+    url("../assets/icons/res_gold.png")  var(--m2,42%) 50%/14px 14px no-repeat,
+    url("../assets/icons/res_nitra.png") var(--m3,68%) 50%/14px 14px no-repeat,
+    url("../assets/icons/res_gold.png")  var(--m4,90%) 50%/14px 14px no-repeat,
+    /* 岩石质感：双层碎石纹 + 暗棕岩体 */
+    repeating-linear-gradient(0deg,rgba(255,235,200,.08) 0 1px,transparent 1px 4px),
+    repeating-linear-gradient(90deg,rgba(0,0,0,.38) 0 3px,transparent 3px 8px),
+    radial-gradient(ellipse 16px 10px at 24% 32%,rgba(118,92,72,.6),transparent 70%),
+    radial-gradient(ellipse 20px 13px at 71% 68%,rgba(98,77,60,.55),transparent 70%),
+    linear-gradient(180deg,#3d2f24,#221a14 55%,#150f0b);
+}
+/* 已挖掘段 = 隧道：深处渐暗，掌子面（推进沿）一道暖光；关掉基础规则的青纹滚动动画 */
+.dep .prog>i{
+  display:block;height:100%;
+  background:linear-gradient(180deg,#03080c,#0a141b 55%,#11222c);
+  border-right:2px solid rgba(255,178,54,.6);
+  box-shadow:inset -7px 0 12px -5px rgba(255,170,50,.35),inset 0 4px 8px rgba(0,0,0,.75);
+  animation:none;
+}
 .dep .digger{position:absolute;z-index:2;bottom:-2px;width:22px;height:22px;transform:translateX(-50%);background-repeat:no-repeat;image-rendering:pixelated}
