@@ -1145,7 +1145,8 @@ function applyLang(lang, silent){
 }
 
 /* —— 首次进入：语言选择弹窗（锁定模式，双语标签防鸡生蛋）—— */
-function showLangChooser(){
+function showLangChooser(onPick){
+  try{ localStorage.setItem('drg_dbg', 'chooser-entry'); }catch(e){}
   if(typeof showModal !== 'function') return;
   showModal(
     '<div style="text-align:center;padding:6px 4px 2px;">' +
@@ -1155,11 +1156,19 @@ function showLangChooser(){
       '<button class="btn" id="btn-lang-en" style="width:100%;height:48px;font-size:15px;">English <span class="note">英语</span></button>' +
     '</div>', true);
   const pick = (lang) => {
+    try{ localStorage.setItem('drg_dbg', 'pick:'+lang); }catch(e){}
     applyLang(lang);
     try{ closeModal(true); }catch(e){}
     let sReady = false;
     try{ sReady = (typeof S !== 'undefined' && !!S && typeof renderAll === 'function'); }catch(e){}
     if(sReady) renderAll();
+    /* 新档兜底：若选择器顶掉了序章弹窗（boot 时序与本选择器并发触发），选完语言后补开序章 */
+    try{
+      if(typeof playPrologue === 'function' && S && !S.flags.prologueDone && !S.flags.nameChosen && !S.deps.some(x=>x.kind==='prologue') && !S.board.some(x=>x.kind==='prologue')){
+        playPrologue();
+      }
+    }catch(e){}
+    if(typeof onPick === 'function') onPick();
   };
   const bz = document.getElementById('btn-lang-zh');
   const be = document.getElementById('btn-lang-en');

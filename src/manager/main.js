@@ -284,8 +284,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   }catch(e){}
   renderAll();
   if(realtimeSummary) showRealtimeSummary(realtimeSummary);
-  /* 老档未选过语言的（序章早已结束，无弹窗可顶）：进游戏后补一次语言选择 */
-  if(S.flags.prologueDone && localStorage.getItem('drg_lang') === null && typeof showLangChooser === 'function') showLangChooser();
+  /* 语言选择（自愈版，09-19 实测）：任何存档状态未选过语言就弹；
+     选完若序章尚未完成（含旧版被顶掉序章的中毒档）自动补开序章；
+     语言已选而代号未登记的老档 → 补一次起名登记。二选一，避免同框互顶 */
+  if(localStorage.getItem('drg_lang') === null && typeof showLangChooser === 'function'){
+    showLangChooser(() => { if(S && !S.flags.prologueDone && typeof playPrologue==='function') playPrologue(); });
+  } else if(S.flags.prologueDone && !S.flags.nameChosen && typeof showNameRegistration === 'function'){
+    showNameRegistration();
+  }
   /* 收纳折叠：全局委托（含动态渲染的折叠头） */
   document.addEventListener('click', e => {
     const h = e.target.closest('[data-fold]');
