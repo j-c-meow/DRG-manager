@@ -103,6 +103,26 @@ document.addEventListener('keydown', e => {
   else if(cheatBuf.endsWith('iriscat')){ cheatBuf=''; doCheat('IRIS'); }
 });
 
+function showCredits(){
+  showModal(
+    '<div class="credits-sheet">'+
+      '<p class="credits-kicker">PROJECT CREDITS</p>'+
+      '<h3>制作与鸣谢</h3>'+
+      '<dl>'+
+        '<div><dt>创意及开发</dt><dd>j-c-meow</dd></div>'+
+        '<div><dt>部署和技术指导</dt><dd>iriscat</dd></div>'+
+        '<div><dt>技术指导</dt><dd>jiuduo、深岩银河汉化组</dd></div>'+
+        '<div><dt>测试</dt><dd>iris 群、Cat Ship Games 群友</dd></div>'+
+        '<div><dt>素材支持</dt><dd>lcyf166、寒曦月璃、Ghost Ship Games、Deep Rock Galactic Wiki</dd></div>'+
+        '<div><dt>参考项目</dt><dd><a href="https://github.com/Flora233333/deep-rock-galactic-html" target="_blank" rel="noopener noreferrer">DS / Flora233333 · deep-rock-galactic-html</a></dd></div>'+
+      '</dl>'+
+      '<p class="credits-note">非商业粉丝作品，与 Ghost Ship Games 无隶属关系。游戏名称、美术、音频及商标归原权利人所有。</p>'+
+      '<div class="credits-actions"><button class="btn pri" onclick="closeModal(true)">返回管理终端</button></div>'+
+    '</div>',
+    true
+  );
+}
+
 /* 资源总览弹窗：全部资源 + 市场价一屏看完 */
 function showResourceOverview(){
   const rows = [];
@@ -384,6 +404,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     if(sysTab) sysTab.click();
     document.querySelector('.roster-panel')?.scrollIntoView({behavior:'smooth', block:'start'});
   };
+  const creditsBtn = document.getElementById('btn-credits');
+  if(creditsBtn) creditsBtn.onclick = showCredits;
   window.addEventListener('beforeunload', save);
   }catch(initErr){ window.__initErr = (initErr.stack || initErr.message); renderAll(); }
 });

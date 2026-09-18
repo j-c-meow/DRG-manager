@@ -27,7 +27,7 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { width: 100%; height: 100%; background: #05070a; color: var(--text);
   font-family: var(--cjk); overflow: hidden; -webkit-font-smoothing: antialiased; overscroll-behavior: none; }
-button { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+button { touch-action: manipulation; -webkit-tap-highlight-color: transparent; background-image: none !important; box-shadow: none !important; }
 #realtime-app { position: relative; flex: 1 1 auto; min-height: 0; width: 100%; height: 100%; overflow: hidden; }
 canvas#game { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: crosshair; touch-action: none; }
 
@@ -44,27 +44,27 @@ canvas#game { position: absolute; inset: 0; width: 100%; height: 100%; display: 
 .btn {
   position: relative; display: block; width: 100%; text-align: left;
   padding: 12px 16px; border: 1px solid rgba(255, 255, 255, .14);
-  background: linear-gradient(180deg, rgba(38, 45, 56, .96), rgba(18, 22, 29, .96));
+  background: #202731;
   color: var(--text); font-family: var(--disp); font-size: 19px; font-weight: 700;
   letter-spacing: .04em; cursor: pointer; transition: .14s;
   clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
 }
 .btn b { display: block; font-size: 20px; }
 .btn span { display: block; font-family: var(--cjk); font-size: 12px; font-weight: 400; color: var(--muted); margin-top: 2px; }
-.btn:hover { border-color: var(--gold); background: linear-gradient(180deg, rgba(72, 56, 22, .98), rgba(30, 24, 14, .98)); transform: translateX(3px); }
+.btn:hover { border-color: var(--gold); background: #342817; transform: translateX(3px); }
 .btn:hover span { color: #e0c79a; }
 .btn:active { transform: translateX(1px) scale(.995); }
 .btn.big { padding: 16px 18px; }
 .btn.big b { font-size: 26px; color: var(--gold); }
-.btn.ghost { background: rgba(20, 24, 30, .7); font-size: 15px; }
+.btn.ghost { background: #171c23; font-size: 15px; }
 .btn.tiny { width: auto; padding: 5px 10px; font-size: 13px; }
-.btn.danger:hover { border-color: var(--red); background: linear-gradient(180deg, rgba(80, 24, 18, .98), rgba(40, 14, 10, .98)); }
+.btn.danger:hover { border-color: var(--red); background: #471b14; }
 .btn.launch {
   width: auto; padding: 14px 42px; text-align: center; font-size: 30px; color: #180d02;
-  background: linear-gradient(180deg, #ffd06a, #e08a12); border: none; text-shadow: 0 1px 0 rgba(255, 255, 255, .35);
+  background: #e9a62c; border: none; text-shadow: none;
 }
 .btn.launch span { color: rgba(30, 16, 0, .7); font-weight: 700; letter-spacing: .1em; }
-.btn.launch:hover { filter: brightness(1.12); transform: translateY(-2px); }
+.btn.launch:hover { background:#ffc451; filter:none; transform: translateY(-2px); }
 .btn:disabled { opacity: .45; cursor: not-allowed; transform: none; }
 .realtime-shell .realtime-shell-close {
   width: auto;

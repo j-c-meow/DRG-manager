@@ -47,20 +47,29 @@ function openDispatch(mid){
   const m = S.board.find(x=>x.id===mid); if(!m) return;
   const t = mtypeById(m.type);
   const idle = S.miners.filter(x=>x.state==='idle' && x.morale>=25);
+  const defaultMinerId = idle.length ? idle[0].id : '';
   let html = '<h3 style="color:var(--amber)">'+t.name+' · '+biomeById(m.biome).name+'</h3>';
   html += '<div class="note">危险等级 '+'★'.repeat(m.hazard)+'　报酬系数 ×'+CFG.HAZ[m.hazard-1]+'</div>';
   html += '<div class="meta">产出：'+Object.entries(m.r).map(([k,v])=>'<span class="costchip">'+(resIcon(k)==='◈'?'◈':resIcon(k))+'<b>'+v+'</b></span>').join('')+(m.clause?'<span class="costchip" title="'+m.clause.name+'：'+m.clause.d+'">⚠ '+m.clause.name+'</span>':'')+'</div>';
-  html += '<h3 class="sec">选择出勤矿工（可多选；简单单人即可，困难单建议满编协作）</h3>';
-  if(!idle.length){
-    html += '<div class="note">没有可派遣的矿工（都在任务中/医疗站/闹情绪）。</div>';
+  html += '<h3 class="sec">选择出勤矿工</h3>';
+  if(!S.miners.length){
+    html += '<div class="note">名册中没有矿工，请先招募矿工。</div>';
+  } else if(!idle.length){
+    html += '<div class="note">当前没有可派遣矿工；任务中、医疗中或士气低于 25 的矿工不能出勤。</div>';
   }
-  const capN = hcCap();
-  idle.forEach((mn,i)=>{
-    const fit = (mn.cls===t.best) ? ' <span style="color:var(--green)">\u2714适配</span>' : '';
-    html += '<label class="row" style="cursor:pointer"><input type="checkbox" data-miner="'+mn.id+'" '+(i===0?'checked':'')+'>'+
-      minerName(mn)+' Lv.'+mn.lv+fit+'</label>';
+  html += '<div class="dispatch-miner-list">';
+  S.miners.forEach(mn=>{
+    const ready = mn.state==='idle' && mn.morale>=25;
+    const fit = mn.cls===t.best ? ' · 任务适配' : '';
+    const stateText = mn.state==='mission' ? '任务中' : mn.state==='med' ? '医疗中' : mn.morale<25 ? '士气过低' : '可派遣';
+    html += '<label class="dispatch-miner-option'+(ready?'':' is-disabled')+'">'+
+      '<input type="checkbox" data-miner="'+mn.id+'" '+(mn.id===defaultMinerId?'checked':'')+' '+(ready?'':'disabled')+'>'+
+      '<span class="dispatch-miner-copy"><b>'+minerName(mn)+' · '+CLASSES[mn.cls].name+' Lv.'+mn.lv+'</b>'+
+      '<span>'+stateText+' · 士气 '+mn.morale+'/100'+fit+'</span></span></label>';
   });
-  html += '<div class="note" id="dp-cap">小队上限 '+capN+' 人，超出的将自动取消勾选。</div>';
+  html += '</div>';
+  const capN = hcCap();
+  html += '<div class="note" id="dp-cap">已默认选择首名可用矿工；小队上限 '+capN+' 人。</div>';
   html += '<div class="meta" id="dp-summary"></div>';
   html += '<button class="btn pri" id="dp-go" style="width:100%" disabled>派遣</button>';
   showModal(html);

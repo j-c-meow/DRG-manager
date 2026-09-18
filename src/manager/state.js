@@ -127,6 +127,11 @@ function load(){
     if(S.merit === undefined) S.merit = 0;
     if(!S.trinkets){ S.trinkets = {}; S.trinketEq = null; }
     if(S.realtime === undefined) S.realtime = null;
+    const assignedMinerIds = new Set((Array.isArray(S.deps) ? S.deps : []).flatMap(d => Array.isArray(d.minerIds) ? d.minerIds : []));
+    if(S.realtime && S.realtime.minerId) assignedMinerIds.add(S.realtime.minerId);
+    S.miners.forEach(m => {
+      if(m.state === 'mission' && !assignedMinerIds.has(m.id)) m.state = 'idle';
+    });
     if(S.realtimeProfile === undefined){
       S.realtimeProfile = S.realtimeOpts || null;
       delete S.realtimeOpts;
