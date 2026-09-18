@@ -1,6 +1,6 @@
 # Deployment
 
-项目构建为纯静态双入口游戏，不需要后端或数据库。
+项目构建为纯静态单页游戏，不需要后端或数据库。
 
 ## Build
 
@@ -14,7 +14,6 @@ npm run build
 ```text
 dist/
 ├── index.html
-├── realtime/index.html
 ├── scripts/
 ├── styles/
 ├── assets/
@@ -32,11 +31,11 @@ npm run deploy
 
 ## Other Static Hosts
 
-先运行 `npm run build`，再把整个 `dist/` 发布到任意静态主机。主入口是 `/`，实时模式入口是 `/realtime/`。服务端必须让 `/realtime/` 返回 `realtime/index.html`。
+先运行 `npm run build`，再把整个 `dist/` 发布到任意静态主机。唯一入口是 `/`；管理终端与实时任务在同一页面内切换，不需要额外的路由回退。
 
 ## Save Data
 
-管理模式和实时模式通过同源 `localStorage` 交换任务请求与结果。更换域名会产生新的存档空间；迁移前应在管理端导出存档。
+管理模式和实时任务共用 `drg_mgr_v02` 存档；实时画面设置保存在该存档的 `realtimeProfile` 字段。更换域名会产生新的存档空间，迁移前应在管理端导出存档。
 
 ## Updates
 

@@ -1,102 +1,85 @@
 /* ============================================================
-   integration.js — management terminal ↔ realtime mission bridge
+   integration.js — in-process management ↔ realtime contract
    ============================================================ */
 (function (root) {
   'use strict';
 
   var DRG = root.DRG;
-  var REQUEST_KEY = 'drg_realtime_request_v1';
-  var RESULT_KEY = 'drg_realtime_result_v1';
-
-  function readJson(key) {
-    try {
-      var value = root.localStorage.getItem(key);
-      return value ? JSON.parse(value) : null;
-    } catch (error) {
-      console.warn('[DRG] bridge read failed', key, error);
-      return null;
-    }
-  }
-
-  function writeJson(key, value) {
-    try {
-      root.localStorage.setItem(key, JSON.stringify(value));
-      return true;
-    } catch (error) {
-      console.error('[DRG] bridge write failed', key, error);
-      return false;
-    }
-  }
-
-  var request = readJson(REQUEST_KEY);
-  var existingResult = readJson(RESULT_KEY);
-  var managerVisible = true;
-
-  function isEmbedded() {
-    return root.parent && root.parent !== root;
-  }
-
-  function postToManager(type) {
-    if (!isEmbedded() || !request) return false;
-    var targetOrigin = root.location.origin === 'null' ? '*' : root.location.origin;
-    root.parent.postMessage({ type: type, requestId: request.id }, targetOrigin);
-    return true;
-  }
+  var request = null;
+  var result = null;
+  var managerVisible = false;
 
   function returnToManager() {
-    if (postToManager('drg:realtime-return')) return;
-    root.location.replace(new URL('../', root.location.href).href);
+    root.DRGUnified.returnToManager();
+  }
+
+  function configureUi() {
+    if (!request) return;
+    var mission = request.mission;
+    DRG.ui.sel.biome = mission.realtimeBiome || 'crystalline';
+    DRG.ui.sel.haz = mission.hazard || 1;
+    DRG.ui.sel.cls = request.miner.cls || 'scout';
+    DRG.ui.sel.seed = request.seed || 1;
+    var seedInput = document.getElementById('seed-input');
+    if (seedInput) seedInput.value = DRG.ui.sel.seed;
+    document.body.classList.add('linked-mission');
+    var managerButton = document.getElementById('btn-manager-return');
+    if (managerButton) managerButton.onclick = returnToManager;
   }
 
   DRG.integration = {
-    request: request,
+    get request() { return request; },
+
+    setRequest: function (nextRequest) {
+      request = nextRequest;
+      result = null;
+      configureUi();
+    },
+
+    clear: function () {
+      request = null;
+      result = null;
+      document.body.classList.remove('linked-mission');
+    },
 
     isLinked: function () {
       return !!(request && request.id && request.mission && request.miner);
     },
 
     hasCompletedRequest: function () {
-      return !!(DRG.integration.isLinked() && existingResult && existingResult.requestId === request.id);
+      return !!(result && request && result.requestId === request.id);
     },
 
-    configureUi: function () {
-      if (!DRG.integration.isLinked()) return;
-      var mission = request.mission;
-      DRG.ui.sel.biome = mission.realtimeBiome || 'crystalline';
-      DRG.ui.sel.haz = mission.hazard || 1;
-      DRG.ui.sel.cls = request.miner.cls || 'scout';
-      DRG.ui.sel.seed = request.seed || 1;
-      DRG.ui.buildBiomes();
-      DRG.ui.buildHazards();
-      DRG.ui.buildClasses();
-      DRG.ui.refreshSummary();
-      var seedInput = document.getElementById('seed-input');
-      if (seedInput) seedInput.value = DRG.ui.sel.seed;
-      document.body.classList.add('linked-mission');
-      var managerButton = document.getElementById('btn-manager-return');
-      if (managerButton) {
-        managerButton.addEventListener('click', function (event) {
-          event.preventDefault();
-          returnToManager();
-        });
-      }
-    },
+    configureUi: configureUi,
 
     launch: function () {
       if (!DRG.integration.isLinked()) return false;
+      if (!DRG.game || !DRG.game.ready) return true;
+      configureUi();
+      if (DRG.game.mission && DRG.game.mission.opt && DRG.game.mission.opt.requestId === request.id) {
+        DRG.game.setPaused(false);
+        return true;
+      }
       var biome = DRG.biomeById(DRG.ui.sel.biome);
       DRG.ui.hideAll();
-      DRG.ui.descend(biome, function () {
-        DRG.game.startMission({
-          biome: biome,
-          haz: DRG.ui.sel.haz,
-          cls: DRG.ui.sel.cls,
-          seed: DRG.ui.sel.seed,
-          requestId: request.id
-        });
-        if (!managerVisible) DRG.game.setPaused(true);
+      DRG.game.startMission({
+        biome: biome,
+        haz: DRG.ui.sel.haz,
+        cls: DRG.ui.sel.cls,
+        seed: DRG.ui.sel.seed,
+        requestId: request.id
       });
+      if (!managerVisible) DRG.game.setPaused(true);
       return true;
+    },
+
+    setVisible: function (visible) {
+      managerVisible = !!visible;
+      if (DRG.game && DRG.game.mission && DRG.game.setPaused) DRG.game.setPaused(!managerVisible);
+      if (DRG.audio && DRG.audio.ctx) {
+        if (managerVisible) DRG.audio.unlock();
+        else if (DRG.audio.ctx.state === 'running') DRG.audio.ctx.suspend();
+      }
     },
 
     returnToManager: returnToManager,
@@ -104,12 +87,13 @@
     complete: function (mission, win, credits, xp) {
       if (!DRG.integration.isLinked()) return;
       var mined = mission.stats.mined || {};
-      var result = {
-        version: 1,
+      result = {
+        version: 2,
         requestId: request.id,
         missionId: request.mission.id,
         minerId: request.miner.id,
         finishedAt: Date.now(),
+        outcome: win ? 'success' : 'failed',
         win: !!win,
         failReason: mission.failReason || '',
         time: mission.time,
@@ -129,31 +113,19 @@
           mined: mined
         }
       };
-      if (writeJson(RESULT_KEY, result)) existingResult = result;
-
       var managerButton = document.getElementById('btn-manager-return');
       if (managerButton) managerButton.hidden = false;
       ['again', 'terminal', 'menu'].forEach(function (action) {
         var button = document.querySelector('#scr-debrief [data-act="' + action + '"]');
         if (button) button.hidden = true;
       });
-      postToManager('drg:realtime-complete');
+      root.DRGUnified.completeMission(result);
+    },
+
+    takeResult: function () {
+      var current = result;
+      result = null;
+      return current;
     }
   };
-
-  root.addEventListener('message', function (event) {
-    if (!isEmbedded() || event.source !== root.parent) return;
-    if (root.location.origin !== 'null' && event.origin !== root.location.origin) return;
-    var data = event.data;
-    if (!data || data.type !== 'drg:realtime-visibility') return;
-    if (request && data.requestId && data.requestId !== request.id) return;
-    managerVisible = !!data.visible;
-    if (DRG.game && DRG.game.setPaused) DRG.game.setPaused(!data.visible);
-    if (DRG.audio && DRG.audio.ctx) {
-      if (data.visible) DRG.audio.unlock();
-      else if (DRG.audio.ctx.state === 'running') DRG.audio.ctx.suspend();
-    }
-  });
-
-  postToManager('drg:realtime-ready');
 })(window);

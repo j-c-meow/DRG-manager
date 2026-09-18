@@ -205,7 +205,7 @@ body.realtime-open{overflow:hidden;padding-bottom:0}
 .realtime-shell-kicker{font-size:10px;letter-spacing:.12em;color:var(--teal);white-space:nowrap}
 #realtime-shell-title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--amber);font-size:13px}
 .realtime-shell-close{flex:none;padding:6px 10px;border-color:#6f7f89;color:#d9e5ec;background:#111820}
-.realtime-frame{display:block;flex:1 1 auto;width:100%;min-height:0;border:0;background:#05070a}
+.realtime-shell>#realtime-app{display:block;flex:1 1 auto;width:100%;min-height:0;background:#05070a}
 @media(max-width:480px){
   .realtime-shell-kicker{display:none}
   .realtime-shell-bar{min-height:38px;padding-top:max(4px,env(safe-area-inset-top));padding-bottom:4px}

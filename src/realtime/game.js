@@ -21,6 +21,8 @@
     slowT: 0, fastT: 0,
 
     init: function () {
+      if (G.initialized) return;
+      G.initialized = true;
       DRG.save.load();
       G.canvas = document.getElementById('game');
       G.g = G.canvas.getContext('2d', { alpha: false });
@@ -50,6 +52,7 @@
             console.warn('[DRG] missing assets', DRG.assets.failed);
           }
           setTimeout(function () {
+            G.ready = true;
             if (DRG.integration && DRG.integration.hasCompletedRequest()) {
               DRG.integration.returnToManager();
               return;
@@ -63,7 +66,7 @@
       );
 
       G.lastT = performance.now();
-      requestAnimationFrame(G.frame);
+      if (!root.__DRG_PHASER_DRIVER) requestAnimationFrame(G.frame);
       DRG.log('booted');
     },
 
@@ -79,7 +82,7 @@
     resize: function () {
       var q = M.clamp((DRG.opts().quality || 1) * G.autoScale, 0.5, 1.6);
       var dpr = Math.min(root.devicePixelRatio || 1, DRG.CFG.RENDER_SCALE_CAP) * q;
-      var app = document.getElementById('app');
+      var app = document.getElementById('realtime-app');
       var w = Math.max(1, app.clientWidth || root.innerWidth);
       var h = Math.max(1, app.clientHeight || root.innerHeight);
       var styles = root.getComputedStyle(document.documentElement);
@@ -205,6 +208,8 @@
     }
   };
 
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', G.init);
-  else G.init();
+  if (!root.__DRG_PHASER_DRIVER) {
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', G.init);
+    else G.init();
+  }
 })(window);

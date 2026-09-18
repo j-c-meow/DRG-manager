@@ -101,7 +101,6 @@
   };
 
   /* ---------- storage ---------- */
-  var KEY = 'drg-html-save-v1';
   DRG.save = {
     data: null,
     defaults: function () {
@@ -113,21 +112,18 @@
     },
     load: function () {
       var d = DRG.save.defaults();
-      try {
-        var raw = root.localStorage && root.localStorage.getItem(KEY);
-        if (raw) {
-          var p = JSON.parse(raw);
-          for (var k in p) if (k !== 'opts') d[k] = p[k];
-          if (p.opts) for (var o in p.opts) if (o in d.opts) d.opts[o] = p.opts[o];
-        }
-      } catch (e) { /* private mode / file:// restrictions */ }
+      var adapter = root.__DRG_MANAGER_SETTINGS;
+      var saved = adapter && adapter.load ? adapter.load() : null;
+      if (saved) {
+        for (var k in saved) if (k !== 'opts') d[k] = saved[k];
+        if (saved.opts) for (var o in saved.opts) if (o in d.opts) d.opts[o] = saved.opts[o];
+      }
       DRG.save.data = d;
       return d;
     },
     flush: function () {
-      try {
-        root.localStorage && root.localStorage.setItem(KEY, JSON.stringify(DRG.save.data));
-      } catch (e) { /* ignore */ }
+      var adapter = root.__DRG_MANAGER_SETTINGS;
+      if (adapter && adapter.save) adapter.save(DRG.save.data);
     },
     reset: function () { DRG.save.data = DRG.save.defaults(); DRG.save.flush(); }
   };

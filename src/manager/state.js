@@ -5,6 +5,27 @@ let dirHandle = null;
 let speed = 1;
 let curTab = 'roster';
 document.body.dataset.mtab = 'roster';
+window.__DRG_MANAGER_SETTINGS = {
+  load(){
+    return S && S.realtimeProfile ? JSON.parse(JSON.stringify(S.realtimeProfile)) : null;
+  },
+  save(profile){
+    if(!S) return;
+    S.realtimeProfile = JSON.parse(JSON.stringify(profile));
+    save();
+  },
+};
+function migrateLegacyRealtimeStorage(){
+  try{
+    if(!S.realtimeProfile){
+      const legacy = JSON.parse(localStorage.getItem('drg-html-save-v1') || 'null');
+      if(legacy) S.realtimeProfile = legacy;
+    }
+    localStorage.removeItem('drg-html-save-v1');
+    localStorage.removeItem('drg_realtime_request_v1');
+    localStorage.removeItem('drg_realtime_result_v1');
+  }catch(e){}
+}
 
 function newMiner(cls){
   const n = S.nextNum[cls]++;
@@ -13,7 +34,7 @@ function newMiner(cls){
 }
 function newGame(){
   S = {
-    v:2, gm:480, lastReal:Date.now(),   // 从 D1 08:00 开始
+    v:2, schemaVersion:3, gm:480, lastReal:Date.now(),   // 从 D1 08:00 开始
     difficulty:{hz:1, nitra:1, ev:1, morale:1, yield:1, market:1},   /* F6：新档必须初始化难度乘区，否则首派 TypeError */
     credits:500, nitra:150, morkite:0, moil:0, gold:0,
     rare:{'玉石':0,'乌玛石':0,'铜矿':0,'妙绝珠':0,'吸铁石':0,'蜂母石':0,'容和石':0},
@@ -35,8 +56,10 @@ function newGame(){
     log:[], flags:{}, speed:1, stats:{missions:0, inj:0}, mode:'idle', idleReport:null, muleLv:1,
     unlocked:{kpi:false, bar:false, market:false, med:false, gear:false},
     recruited:{scout:true, engineer:false, gunner:false, driller:false},
-    realtime:null,
+    realtime:null, settledRealtime:{}, realtimeProfile:null,
   };
+  DRGUnified.domain.migrateSave(S);
+  migrateLegacyRealtimeStorage();
   S.miners.push(newMiner('scout'));
   genBoard();
   log(TEXT.log_welcome, 'sys');
@@ -56,6 +79,8 @@ function load(){
     const d = JSON.parse(raw);
     if(!d || d.v !== 2) return false;
     S = d;
+    DRGUnified.domain.migrateSave(S);
+    migrateLegacyRealtimeStorage();
     if(!S.recruited) S.recruited = {scout:true, engineer:true, gunner:true, driller:true};
     if(!S.stats) S.stats = {missions:0, inj:0};
     if(!S.campaign) S.campaign = {ci:0, si:0, prog:0};
@@ -102,6 +127,10 @@ function load(){
     if(S.merit === undefined) S.merit = 0;
     if(!S.trinkets){ S.trinkets = {}; S.trinketEq = null; }
     if(S.realtime === undefined) S.realtime = null;
+    if(S.realtimeProfile === undefined){
+      S.realtimeProfile = S.realtimeOpts || null;
+      delete S.realtimeOpts;
+    }
     if(!Array.isArray(S.board)) S.board = [];
     if(!S.board.some(m => m && m.type === 'exp')) S.board.push(genMission('exp'));
     return true;
@@ -124,7 +153,7 @@ function importSave(){
     r.onload = () => {
       try{
         const d = JSON.parse(r.result);
-        if(d && d.v === 2){ S = d; if(!S.difficulty) S.difficulty = {hz:1, nitra:1, ev:1, morale:1, yield:1, market:1}; if(S.flags.prologueDone === undefined) S.flags.prologueDone = ((S.stats && S.stats.missions) > 0); log(TEXT.log_save_import_ok, 'good'); renderAll(); }
+        if(d && d.v === 2){ S = DRGUnified.domain.migrateSave(d); if(!S.difficulty) S.difficulty = {hz:1, nitra:1, ev:1, morale:1, yield:1, market:1}; if(S.flags.prologueDone === undefined) S.flags.prologueDone = ((S.stats && S.stats.missions) > 0); log(TEXT.log_save_import_ok, 'good'); renderAll(); }
         else log(TEXT.log_save_import_ver, 'bad');
       }catch(e){ log(TEXT.log_save_import_bad, 'bad'); }
     };
@@ -176,7 +205,7 @@ async function restoreFolderSave(){
     const fh = await dirHandle.getFileHandle('drg_save.json');
     const t = await fh.getFile();
     const d = JSON.parse(await t.text());
-    if(d && d.v === 2){ S = d; if(!S.difficulty) S.difficulty = {hz:1, nitra:1, ev:1, morale:1, yield:1, market:1}; if(S.flags.prologueDone === undefined) S.flags.prologueDone = ((S.stats && S.stats.missions) > 0); log(TEXT.log_restore_ok, 'good'); renderAll(); }
+    if(d && d.v === 2){ S = DRGUnified.domain.migrateSave(d); if(!S.difficulty) S.difficulty = {hz:1, nitra:1, ev:1, morale:1, yield:1, market:1}; if(S.flags.prologueDone === undefined) S.flags.prologueDone = ((S.stats && S.stats.missions) > 0); log(TEXT.log_restore_ok, 'good'); renderAll(); }
     else log(TEXT.log_restore_ver, 'bad');
   }catch(e){ log(TEXT.log_restore_fail, 'bad'); }
 }

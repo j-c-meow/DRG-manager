@@ -1,15 +1,33 @@
-const CACHE = 'drg-rig-v13';
+const CACHE = 'drg-rig-v20-atlas';
 const ASSETS = [
   './',
   './index.html',
-  './realtime/index.html',
   './styles/manager.css',
+  './styles/realtime.css',
+  './scripts/app.js',
   './scripts/manager/game-data.js',
   './scripts/manager/state.js',
   './scripts/manager/missions.js',
-  './scripts/manager/realtime-bridge.js',
+  './scripts/manager/realtime-controller.js',
   './scripts/manager/ui.js',
   './scripts/manager/main.js',
+  './scripts/realtime/core.js',
+  './scripts/realtime/assets.js',
+  './scripts/realtime/audio.js',
+  './scripts/realtime/input.js',
+  './scripts/realtime/gfx.js',
+  './scripts/realtime/lighting.js',
+  './scripts/realtime/particles.js',
+  './scripts/realtime/world.js',
+  './scripts/realtime/entities.js',
+  './scripts/realtime/enemies.js',
+  './scripts/realtime/player.js',
+  './scripts/realtime/mission.js',
+  './scripts/realtime/hud.js',
+  './scripts/realtime/ui.js',
+  './scripts/realtime/integration.js',
+  './scripts/realtime/game.js',
+  './scripts/realtime/autopilot.js',
   './manifest.webmanifest',
   './assets/pwa/icon-192.png',
   './assets/pwa/icon-512.png',
@@ -43,8 +61,7 @@ self.addEventListener('fetch', event => {
         caches.open(CACHE).then(cache => cache.put(event.request, copy));
         return response;
       }).catch(() => {
-        const fallback = url.pathname.includes('/realtime/') ? './realtime/index.html' : './index.html';
-        return caches.match(event.request).then(hit => hit || caches.match(fallback));
+        return caches.match(event.request).then(hit => hit || caches.match('./index.html'));
       })
     );
     return;

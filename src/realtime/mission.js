@@ -7,13 +7,9 @@
   var DRG = root.DRG, M = DRG.M, gfx = DRG.gfx, T = DRG.CFG.TILE, TT = DRG.TT;
   var A = function () { return DRG.assets; };
 
-  DRG.HAZARDS = [
-    { lv: 1, name: '危险等级 1', dmgMul: 0.55, hpMul: 0.7, rate: 0.55, quota: 0.7, credit: 0.75, xp: 0.8 },
-    { lv: 2, name: '危险等级 2', dmgMul: 0.8, hpMul: 0.9, rate: 0.8, quota: 0.85, credit: 1.0, xp: 1.0 },
-    { lv: 3, name: '危险等级 3', dmgMul: 1.0, hpMul: 1.0, rate: 1.0, quota: 1.0, credit: 1.3, xp: 1.3 },
-    { lv: 4, name: '危险等级 4', dmgMul: 1.3, hpMul: 1.35, rate: 1.35, quota: 1.15, credit: 1.7, xp: 1.7 },
-    { lv: 5, name: '危险等级 5', dmgMul: 1.7, hpMul: 1.8, rate: 1.8, quota: 1.3, credit: 2.2, xp: 2.2 }
-  ];
+  DRG.HAZARDS = DRG_SHARED.realtimeHazards.map(function (hazard) {
+    return Object.assign({}, hazard);
+  });
 
   function Mission(opt) {
     var self = this;

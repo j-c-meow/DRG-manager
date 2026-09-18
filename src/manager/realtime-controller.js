@@ -1,7 +1,8 @@
 'use strict';
-/* ---------------- REALTIME MISSION BRIDGE ---------------- */
+/* ---------------- UNIFIED REALTIME MISSION ---------------- */
 let realtimeGameOpen = false;
 let realtimeBgmContext = null;
+let pendingRealtimeResult = null;
 
 function isRealtimeGameOpen(){
   return realtimeGameOpen;
@@ -46,47 +47,45 @@ function openRealtime(mid){
   };
 }
 
-
-function realtimeUrl(){
-  const url = new URL(REALTIME_BRIDGE.PATH, location.href);
-  url.searchParams.set('embedded', '1');
-  if(typeof S !== 'undefined' && S && S.realtime){
-    url.searchParams.set('request', S.realtime.requestId);
-  }
-  return url.href;
-}
-
-
-function clearRealtimeBridge(){
-  try{
-    localStorage.removeItem(REALTIME_BRIDGE.REQUEST_KEY);
-    localStorage.removeItem(REALTIME_BRIDGE.RESULT_KEY);
-  }catch(e){}
-}
-
 function realtimeShell(){
   return {
     root: document.getElementById('realtime-shell'),
-    frame: document.getElementById('realtime-frame'),
-    title: document.getElementById('realtime-shell-title')
+    host: document.getElementById('realtime-app'),
+    title: document.getElementById('realtime-shell-title'),
+    style: document.getElementById('realtime-style'),
   };
 }
 
-function postRealtimeVisibility(visible){
-  const frame = realtimeShell().frame;
-  if(!frame || !frame.contentWindow) return;
-  frame.contentWindow.postMessage({
-    type: 'drg:realtime-visibility',
-    visible: !!visible,
-    requestId: S && S.realtime ? S.realtime.requestId : null
-  }, location.origin);
+function requestForPending(){
+  if(!S || !S.realtime) return null;
+  const pending = S.realtime;
+  const m = pending.mission;
+  const miner = S.miners.find(x=>x.id===pending.minerId);
+  if(!m || !miner) return null;
+  return {
+    version:2,
+    id:pending.requestId,
+    createdAt:pending.startedAt,
+    seed:realtimeSeed(m),
+    resolution:'direct',
+    mission:{
+      id:m.id, type:m.type, biome:m.biome, hazard:m.hazard,
+      rewards:m.r, r:m.r, clause:m.clause||null,
+      realtimeBiome:REALTIME_BIOMES[m.biome]||'crystalline',
+    },
+    miner:{id:miner.id, cls:miner.cls, name:minerName(miner), level:miner.lv},
+  };
+}
+
+function clearRealtimeBridge(){
+  pendingRealtimeResult = null;
+  if(window.DRG && DRG.integration) DRG.integration.clear();
 }
 
 function pauseManagerBgm(){
   if(typeof BGM === 'undefined') return;
   realtimeBgmContext = BGM.ctx || realtimeBgmContext || 'main';
   BGM.stop();
-  setTimeout(() => { if(realtimeGameOpen) BGM.stop(); }, 0);
 }
 
 function resumeManagerBgm(){
@@ -106,50 +105,50 @@ function settleManagerRealtimeAbsence(){
 }
 
 function openRealtimeGame(){
-  if(!S || !S.realtime) return;
+  if(!S || !S.realtime || !window.DRG || !DRG.integration) return;
   const shell = realtimeShell();
-  if(!shell.root || !shell.frame) return;
+  if(!shell.root || !shell.host) return;
+  const request = requestForPending();
+  if(!request) return;
   closeModal(true);
-  const requestId = S.realtime.requestId;
-  const reuseFrame = shell.frame.dataset.requestId === requestId;
-  if(!reuseFrame){
-    shell.frame.dataset.requestId = requestId;
-    shell.frame.src = realtimeUrl();
+  if(!DRG.integration.request || DRG.integration.request.id !== request.id){
+    DRG.integration.setRequest(request);
   }
   if(shell.title) shell.title.textContent = biomeById(S.realtime.mission.biome).name;
+  if(shell.style) shell.style.disabled = false;
   shell.root.hidden = false;
   shell.root.setAttribute('aria-hidden', 'false');
   document.body.classList.add('realtime-open');
   realtimeGameOpen = true;
   pauseManagerBgm();
-  if(reuseFrame) postRealtimeVisibility(true);
-  shell.frame.focus();
+  DRGUnified.runtime.setVisible(true);
+  DRG.integration.setVisible(true);
+  DRG.integration.launch();
+  shell.host.focus();
 }
 
-function closeRealtimeGame(destroyFrame){
+function closeRealtimeGame(){
   const shell = realtimeShell();
   const wasOpen = realtimeGameOpen;
-  if(wasOpen) postRealtimeVisibility(false);
+  if(window.DRG && DRG.integration) DRG.integration.setVisible(false);
+  DRGUnified.runtime.setVisible(false);
   if(shell.root){
     shell.root.hidden = true;
     shell.root.setAttribute('aria-hidden', 'true');
   }
   document.body.classList.remove('realtime-open');
   realtimeGameOpen = false;
+  if(shell.style) shell.style.disabled = true;
   if(wasOpen){
     settleManagerRealtimeAbsence();
     resumeManagerBgm();
-  }
-  if(destroyFrame && shell.frame){
-    shell.frame.src = 'about:blank';
-    delete shell.frame.dataset.requestId;
   }
 }
 
 function finishRealtimeMission(){
   const summary = consumeRealtimeResult();
   if(!summary) return;
-  closeRealtimeGame(true);
+  closeRealtimeGame();
   renderAll();
   showRealtimeSummary(summary);
   save();
@@ -157,32 +156,22 @@ function finishRealtimeMission(){
 
 function startRealtimeMission(m, miner, cost){
   const requestId = 'rt'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
-  const request = {
-    version:1,
-    id:requestId,
-    createdAt:Date.now(),
-    seed:realtimeSeed(m),
-    mission:{
-      id:m.id, type:m.type, biome:m.biome, realtimeBiome:REALTIME_BIOMES[m.biome]||'crystalline',
-      hazard:m.hazard, rewards:m.r, clause:m.clause||null,
-    },
-    miner:{id:miner.id, cls:miner.cls, name:minerName(miner), level:miner.lv},
-  };
+  let request;
   try{
-    localStorage.setItem(REALTIME_BRIDGE.REQUEST_KEY, JSON.stringify(request));
-    localStorage.removeItem(REALTIME_BRIDGE.RESULT_KEY);
-  }catch(e){
-    log('实时任务启动失败：浏览器拒绝写入任务交接数据。', 'bad');
+    request = DRGUnified.domain.startDirectMission(S, {
+      requestId,
+      seed:realtimeSeed(m),
+      mission:Object.assign({}, m, {rewards:Object.assign({}, m.r)}),
+      miner:{id:miner.id, cls:miner.cls, name:minerName(miner), level:miner.lv},
+      nitraCost:cost,
+      now:Date.now(),
+    });
+  }catch(error){
+    log('实时任务启动失败：'+(error && error.message || error), 'bad');
     closeModal(true);
     return;
   }
-  S.nitra -= cost;
-  miner.state = 'mission';
-  S.realtime = {
-    requestId, missionId:m.id, minerId:miner.id, mission:JSON.parse(JSON.stringify(m)),
-    nitraSpent:cost, startedAt:Date.now(),
-  };
-  S.board = S.board.filter(x=>x.id!==m.id);
+  DRG.integration.setRequest(request);
   log('▶ '+minerName(miner)+' 已进入实时任务：'+biomeById(m.biome).name+'，危险 '+m.hazard+'。', 'gold');
   save();
   openRealtimeGame();
@@ -203,51 +192,57 @@ function showPendingRealtime(){
 
 function recallRealtime(){
   if(!S.realtime) return;
-  const miner = S.miners.find(x=>x.id===S.realtime.minerId);
-  if(miner){ miner.state='idle'; miner.morale=clamp(miner.morale-15,10,100); }
+  DRGUnified.domain.abortDirectMission(S, 15);
   S.stats.realtimeFailed = (S.stats.realtimeFailed||0) + 1;
   log('实时任务已中止：矿工被紧急召回，士气 -15，出舱补给不退。', 'bad');
-  S.realtime = null;
   clearRealtimeBridge();
-  closeRealtimeGame(true);
+  closeRealtimeGame();
   closeModal(true);
   renderAll();
   save();
 }
-function consumeRealtimeResult(){
-  if(!S.realtime) return null;
-  let result = null;
-  try{ result = JSON.parse(localStorage.getItem(REALTIME_BRIDGE.RESULT_KEY)||'null'); }catch(e){}
-  if(!result || result.requestId !== S.realtime.requestId) return null;
+
+function consumeRealtimeResult(explicitResult){
+  if(!S || !S.realtime) return null;
+  const result = explicitResult || pendingRealtimeResult || (DRG.integration && DRG.integration.takeResult());
+  if(!result || !DRGUnified.domain.canSettleMission(S, result)) return null;
   const pending = S.realtime;
   const m = pending.mission;
   const miner = S.miners.find(x=>x.id===pending.minerId);
   if(!m || !miner) return null;
   const summary = {win:!!result.win, result, mission:m, miner:minerName(miner), gain:{}};
-  if(result.win){
-    const before = {credits:S.credits, nitra:S.nitra, morkite:S.morkite, moil:S.moil, gold:S.gold};
-    const kills = Number(result.stats && result.stats.kills)||0;
-    const gold = Number(result.deposited && result.deposited.gold)||0;
-    const performance = clamp(0.85 + Math.min(kills,60)/300 + Math.min(gold,60)/600, 0.85, 1.15);
-    settle({
-      id:'live-'+pending.requestId, m, hc:1, minerIds:[miner.id],
-      fitN:miner.cls===mtypeById(m.type).best?1:0, modEff:squadModEffects([miner.id]),
-      bonus:1, rewardBonus:1, morkiteBuff:1, mode:'realtime', nitraSpent:pending.nitraSpent,
-    }, false, performance);
-    summary.performance = performance;
-    Object.keys(before).forEach(k=>{ summary.gain[k] = Math.round((S[k]||0)-before[k]); });
-    S.stats.realtimeWon = (S.stats.realtimeWon||0) + 1;
-  }else{
-    miner.state = 'idle';
-    miner.morale = clamp(miner.morale-15,10,100);
-    S.stats.realtimeFailed = (S.stats.realtimeFailed||0) + 1;
-    log('实时任务失败：'+minerName(miner)+' 已归队，士气 -15。'+(result.failReason?' '+result.failReason:''), 'bad');
+  try{
+    if(result.win){
+      const before = {credits:S.credits, nitra:S.nitra, morkite:S.morkite, moil:S.moil, gold:S.gold};
+      const kills = Number(result.stats && result.stats.kills)||0;
+      const gold = Number(result.deposited && result.deposited.gold)||0;
+      const performance = clamp(0.85 + Math.min(kills,60)/300 + Math.min(gold,60)/600, 0.85, 1.15);
+      settle({
+        id:'live-'+pending.requestId, m, hc:1, minerIds:[miner.id],
+        fitN:miner.cls===mtypeById(m.type).best?1:0, modEff:squadModEffects([miner.id]),
+        bonus:1, rewardBonus:1, morkiteBuff:1, mode:'realtime', nitraSpent:pending.nitraSpent,
+      }, false, performance);
+      summary.performance = performance;
+      Object.keys(before).forEach(k=>{ summary.gain[k] = Math.round((S[k]||0)-before[k]); });
+      S.stats.realtimeWon = (S.stats.realtimeWon||0) + 1;
+    }else{
+      miner.state = 'idle';
+      miner.morale = clamp(miner.morale-15,10,100);
+      S.stats.realtimeFailed = (S.stats.realtimeFailed||0) + 1;
+      log('实时任务失败：'+minerName(miner)+' 已归队，士气 -15。'+(result.failReason?' '+result.failReason:''), 'bad');
+    }
+    DRGUnified.domain.markMissionSettled(S, result.requestId, result.finishedAt);
+    S.realtime = null;
+    pendingRealtimeResult = null;
+    DRG.integration.clear();
+    save();
+    return summary;
+  }catch(error){
+    pendingRealtimeResult = result;
+    throw error;
   }
-  S.realtime = null;
-  clearRealtimeBridge();
-  save();
-  return summary;
 }
+
 function showRealtimeSummary(summary){
   const r = summary.result;
   const elapsed = Math.max(0, Math.round(r.time||0));
@@ -270,27 +265,18 @@ function showRealtimeSummary(summary){
 const realtimeCloseButton = document.getElementById('realtime-shell-close');
 if(realtimeCloseButton){
   realtimeCloseButton.addEventListener('click', () => {
-    closeRealtimeGame(false);
+    closeRealtimeGame();
     renderAll();
     showPendingRealtime();
     save();
   });
 }
 
-window.addEventListener('message', event => {
-  const shell = realtimeShell();
-  if(!shell.frame || event.source !== shell.frame.contentWindow || event.origin !== location.origin) return;
-  const data = event.data;
-  if(!data || typeof data !== 'object' || !S || !S.realtime) return;
-  if(data.requestId !== S.realtime.requestId) return;
-  if(data.type === 'drg:realtime-ready'){
-    postRealtimeVisibility(realtimeGameOpen);
-    return;
-  }
-  if(data.type === 'drg:realtime-complete'){
-    if(shell.title) shell.title.textContent = biomeById(S.realtime.mission.biome).name+' · 任务完成';
-    return;
-  }
-  if(data.type === 'drg:realtime-return') finishRealtimeMission();
+window.addEventListener('drg:realtime-complete', event => {
+  if(!S || !S.realtime || !event.detail || event.detail.requestId !== S.realtime.requestId) return;
+  pendingRealtimeResult = event.detail;
+  const title = realtimeShell().title;
+  if(title) title.textContent = biomeById(S.realtime.mission.biome).name+' · 任务完成';
 });
 
+window.addEventListener('drg:realtime-return', finishRealtimeMission);

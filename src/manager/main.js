@@ -306,9 +306,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   /* 虫潮预警条小图标（C 二期 swarm_alert_icon，animDiv 一次注入，tickStages 全局驱动） */
   const sic = document.getElementById('swarmalert-ic');
   if(sic) sic.innerHTML = animDiv('swarm_alert_icon', 32, 32);
-  /* PWA：Service Worker 注册（file:// 与微信 webview 自动跳过） */
-  if ('serviceWorker' in navigator && location.protocol !== 'file:' && !/MicroMessenger/i.test(navigator.userAgent))
+  /* PWA：本地 Wrangler 开发必须绕过旧离线包；生产环境继续注册 Service Worker。 */
+  const localDev = ['localhost', '127.0.0.1', '::1', '[::1]'].includes(location.hostname);
+  if ('serviceWorker' in navigator && localDev) {
+    navigator.serviceWorker.getRegistrations()
+      .then(registrations => Promise.all(registrations.map(registration => registration.unregister())));
+    if ('caches' in window) {
+      caches.keys()
+        .then(keys => Promise.all(keys.filter(key => key.startsWith('drg-rig-')).map(key => caches.delete(key))));
+    }
+  } else if ('serviceWorker' in navigator && location.protocol !== 'file:' && !/MicroMessenger/i.test(navigator.userAgent)) {
     navigator.serviceWorker.register('sw.js');
+  }
   /* 挂机券：3 小时自动游玩（自动事件决策 + 自动派遣空闲矿工） */
   const toggleAuto = () => {
     if(S.mode === 'rush'){ log(TEXT.dm_auto_rush_lock, 'bad'); return; }

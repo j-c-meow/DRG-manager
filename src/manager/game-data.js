@@ -18,30 +18,10 @@ const CFG = {
   KPI_FIRST: 500, KPI_MUL: 1.6, KPI_BONUS: 800,
 };
 
-const REALTIME_BRIDGE = {
-  REQUEST_KEY: 'drg_realtime_request_v1',
-  RESULT_KEY: 'drg_realtime_result_v1',
-  PATH: 'realtime/index.html',
-};
-const REALTIME_BIOMES = {
-  crystal:'crystalline', salt:'salt', fungus:'fungus', sand:'sandblasted',
-  rad:'radioactive', bio:'biozone', glacial:'glacial', bough:'bough',
-  magma:'magma', azure:'azure', ossuary:'crystalline',
-};
-
-const BIOMES = [
-  {id:'crystal', name:'水晶洞穴',    tier:1, pair:['乌玛石','铜矿']},
-  {id:'salt',    name:'盐坑',        tier:1, pair:['容和石','吸铁石']},
-  {id:'fungus',  name:'霉菌沼泽',    tier:2, pair:['铜矿','蜂母石']},
-  {id:'sand',    name:'飞沙走廊',    tier:2, pair:['乌玛石','吸铁石']},
-  {id:'rad',     name:'放射性禁区',  tier:3, pair:['妙绝珠','乌玛石']},
-  {id:'bio',     name:'密林丛原',    tier:3, pair:['铜矿','玉石']},
-  {id:'glacial', name:'冰封岩层',    tier:4, pair:['玉石','妙绝珠']},
-  {id:'bough',   name:'藤络树洞',    tier:4, pair:['蜂母石','吸铁石']},
-  {id:'magma',   name:'熔岩之心',    tier:5, pair:['吸铁石','玉石']},
-  {id:'azure',   name:'蔚蓝花甸',    tier:5, pair:['妙绝珠','玉石']},
-  {id:'ossuary', name:'栖骨深渊',    tier:5, pair:['容和石','蜂母石']},
-];
+const REALTIME_BIOMES = DRG_SHARED.realtimeBiomeByManagerId;
+const BIOMES = DRG_SHARED.managerBiomes.map(b => ({
+  id:b.id, name:b.name, tier:b.tier, pair:Array.from(b.pair),
+}));
 
 const MTYPES = [
   {id:'exp',   name:'采矿探险', rig:1, min:360, r:{credits:220, morkite:70,  nitra:30},            best:'scout'},

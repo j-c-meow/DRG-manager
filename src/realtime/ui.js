@@ -9,24 +9,33 @@
 
   var UI = DRG.ui = {
     sel: { biome: 'crystalline', haz: 3, cls: 'driller', seed: 424242 },
-    screen: 'boot',
+    selectionBuilt: false,
 
     init: function () {
-      UI.buildBiomes();
-      UI.buildHazards();
-      UI.buildClasses();
       UI.buildHelp();
       UI.buildSettings();
       UI.wire();
-      UI.refreshSummary();
       UI.refreshMenuStats();
     },
 
     show: function (name) {
+      if (name === 'select' && !UI.selectionBuilt) {
+        UI.buildBiomes();
+        UI.buildHazards();
+        UI.buildClasses();
+        UI.refreshSummary();
+        UI.selectionBuilt = true;
+      }
       UI.screen = name;
       $$('.screen').forEach(function (s) { s.classList.remove('active'); });
       var el = $('#scr-' + name);
-      if (el) el.classList.add('active');
+      if (el) {
+        $$('img[data-src]', el).forEach(function (image) {
+          image.src = image.dataset.src;
+          delete image.dataset.src;
+        });
+        el.classList.add('active');
+      }
       DRG.log('screen ->', name);
     },
     hideAll: function () { $$('.screen').forEach(function (s) { s.classList.remove('active'); }); UI.screen = 'game'; },
@@ -191,6 +200,11 @@
     /* ---------------- descent transition ---------------- */
     descend: function (biome, cb) {
       var el = $('#descend');
+      var podImage = el.querySelector('img[data-src]');
+      if (podImage) {
+        podImage.src = podImage.dataset.src;
+        delete podImage.dataset.src;
+      }
       $('#desc-title').textContent = '下降舱脱离中…';
       $('#desc-sub').textContent = biome.name + ' · ' + biome.en + ' — 正在穿过地壳';
       el.classList.add('active');

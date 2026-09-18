@@ -98,7 +98,7 @@
   A.load = function (onProgress, onDone) {
     var keys = Object.keys(IMG), sndKeys = Object.keys(SND);
     var assetBase = new URL('assets/', document.baseURI);
-    A.total = keys.length + sndKeys.length;
+    A.total = keys.length;
     A.loaded = 0;
     A.failed.length = 0;
     var done = false;
@@ -154,31 +154,77 @@
       im.src = assetUrl('img/' + IMG[k], attempt);
     }
 
-    function loadAudio(k, next, attempt) {
-      var el = new Audio();
-      var settled = false;
-      function finish(ok) {
-        if (settled) return;
-        settled = true;
-        if (!ok && attempt < 1) {
-          setTimeout(function () { loadAudio(k, next, attempt + 1); }, 250);
-          return;
-        }
-        if (ok) A.snd[k] = el;
-        else A.failed.push(SND[k]);
-        tick();
-        next();
-      }
-      el.addEventListener('canplaythrough', function () { finish(true); }, { once: true });
-      el.addEventListener('loadeddata', function () { finish(true); }, { once: true });
-      el.addEventListener('error', function () { finish(false); }, { once: true });
-      el.preload = 'auto';
-      el.src = assetUrl(SND[k], attempt);
-      setTimeout(function () { finish(true); }, 6000);
+    function cropWithCanvas(image, frame) {
+      var canvas = document.createElement('canvas');
+      canvas.width = frame.width;
+      canvas.height = frame.height;
+      canvas.getContext('2d').drawImage(
+        image,
+        frame.x, frame.y, frame.width, frame.height,
+        0, 0, frame.width, frame.height
+      );
+      return canvas;
     }
 
-    runQueue(keys, 8, function (k, next) { loadImage(k, next, 0); });
-    runQueue(sndKeys, 4, function (k, next) { loadAudio(k, next, 0); });
+    function cropFrame(image, frame) {
+      if (!root.createImageBitmap) return Promise.resolve(cropWithCanvas(image, frame));
+      return root.createImageBitmap(
+        image,
+        frame.x, frame.y, frame.width, frame.height
+      ).catch(function () {
+        return cropWithCanvas(image, frame);
+      });
+    }
+
+    function loadAtlasPage(page, attempt) {
+      return new Promise(function (resolve, reject) {
+        var image = new Image();
+        image.decoding = 'async';
+        image.onload = function () { resolve(image); };
+        image.onerror = reject;
+        image.src = assetUrl('generated/' + page.file, attempt);
+      });
+    }
+
+    function loadAtlas(attempt) {
+      fetch(assetUrl('generated/realtime-atlas.json', attempt))
+        .then(function (response) {
+          if (!response.ok) throw new Error('atlas manifest ' + response.status);
+          return response.json();
+        })
+        .then(function (manifest) {
+          return Promise.all(manifest.pages.map(function (page) {
+            return loadAtlasPage(page, attempt);
+          })).then(function (pages) {
+            return Promise.all(keys.map(function (key) {
+              var frame = manifest.frames[IMG[key]];
+              if (!frame || !pages[frame.page]) throw new Error('atlas frame missing: ' + IMG[key]);
+              return cropFrame(pages[frame.page], frame);
+            }));
+          });
+        })
+        .then(function (images) {
+          images.forEach(function (image, index) {
+            A.img[keys[index]] = image;
+            tick();
+          });
+        })
+        .catch(function () {
+          if (attempt < 1) {
+            setTimeout(function () { loadAtlas(attempt + 1); }, 250);
+            return;
+          }
+          runQueue(keys, 4, function (key, next) { loadImage(key, next, 0); });
+        });
+    }
+
+    // Shipped clips are prepared without preloading. The browser fetches only a clip that is played.
+    sndKeys.forEach(function (key) {
+      var audio = new Audio();
+      audio.dataset.src = assetUrl(SND[key], 0);
+      A.snd[key] = audio;
+    });
+    loadAtlas(0);
 
     // hard safety valve: never hang the boot screen
     setTimeout(function () {

@@ -6,6 +6,8 @@
 <meta name="theme-color" content="#0c1116">
 <link rel="icon" type="image/png" href="assets/pwa/icon-192.png">
 <link rel="stylesheet" href="styles/manager.css?v=embed1">
+<link rel="stylesheet" href="assets/font/fonts.css">
+<link id="realtime-style" rel="stylesheet" href="styles/realtime.css?v=unified1" disabled>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="manifest" href="manifest.webmanifest">
@@ -106,15 +108,32 @@
     </div>
     <button class="btn realtime-shell-close" id="realtime-shell-close" type="button">返回管理终端</button>
   </div>
-  <iframe id="realtime-frame" class="realtime-frame" title="实时下矿" src="about:blank" allow="autoplay; fullscreen; gamepad" allowfullscreen></iframe>
+  <!-- REALTIME_SHELL -->
 </section>
 
-
+<script src="scripts/app.js?v=atlas3"></script>
 <script src="scripts/manager/game-data.js"></script>
 <script src="scripts/manager/state.js"></script>
 <script src="scripts/manager/missions.js"></script>
-<script src="scripts/manager/realtime-bridge.js?v=embed1"></script>
-<script src="scripts/manager/ui.js?v=embed1"></script>
-<script src="scripts/manager/main.js?v=embed1"></script>
+<script src="scripts/realtime/core.js"></script>
+<script src="scripts/realtime/assets.js?v=atlas2"></script>
+<script src="scripts/realtime/audio.js?v=lazy1"></script>
+<script src="scripts/realtime/input.js?v=touch3"></script>
+<script src="scripts/realtime/gfx.js"></script>
+<script src="scripts/realtime/lighting.js"></script>
+<script src="scripts/realtime/particles.js"></script>
+<script src="scripts/realtime/world.js"></script>
+<script src="scripts/realtime/entities.js"></script>
+<script src="scripts/realtime/enemies.js"></script>
+<script src="scripts/realtime/player.js"></script>
+<script src="scripts/realtime/mission.js"></script>
+<script src="scripts/realtime/hud.js?v=touch3"></script>
+<script src="scripts/realtime/ui.js?v=atlas2"></script>
+<script src="scripts/realtime/integration.js?v=atlas1"></script>
+<script src="scripts/manager/realtime-controller.js?v=unified1"></script>
+<script src="scripts/manager/ui.js?v=unified1"></script>
+<script src="scripts/manager/main.js?v=unified1"></script>
+<script src="scripts/realtime/game.js?v=lazy1"></script>
+<script src="scripts/realtime/autopilot.js"></script>
 </body>
 </html>

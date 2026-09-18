@@ -295,6 +295,10 @@
     clip: function (key, vol, isVoice) {
       var el = DRG.assets.snd[key];
       if (!el || !unlocked) return null;
+      if (!el.getAttribute('src') && el.dataset.src) {
+        el.src = el.dataset.src;
+        delete el.dataset.src;
+      }
       // 语音线最多同时 2 条，同一条 450ms 内不重复 —— 杜绝虫子合唱团
       if (isVoice) {
         if (S.voiceActive >= 2) return null;

@@ -12,7 +12,7 @@ npm install
 npm run dev
 ```
 
-打开 Wrangler 输出的本地地址。管理模式位于 `/`，独立实时模式位于 `/realtime/`。
+打开 Wrangler 输出的本地地址。管理终端和实时任务位于同一个单页应用 `/`；任务板中的“实时下矿”会切换到 Phaser 驱动的任务场景。
 
 ## Build
 
@@ -20,7 +20,7 @@ npm run dev
 npm run build
 ```
 
-静态发布物生成到 `dist/`。页面源码位于 `src/pages/`，管理端按 `game-data`、`state`、`missions`、`realtime-bridge`、`ui`、`main` 拆分在 `src/manager/`，实时玩法位于 `src/realtime/`，静态资源位于 `public/assets/`。
+静态发布物生成到 `dist/`。统一领域层与 Phaser 入口位于 `src/unified/`，管理端位于 `src/manager/`，实时玩法位于 `src/realtime/`，构建时会把 `src/realtime/shell.html` 嵌入主页面；静态资源位于 `public/assets/`。
 
 ## Controls
 

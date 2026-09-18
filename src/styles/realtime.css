@@ -28,7 +28,7 @@
 html, body { width: 100%; height: 100%; background: #05070a; color: var(--text);
   font-family: var(--cjk); overflow: hidden; -webkit-font-smoothing: antialiased; overscroll-behavior: none; }
 button { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
-#app { position: fixed; inset: 0; width: 100vw; height: 100vh; height: 100dvh; }
+#realtime-app { position: relative; flex: 1 1 auto; min-height: 0; width: 100%; height: 100%; overflow: hidden; }
 canvas#game { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: crosshair; touch-action: none; }
 
 /* ---------------- screens ---------------- */
@@ -66,6 +66,21 @@ canvas#game { position: absolute; inset: 0; width: 100%; height: 100%; display: 
 .btn.launch span { color: rgba(30, 16, 0, .7); font-weight: 700; letter-spacing: .1em; }
 .btn.launch:hover { filter: brightness(1.12); transform: translateY(-2px); }
 .btn:disabled { opacity: .45; cursor: not-allowed; transform: none; }
+.realtime-shell .realtime-shell-close {
+  width: auto;
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  font-family: var(--cjk);
+  font-size: 12px;
+  letter-spacing: 0;
+  text-align: center;
+  clip-path: none;
+  transform: none;
+}
+.realtime-shell .realtime-shell-close:hover {
+  transform: none;
+}
 
 /* ---------------- boot ---------------- */
 .boot { place-items: center; background: radial-gradient(circle at 50% 40%, #16202c 0%, #05070a 70%); }
