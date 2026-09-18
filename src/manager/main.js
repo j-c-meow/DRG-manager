@@ -107,16 +107,16 @@ function showCredits(){
   showModal(
     '<div class="credits-sheet">'+
       '<p class="credits-kicker">PROJECT CREDITS</p>'+
-      '<h3>制作与鸣谢</h3>'+
+      '<h3>'+L('制作与鸣谢')+'</h3>'+
       '<dl>'+
-        '<div><dt>创意及开发</dt><dd>j-c-meow</dd></div>'+
-        '<div><dt>部署和技术指导</dt><dd>iriscat</dd></div>'+
-        '<div><dt>技术指导</dt><dd>jiuduo、深岩银河汉化组</dd></div>'+
-        '<div><dt>测试</dt><dd>iris 群、Cat Ship Games 群友</dd></div>'+
-        '<div><dt>素材支持</dt><dd>lcyf166、寒曦月璃、Ghost Ship Games、Deep Rock Galactic Wiki</dd></div>'+
-        '<div><dt>参考项目</dt><dd><a href="https://github.com/Flora233333/deep-rock-galactic-html" target="_blank" rel="noopener noreferrer">DS / Flora233333 · deep-rock-galactic-html</a></dd></div>'+
+        '<div><dt>'+L('创意及开发')+'</dt><dd>j-c-meow</dd></div>'+
+        '<div><dt>'+L('部署和技术指导')+'</dt><dd>iriscat</dd></div>'+
+        '<div><dt>'+L('技术指导')+'</dt><dd>jiuduo、深岩银河汉化组</dd></div>'+
+        '<div><dt>'+L('测试')+'</dt><dd>iris 群、Cat Ship Games 群友</dd></div>'+
+        '<div><dt>'+L('素材支持')+'</dt><dd>lcyf166、寒曦月璃、Ghost Ship Games、Deep Rock Galactic Wiki</dd></div>'+
+        '<div><dt>'+L('参考项目')+'</dt><dd><a href="https://github.com/Flora233333/deep-rock-galactic-html" target="_blank" rel="noopener noreferrer">DS / Flora233333 · deep-rock-galactic-html</a></dd></div>'+
       '</dl>'+
-      '<p class="credits-note">非商业粉丝作品，与 Ghost Ship Games 无隶属关系。游戏名称、美术、音频及商标归原权利人所有。</p>'+
+      '<p class="credits-note">'+L('非商业粉丝作品，与 Ghost Ship Games 无隶属关系。游戏名称、美术、音频及商标归原权利人所有。')+'</p>'+
       '<div class="credits-actions"><button class="btn pri" onclick="closeModal(true)">返回管理终端</button></div>'+
     '</div>',
     true
@@ -134,17 +134,17 @@ function showResourceOverview(){
     {k:'gold', name:'黄金', icon:'res_gold'},
   ];
   mains.forEach(r=>{
-    rows.push('<div class="row"><span style="flex:1">'+(r.icon?ic(r.icon):'◈')+' '+r.name+'</span><b>'+fmt(S[r.k]||0)+'</b></div>');
+    rows.push('<div class="row"><span style="flex:1">'+(r.icon?ic(r.icon):'◈')+' '+L(r.name)+'</span><b>'+fmt(S[r.k]||0)+'</b></div>');
   });
-  rows.push('<div class="row"><span style="flex:1">功绩点</span><b>'+(S.merit||0)+'</b></div>');
-  rows.push('<div class="row"><span style="flex:1">空白模组</span><b>'+(S.blanks||0)+'</b></div>');
-  rows.push('<h3 class="sec">稀有矿物（含市场价）</h3>');
+  rows.push('<div class="row"><span style="flex:1">'+L('功绩点')+'</span><b>'+(S.merit||0)+'</b></div>');
+  rows.push('<div class="row"><span style="flex:1">'+L('空白模组')+'</span><b>'+(S.blanks||0)+'</b></div>');
+  rows.push('<h3 class="sec">'+L('稀有矿物（含市场价）')+'</h3>');
   TRADEABLES.forEach(t=>{
     const p = S.market.prices[t.k] || t.base;
-    rows.push('<div class="row"><span style="flex:1">'+(MKEY[t.name] ? ic('res_'+MKEY[t.name]) : '◇')+' '+t.name+'</span><span>持有 <b>'+fmt(S[t.k]||0)+'</b>　市价 <b>'+p+'</b></span></div>');
+    rows.push('<div class="row"><span style="flex:1">'+(MKEY[t.name] ? ic('res_'+MKEY[t.name]) : '◇')+' '+L(t.name)+'</span><span>'+L('持有 <b>')+fmt(S[t.k]||0)+'</b>'+L('　市价 <b>')+p+'</b></span></div>');
   });
-  showModal('<h3 style="color:var(--amber)">资源总览</h3><div style="margin-top:8px;">'+rows.join('')+'</div>'+
-    '<div class="row" style="justify-content:center;margin-top:10px;"><button class="btn" onclick="closeModal(true)">关闭</button></div>', true);
+  showModal('<h3 style="color:var(--amber)">'+L('资源总览')+'</h3><div style="margin-top:8px;">'+rows.join('')+'</div>'+
+    '<div class="row" style="justify-content:center;margin-top:10px;"><button class="btn" onclick="closeModal(true)">'+L('关闭')+'</button></div>', true);
 }
 /* 仓库面板（C §10.2）：饰品格 + 模组柜，纯展示 */
 function trRarityColor(r){
@@ -166,33 +166,33 @@ function renderWarehouse(){
   const cells = [];
   Object.keys(S.trinkets||{}).filter(id => TRINKET_INDEX[id] && (S.trinkets[id]||0) > 0).forEach(id => {
     const t = TRINKET_INDEX[id], n = S.trinkets[id];
-    cells.push('<div data-trdet="'+t.id+'" style="width:52px;height:52px;border:1px solid '+trRarityColor(t.rarity)+';border-radius:3px;position:relative;display:flex;align-items:center;justify-content:center;background:#0a0e12;flex:none;cursor:pointer;" title="'+t.name_zh+'（点击看详情）">'+
+    cells.push('<div data-trdet="'+t.id+'" style="width:52px;height:52px;border:1px solid '+trRarityColor(t.rarity)+';border-radius:3px;position:relative;display:flex;align-items:center;justify-content:center;background:#0a0e12;flex:none;cursor:pointer;" title="'+L(t)+L('（点击看详情）')+'">'+
       '<img src="assets/trinkets/'+t.id+'.png" style="width:36px;image-rendering:pixelated">'+
       (n>1 ? '<span style="position:absolute;right:2px;bottom:1px;font-size:10px;color:var(--txt);">×'+n+'</span>' : '')+'</div>');
   });
   const trGrid = cells.length
     ? '<div style="display:flex;flex-wrap:wrap;gap:6px;">'+cells.join('')+'</div>'
-    : '<div class="note">还没有饰品。深潜末关、节日战役与饰品箱会掉。</div>';
+    : '<div class="note">'+L('还没有饰品。深潜末关、节日战役与饰品箱会掉。')+'</div>';
   const modRows = slice.map(mid => {
     const m = MOD_INDEX[mid], n = S.modsOwned[mid];
-    return '<div class="row"><span style="flex:1"><img src="assets/trinkets/mod_filled.png" style="width:20px;image-rendering:pixelated;vertical-align:middle"> '+m.name_zh+
-      '　<span class="note">'+m.weaponZh+'｜'+m.tier+'</span></span>'+(n>1?'<b>×'+n+'</b>':'')+'</div>';
+    return '<div class="row"><span style="flex:1"><img src="assets/trinkets/mod_filled.png" style="width:20px;image-rendering:pixelated;vertical-align:middle"> '+L(m)+
+      '　<span class="note">'+weaponZh(m.weaponId)+'｜'+m.tier+'</span></span>'+(n>1?'<b>×'+n+'</b>':'')+'</div>';
   }).join('');
   const modBox = modRows
     ? modRows
-    : '<div class="note">模组柜空空如也。接三提石任务（✦ 标记）赚空白模组，来锻造台抽卡。</div>';
+    : '<div class="note">'+L('模组柜空空如也。接三提石任务（✦ 标记）赚空白模组，来锻造台抽卡。')+'</div>';
   const pager = pages > 1
-    ? '<div class="row" style="justify-content:center;gap:8px;margin-top:6px;"><button class="btn" data-whpg="-1" '+(whPage===0?'disabled':'')+'>◀ 上一页</button><span class="note">第 '+(whPage+1)+' / '+pages+' 页（共 '+mods.length+' 个模组）</span><button class="btn" data-whpg="1" '+(whPage>=pages-1?'disabled':'')+'>下一页 ▶</button></div>'
+    ? '<div class="row" style="justify-content:center;gap:8px;margin-top:6px;"><button class="btn" data-whpg="-1" '+(whPage===0?'disabled':'')+'>'+L('◀ 上一页')+'</button><span class="note">'+L('第 ')+(whPage+1)+' / '+pages+L(' 页（共 ')+mods.length+L(' 个模组）')+'</span><button class="btn" data-whpg="1" '+(whPage>=pages-1?'disabled':'')+'>'+L('下一页 ▶')+'</button></div>'
     : '';
   showModal('<div style="display:flex;align-items:center;justify-content:space-between;">'+
-    '<h3 style="color:var(--amber);margin:0;">📦 仓库</h3>'+
-    '<button class="btn" onclick="closeModal(true)">✕ 关闭</button></div>'+
+    '<h3 style="color:var(--amber);margin:0;">'+L('📦 仓库')+'</h3>'+
+    '<button class="btn" onclick="closeModal(true)">'+L('✕ 关闭')+'</button></div>'+
     '<div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:8px;">'+
-    '<div style="flex:1;min-width:260px;"><h3 class="sec">饰品格（全队佩戴）</h3>'+trGrid+
-    '<div class="note" style="margin-top:6px;">空白模组 ×'+(S.blanks||0)+' → 装备终端锻造台可抽卡。</div></div>'+
-    '<div style="flex:1;min-width:260px;"><h3 class="sec">模组柜（第 '+(whPage+1)+' 页）</h3>'+modBox+pager+'</div>'+
+    '<div style="flex:1;min-width:260px;"><h3 class="sec">'+L('饰品格（全队佩戴）')+'</h3>'+trGrid+
+    '<div class="note" style="margin-top:6px;">'+L('空白模组')+' ×'+(S.blanks||0)+L(' → 装备终端锻造台可抽卡。')+'</div></div>'+
+    '<div style="flex:1;min-width:260px;"><h3 class="sec">'+L('模组柜（第 ')+(whPage+1)+L(' 页）')+'</h3>'+modBox+pager+'</div>'+
     '</div>'+
-    '<div class="row" style="justify-content:center;margin-top:10px;"><button class="btn" onclick="closeModal(true)">关闭</button></div>', true);
+    '<div class="row" style="justify-content:center;margin-top:10px;"><button class="btn" onclick="closeModal(true)">'+L('关闭')+'</button></div>', true);
   $('#modal-box').querySelectorAll('[data-whpg]').forEach(el=>{
     el.onclick = () => { whPage += parseInt(el.dataset.whpg); renderWarehouse(); };
   });
@@ -203,18 +203,18 @@ function renderWarehouse(){
 /* 饰品详情（仓库二期） */
 function showTrinketDetail(id){
   const t = TRINKET_INDEX[id]; if(!t) return;
-  const rn = {uncommon:'少见', rare:'稀有', epic:'史诗', legendary:'传说'}[t.rarity] || t.rarity;
-  showModal('<h3 style="color:var(--amber)">'+t.name_zh+' <span class="note">'+(t.name_en||'')+'</span></h3>'+
+  const rn = L({uncommon:'少见', rare:'稀有', epic:'史诗', legendary:'传说'}[t.rarity]) || t.rarity;
+  showModal('<h3 style="color:var(--amber)">'+L(t)+' <span class="note">'+(t.name_en||'')+'</span></h3>'+
     '<div class="meta">'+rn+(t.fest?'｜'+t.fest:'')+'｜'+effectText(t.effect||{})+'</div>'+
-    '<p class="note">'+(t.desc||'')+'</p>'+
-    '<div class="row" style="justify-content:center;margin-top:10px;"><button class="btn" onclick="renderWarehouse()">← 返回仓库</button></div>', true);
+    '<p class="note">'+L(t.desc||'')+'</p>'+
+    '<div class="row" style="justify-content:center;margin-top:10px;"><button class="btn" onclick="renderWarehouse()">'+L('← 返回仓库')+'</button></div>', true);
 }
 /* 日志放大弹窗 */
 function showLogModal(){
   const items = S.log.slice(0, 60).map(l=>'<div class="l '+l.c+'">['+l.t+'] '+l.m+'</div>').join('');
-  showModal('<h3 style="color:var(--amber)">管理终端日志（近 60 条）</h3>'+
+  showModal('<h3 style="color:var(--amber)">'+L('管理终端日志（近 60 条）')+'</h3>'+
     '<div style="max-height:60vh;overflow-y:auto;border:1px solid var(--line);padding:8px;font-size:12px;line-height:1.7;">'+items+'</div>'+
-    '<div class="row" style="justify-content:center;margin-top:10px;"><button class="btn" onclick="closeModal(true)">关闭</button></div>', true);
+    '<div class="row" style="justify-content:center;margin-top:10px;"><button class="btn" onclick="closeModal(true)">'+L('关闭')+'</button></div>', true);
 }
 
 /* —— 起名系统（用户 09-19 拍板）——
@@ -279,6 +279,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   }catch(e){}
   renderAll();
   if(realtimeSummary) showRealtimeSummary(realtimeSummary);
+  /* 首次进入（localStorage 无 drg_lang）弹出语言选择；主循环照常运行 */
+  try{ if(localStorage.getItem('drg_lang') === null && typeof showLangChooser === 'function') showLangChooser(); }catch(e){}
   /* 收纳折叠：全局委托（含动态渲染的折叠头） */
   document.addEventListener('click', e => {
     const h = e.target.closest('[data-fold]');
@@ -295,7 +297,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   if(pauseBtn) pauseBtn.onclick = () => {
     speed = (speed === 0) ? 1 : 0;
     renderHeader();
-    log(speed === 0 ? '时间暂停。钻台进入待机。' : '时间继续流动。开始采掘。', 'sys');
+    log(L(speed === 0 ? '时间暂停。钻台进入待机。' : '时间继续流动。开始采掘。'), 'sys');
   };
   $('#btn-refresh').onclick = () => { genBoard(); log(TEXT.log_board_refresh, 'sys'); renderAll(); boardBtnSync(); };
   $('#btn-kpi').onclick = claimKPI;
@@ -304,12 +306,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   function boardBtnSync(){
     const b = $('#btn-board-compact');
     if(isMobile()){
-      b.textContent = FOLD.boardFolded ? '展开' : '折叠';
+      b.textContent = FOLD.boardFolded ? L('展开') : L('折叠');
       $('#board').classList.toggle('folded', FOLD.boardFolded);
       $('#boardFoldSummary').classList.toggle('on', FOLD.boardFolded);
-      if(FOLD.boardFolded) $('#boardFoldSummary').textContent = '任务板已折叠 · '+S.board.length+' 个任务，点击展开';
+      if(FOLD.boardFolded) $('#boardFoldSummary').textContent = L('任务板已折叠 · ')+S.board.length+L(' 个任务，点击展开');
     } else {
-      b.textContent = FOLD.boardCompact ? '详细' : '简洁';
+      b.textContent = FOLD.boardCompact ? L('详细') : L('简洁');
       $('#board').classList.remove('folded');
       $('#boardFoldSummary').classList.remove('on');
     }
@@ -317,7 +319,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   $('#btn-board-compact').onclick = () => {
     if(isMobile()){ FOLD.boardFolded = !FOLD.boardFolded; saveFold(); boardBtnSync(); return; }
     FOLD.boardCompact = !FOLD.boardCompact; saveFold();
-    $('#btn-board-compact').textContent = FOLD.boardCompact ? '详细' : '简洁';
+    $('#btn-board-compact').textContent = FOLD.boardCompact ? L('详细') : L('简洁');
     renderBoard();
   };
   $('#boardFoldSummary').onclick = () => { FOLD.boardFolded = false; saveFold(); boardBtnSync(); };
@@ -350,9 +352,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       if(facKey && !facUnlocked(facKey)){
         const f = FACILITIES[facKey];
         const canBuy = S.rigLv>=f.rig && S.campaign.ci > CAMPAIGNS.findIndex(x=>x.id===f.campaign) && S.credits>=f.cost;
-        showModal('<h3 style="color:var(--amber)">🔒 '+f.name+'</h3><div class="note" style="margin:10px 0">'+facCondText(facKey)+'</div>'+
-          '<button class="btn pri" style="width:100%" id="fac-buy" '+(canBuy?'':'disabled')+'>重建 · '+f.cost+' 代币</button>'+
-          '<button class="btn" style="width:100%;margin-top:4px" onclick="closeModal(true)">稍后再说</button>', false);
+        showModal('<h3 style="color:var(--amber)">🔒 '+L(f.name)+'</h3><div class="note" style="margin:10px 0">'+facCondText(facKey)+'</div>'+
+          '<button class="btn pri" style="width:100%" id="fac-buy" '+(canBuy?'':'disabled')+'>'+L('重建 · ')+f.cost+L(' 代币')+'</button>'+
+          '<button class="btn" style="width:100%;margin-top:4px" onclick="closeModal(true)">'+L('稍后再说')+'</button>', false);
         $('#fac-buy').onclick = () => {
           if(tryUnlockFacility(facKey)){ closeModal(true); renderAll(); }
           else log(TEXT.un_locked_toast.replace('{name}', f.name).replace('{cond}', facCondText(facKey)), 'bad');
@@ -433,17 +435,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   const irBtn = document.getElementById('btn-idle-report');
   if(irBtn) irBtn.onclick = showIdleReport;
   const chipCr = document.getElementById('chip-credits');
-  if(chipCr) chipCr.onclick = () => showDetail('代币', [
-    {label:'当前存量', value:fmt(S.credits)},
-    {label:'下季 KPI 奖金', value:fmt(Math.round(1500 * (S.kpi.term + 1)))},
-    {label:'重复招募折算', value:'300 代币'},
+  if(chipCr) chipCr.onclick = () => showDetail(L('代币'), [
+    {label:L('当前存量'), value:fmt(S.credits)},
+    {label:L('下季 KPI 奖金'), value:fmt(Math.round(1500 * (S.kpi.term + 1)))},
+    {label:L('重复招募折算'), value:'300'+L(' 代币')},
   ]);
   const chipNi = document.getElementById('chip-nitra');
-  if(chipNi) chipNi.onclick = () => showDetail('硝石', [
-    {label:'当前存量', value:fmt(S.nitra)},
-    {label:'每日产出', value:'+25'},
-    {label:'派遣消耗', value:'60×人数×时长系数' + (S.mode === 'rush' ? '（急行 ×4）' : '')},
-    {label:'集团关怀', value:(S.credits < 100 && S.nitra < 60) ? '生效中' : '未触发'},
+  if(chipNi) chipNi.onclick = () => showDetail(L('硝石'), [
+    {label:L('当前存量'), value:fmt(S.nitra)},
+    {label:L('每日产出'), value:'+25'},
+    {label:L('派遣消耗'), value:'60×'+L('人数×时长系数') + (S.mode === 'rush' ? L('（急行 ×4）') : '')},
+    {label:L('集团关怀'), value:(S.credits < 100 && S.nitra < 60) ? L('生效中') : L('未触发')},
   ]);
   /* B-8：音乐开关 */
   const bgmBtn = document.getElementById('btn-bgm');
@@ -461,6 +463,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   if(creditsBtn) creditsBtn.onclick = showCredits;
   const renameBtn = document.getElementById('btn-rename');
   if(renameBtn) renameBtn.onclick = showNameRegistration;   /* 起名系统：随时改代号 */
+  /* 语言切换按钮：显示目标语言（中文界面显示 EN，英文界面显示 中） */
+  const langBtn = document.getElementById('btn-lang');
+  if(langBtn){
+    langBtn.textContent = (currentLang() === 'en') ? '中' : 'EN';
+    langBtn.onclick = () => {
+      const next = (currentLang() === 'en') ? 'zh' : 'en';
+      langBtn.textContent = (next === 'en') ? '中' : 'EN';
+      applyLang(next);
+    };
+  }
   window.addEventListener('beforeunload', save);
   }catch(initErr){ window.__initErr = (initErr.stack || initErr.message); renderAll(); }
 });

@@ -39,7 +39,7 @@ function applyMgrTitle(msg){
 }
 
 function log(msg, cls){
-  if(msg === undefined || msg === null) msg = '（日志异常，已捕获）';
+  if(msg === undefined || msg === null) msg = L('（日志异常，已捕获）');
   msg = applyMgrTitle(msg);
   S.log.unshift({t:clockStr(), m:String(msg), c:cls||''});
   if(S.log.length > 80) S.log.length = 80;
@@ -250,7 +250,7 @@ function clockStr(){
   return 'D'+day+' '+hh+':'+mm;
 }
 function gameDay(){ return Math.floor((S.gm + 480)/1440) + 1; }
-function minerName(m){ return m ? (CLASSES[m.cls].short + '-' + m.num) : '神秘矮人'; }
+function minerName(m){ return m ? (L(CLASSES[m.cls].short) + '-' + m.num) : L('神秘矮人'); }
 function biomeById(id){ return BIOMES.find(b=>b.id===id); }
 function mtypeById(id){ return MTYPES.find(m=>m.id===id); }
 function unlockedBiomes(){ const t = rigTier(); return BIOMES.filter(b=>b.tier<=t); }
