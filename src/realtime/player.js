@@ -64,8 +64,19 @@
     return CLASSES[0];
   };
 
-  /* ---------------- player ---------------- */
-  function Player(clsId, x, y) {
+/* ---------------- player ---------------- */
+/**
+ * 携带限制（纯逻辑，冒烟可测）：定点提取的矿块 / 搜救的矿骡腿头顶携带期间——
+ * 主手武器禁用（强制锁副手槽）、职业装备不可切（Q）、移速按携带物折扣。
+ * 护送局的燃料罐沿用旧规则（不限武器），由此处返回 null 表达。
+ */
+DRG.carryRestriction = function (p) {
+  if (!p || !p.carriedItem || p.carriedCan) return null;
+  var item = p.carriedItem;
+  return { slot: 1, slowMul: item.slowMul || 0.9, label: item.label || '携带物' };
+};
+
+function Player(clsId, x, y) {
     var c = DRG.classById(clsId);
     this.cls = c;
     this.x = x; this.y = y; this.vx = 0; this.vy = 0;
@@ -84,11 +95,14 @@
     this.fireCd = 0; this.spin = 0;
     this.carry = { morkite: 0, nitra: 0, gold: 0, crystal: 0 };
     this.carryCap = 60;
+    this.carriedCan = null;             // 头顶携带的燃料罐（护送局）
+    this.carriedItem = null;            // 头顶携带的通用物品（矿块 / 矿骡腿）
     this.flares = 8; this.maxFlares = 8;
     this.grenades = 3; this.maxGrenades = 3;
     this.toolCharges = c.tool.charges; this.toolCd = 0;
     this.extraCharges = c.extra ? c.extra.charges : 0; this.extraCd = 0;
     this.mining = 0; this.swing = 0; this.mineTarget = null;
+    this.drillTarget = null;            // 定点提取：正在钻采的大矿结（PointBeacon）
     this.walkT = 0; this.t = 0;
     this.downed = false; this.bleed = 0; this.downedFully = false;
     this.hurtFlash = 0; this.recoil = 0; this.kickAng = 0;
@@ -106,6 +120,15 @@
   }
 
   Player.prototype.weapon = function () { return W[this.weapons[this.cur]]; };
+
+/** 携带态按键提示节流（锁副手时按 1/滚轮/Q） */
+Player.prototype.carryWarn = function (m) {
+  if (this.t - (this._carryWarnT || -9) < 2.5) return;
+  this._carryWarnT = this.t;
+  var lock = DRG.carryRestriction(this);
+  m.toast('怀里抱着' + (lock ? lock.label : '物品') + '——只能用副手武器', '#ffb03c', 2);
+  DRG.audio.sfx('beep');
+};
 
   /* ---------------- damage / health ---------------- */
   Player.prototype.hurt = function (dmg, m, cause) {
@@ -128,6 +151,11 @@
   Player.prototype.goDown = function (m) {
     this.hp = 0; this.downed = true; this.bleed = 28;
     this.vx = 0;
+    // 携带物掉落原地（倒地可重拾；护送油罐沿用旧规则不落地）
+    if (this.carriedItem && this.carriedItem.drop) {
+      this.carriedItem.drop(this, m);
+      this.carriedItem = null;
+    }
     DRG.audio.loop('flame', { stop: true });
     DRG.audio.loop('minigun', { stop: true });
     DRG.audio.loop('drill', { stop: true });
@@ -192,6 +220,8 @@
     var left = I.key('KeyA', 'ArrowLeft'), right = I.key('KeyD', 'ArrowRight');
     var wantX = (right ? 1 : 0) - (left ? 1 : 0);
     var spd = c.speed;
+    var carryLock = DRG.carryRestriction(this);   // 携带矿块/矿骡腿：减速 + 锁副手
+    if (carryLock) spd *= carryLock.slowMul;
     if (this.spin > 0.15 && this.cur === 0 && W[c.primary].slow) spd *= (1 - W[c.primary].slow);
     if (this.mining > 0) spd *= 0.6;
     this.vx = M.damp(this.vx, wantX * spd, this.onGround ? 16 : 8, dt);
@@ -241,18 +271,35 @@
     }
 
     /* ---- actions ---- */
+    if (carryLock) {                            // 携带态：强制锁副手武器槽
+      if (this.cur !== carryLock.slot || this.toolSelected) {
+        this.cur = carryLock.slot; this.toolSelected = false; this.spin = 0;
+      }
+    }
     if (I.down[2] || I.key('KeyC')) this.mine(dt, m);
     else {
       this.mining = Math.max(0, this.mining - dt * 4);
       this.mineTarget = null;
       if (this.cls.drill) DRG.audio.loop('drill', { stop: true });
     }
-    if (I.hit('Digit1')) this.switchTo(0, m);
+    if (carryLock && (I.hit('Digit1') || I.wheel || (I.hit('KeyQ') && !I.key('ShiftLeft', 'ShiftRight')))) this.carryWarn(m);
+    if (I.hit('Digit1') && !carryLock) this.switchTo(0, m);
     if (I.hit('Digit2')) this.switchTo(1, m);
-    if (I.wheel) this.switchTo(1 - this.cur, m);
-    var toolToggled = I.hit('KeyQ') && !I.key('ShiftLeft', 'ShiftRight');
+    if (I.wheel && !carryLock) this.switchTo(1 - this.cur, m);
+    var toolToggled = I.hit('KeyQ') && !I.key('ShiftLeft', 'ShiftRight') && !carryLock;
     if (toolToggled) this.switchTool(m);
-    if (I.down[0] && !this.toolSelected) this.fire(dt, m); else this.releaseFire(dt, m);
+    /* 定点提取：按住攻击对着大矿结 → 钻采（拦截开火） */
+    var drilling = !this.toolSelected && I.down[0] && !carryLock && m.drillVeinAt ? m.drillVeinAt(this) : null;
+    if (drilling) {
+      this.mining = Math.min(1, this.mining + dt * 5);
+      this.drillTarget = drilling;
+      drilling.drill(dt, m);
+      DRG.audio.loop('flame', { stop: true });
+      DRG.audio.loop('minigun', { stop: true });
+    } else {
+      this.drillTarget = null;
+      if (I.down[0] && !this.toolSelected) this.fire(dt, m); else this.releaseFire(dt, m);
+    }
     if (!toolToggled && this.toolSelected && I.clicked[0]) this.useTool(m);
     if (!this.toolSelected && I.hit('KeyR') && this.mag[this.cur] < W[this.weapons[this.cur]].mag) this.startReload(m);
     if (I.hit('KeyF')) this.throwFlare(m);

@@ -139,6 +139,22 @@
     /** flashing highlight colour for urgent HUD elements */
     pulse: function (t, a, b, speed) {
       return gfx.mix(a, b, (Math.sin(t * (speed || 6)) + 1) / 2);
+    },
+
+    /** progress ring (point 钻采 / salv 修复 / 通用进度读数) */
+    ring: function (g, x, y, r, frac, col, lw) {
+      frac = M.clamp(frac, 0, 1);
+      g.save();
+      g.lineCap = 'round';
+      g.strokeStyle = 'rgba(8,12,16,0.72)';
+      g.lineWidth = (lw || 4) + 2;
+      g.beginPath(); g.arc(x, y, r, 0, 6.283); g.stroke();
+      g.strokeStyle = col || '#ffd76a';
+      g.lineWidth = lw || 4;
+      g.beginPath();
+      g.arc(x, y, r, -Math.PI / 2, -Math.PI / 2 + frac * 6.283);
+      g.stroke();
+      g.restore();
     }
   };
 })(window);

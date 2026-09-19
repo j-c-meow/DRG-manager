@@ -1,0 +1,69 @@
+src/manager/game-data.js 21: const REALTIME_BIOMES = DRG_SHARED.realtimeBiomeByManagerId;
+src/manager/game-data.js 26: const MTYPES = [
+src/manager/game-data.js 28: {id:'point', name:'定点提取', rig:1, min:240, r:{credits:180, morkite:45,  gold:2},              best:'scout'},
+src/manager/game-data.js 31: {id:'salv',  name:'搜救行动', rig:4, min:300, r:{credits:240, morkite:50,  gold:1},              best:'driller'},
+src/manager/game-data.js 81: {type:'mission', target:'salv', need:1, txt:'完成 1 次搜救行动'},
+src/manager/game-data.js 160: const t = ['exp','point','refi','salv','elim','escort'][Math.floor(Math.random()*6)];
+src/manager/game-data.js 161: const tn = mtypeById(t) ? mtypeById(t).name : t;
+src/manager/game-data.js 393: const MIS_BANNER = {exp:'mis_exp', point:'mis_point', refi:'mis_refi', escort:'mis_escort', salv:'mis_salvage', elim:'mis_elim'};
+src/realtime/autopilot.js 63: m.quota = DEMO_QUOTA;
+src/realtime/autopilot.js 70: console.log('[DEMO] 任务开始 — 目标:', m.quota, '莫尔凯特');
+src/realtime/autopilot.js 168: if (m.deposited.morkite >= m.quota) m.checkObjective();
+src/realtime/autopilot.js 169: console.log('[DEMO] ★ 存入莫莉 — 进度', Math.floor(m.deposited.morkite) + '/' + m.quota);
+src/realtime/autopilot.js 289: if (!wantNitra && t === TT.NITRA && m.deposited.morkite < m.quota) continue;
+src/realtime/autopilot.js 432: '|', AP.phase, '| 莫尔凯特', Math.floor(m.deposited.morkite) + '/' + m.quota,
+src/manager/missions.js 34: S.board = [genMission('exp')];
+src/manager/missions.js 57: const t = mtypeById(m.type);
+src/manager/missions.js 181: log(L(mtypeById(m.type))+L('【')+L(biomeById(m.biome))+L('】派遣 ')+hc+L(' 人小队（')+names+L('），预计 ')+fmtDur(dur)+L('。'), '');
+src/manager/missions.js 184: if(m.type === 'escort' && !dep0.isDive && Math.random() < 0.3) startEvent(dep0, 'lcyf166');
+src/manager/missions.js 189: const best = d.m ? mtypeById(d.m.type).best : '';
+src/manager/missions.js 216: if(p.require === 'escort') return d.m.type === 'escort';
+src/manager/missions.js 646: log((offline?L('【离线结算】'):'⚠ ')+L('任务中止：')+L(mtypeById(m.type))+L('【')+L(biomeById(m.biome))+L('】全员退出战斗序列，无人机只抢回了 ')+g+L(' 代币的矿袋。'), 'bad');
+src/manager/missions.js 769: log((offline?L('【离线结算】'):'✅ ')+L('任务完成：')+L(mtypeById(m.type))+L('【')+L(b)+L('】 代币+')+gain.credits+
+scripts/build.mjs 10: const realtimeSourceDirectory = "src/realtime";
+scripts/build.mjs 12: const realtimeOutputDirectory = join(outputDirectory, "scripts/realtime");
+scripts/build.mjs 31: await mkdir(realtimeOutputDirectory, { recursive: true });
+scripts/build.mjs 34: await cp("public", outputDirectory, { recursive: true });
+scripts/build.mjs 99: const file = `realtime-atlas-${pageIndex}.webp`;
+scripts/build.mjs 127: join(atlasOutputDirectory, "realtime-atlas.json"),
+scripts/build.mjs 130: const [managerHtml, realtimeShell, serviceWorker] = await Promise.all([
+scripts/build.mjs 132: readFile("src/realtime/shell.html", "utf8"),
+scripts/build.mjs 136: throw new Error("manager.html is missing the realtime shell marker");
+scripts/build.mjs 139: .replace("<!-- REALTIME_SHELL -->", realtimeShell)
+scripts/build.mjs 149: await cp("src/pwa/manifest.webmanifest", join(outputDirectory, "manifest.webmanifest"));
+scripts/build.mjs 154: await cp("src/styles", join(outputDirectory, "styles"), { recursive: true });
+scripts/build.mjs 155: await cp("THIRD_PARTY_LICENSE.txt", join(outputDirectory, "THIRD_PARTY_LICENSE.txt"));
+scripts/build.mjs 160: cp(join(managerSourceDirectory, file), join(managerOutputDirectory, file))
+scripts/build.mjs 163: const realtimeScripts = (await readdir(realtimeSourceDirectory))
+scripts/build.mjs 165: await Promise.all(realtimeScripts.map(file =>
+scripts/build.mjs 166: cp(join(realtimeSourceDirectory, file), join(realtimeOutputDirectory, file))
+src/pages/manager.html 155: <section class="realtime-shell" id="realtime-shell" hidden aria-hidden="true">
+src/pages/manager.html 156: <div class="realtime-shell-bar">
+src/pages/manager.html 158: <span class="realtime-shell-kicker">直接指挥</span>
+src/pages/manager.html 159: <strong id="realtime-shell-title">实时下矿</strong>
+src/pages/manager.html 161: <button class="btn realtime-shell-close" id="realtime-shell-close" type="button">返回管理终端</button>
+src/pages/manager.html 166: <script src="scripts/app.js"></script>
+src/pages/manager.html 171: <script src="scripts/realtime/core.js"></script>
+src/pages/manager.html 172: <script src="scripts/realtime/assets.js"></script>
+src/pages/manager.html 173: <script src="scripts/realtime/audio.js"></script>
+src/pages/manager.html 174: <script src="scripts/realtime/input.js"></script>
+src/pages/manager.html 175: <script src="scripts/realtime/gfx.js"></script>
+src/pages/manager.html 176: <script src="scripts/realtime/lighting.js"></script>
+src/pages/manager.html 177: <script src="scripts/realtime/particles.js"></script>
+src/pages/manager.html 178: <script src="scripts/realtime/world.js"></script>
+src/pages/manager.html 179: <script src="scripts/realtime/entities.js"></script>
+src/pages/manager.html 180: <script src="scripts/realtime/doretta.js"></script>
+src/pages/manager.html 181: <script src="scripts/realtime/enemies.js"></script>
+src/pages/manager.html 182: <script src="scripts/realtime/player.js"></script>
+src/pages/manager.html 183: <script src="scripts/realtime/mission.js"></script>
+src/pages/manager.html 184: <script src="scripts/realtime/hud.js"></script>
+src/pages/manager.html 185: <script src="scripts/realtime/ui.js"></script>
+src/pages/manager.html 186: <script src="scripts/realtime/integration.js"></script>
+src/pages/manager.html 190: <script src="scripts/realtime/game.js"></script>
+src/pages/manager.html 191: <script src="scripts/realtime/autopilot.js"></script>
+src/unified/domain.ts 2: import type { DirectMissionRequest, MissionDefinition, MissionResult, UnifiedSaveState } from './contracts';
+src/unified/domain.ts 20: export function startDirectMission(state: UnifiedSaveState, input: StartDirectMissionInput): DirectMissionRequest {
+src/unified/domain.ts 28: const realtimeBiome = realtimeBiomeByManagerId[input.mission.biome as keyof typeof realtimeBiomeByManagerId] ?? 'crystalline';
+src/unified/domain.ts 57: export function startDirectMissionFromDep(
+src/unified/domain.ts 70: const realtimeBiome = realtimeBiomeByManagerId[mission.biome as keyof typeof realtimeBiomeByManagerId] ?? 'crystalline';
+src/unified/domain.ts 77: /* 管理端的任务报酬字段是 r（startDirectMission 由调用方折成 rewards），此处统一兜底 */

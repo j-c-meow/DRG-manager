@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0c1116">
+<link rel="icon" type="image/png" href="assets/pwa/icon-192.png">
+<link rel="stylesheet" href="styles/manager.css?v=mu7ddwu9-189464e6">
+<link rel="stylesheet" href="assets/font/fonts.css?v=mu7ddwu9-189464e6">
+<link id="realtime-style" rel="stylesheet" href="styles/realtime.css?v=mu7ddwu9-189464e6" disabled>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.webmanifest?v=mu7ddwu9-189464e6">
+<link rel="apple-touch-icon" href="assets/pwa/apple-touch-icon-180.png">
+<title>深岩银河 · 17号钻台管理终端</title>
+<meta name="drg-build-version" content="mu7ddwu9-189464e6">
+</head>
+<body>
+<div id="app">
+  <header class="command-header">
+    <div class="topbar">
+      <div class="brand-lockup">
+        <img class="brand-mark" src="assets/ui/brand-mark.svg" alt="">
+        <div class="brand-copy">
+          <strong>深岩银河集团</strong>
+          <span>DEEP ROCK GALAXY CORP.</span>
+        </div>
+      </div>
+
+      <div class="terminal-name">
+        <strong>17号钻台管理终端</strong>
+        <span>开采资源 · 建设未来</span>
+      </div>
+
+      <div class="clock-console">
+        <div><b id="clock">D1</b><strong id="clock-time">08:00</strong></div>
+        <span id="clock-date">2020-05-13　星期三</span>
+      </div>
+
+      <div class="pause-console" id="spd-chip">
+        <button class="btn pause-button" id="btn-pause" title="暂停 / 继续时间">
+          <span class="pause-glyph" aria-hidden="true"></span><b>暂停中</b>
+        </button>
+      </div>
+
+      <div class="mode-console" id="mode-chip" title="点击切换挂机与急行模式">
+        <div class="mspr" aria-hidden="true"></div>
+        <div><span>运行模式</span><b class="mlabel" id="mode-label">挂机</b></div>
+      </div>
+
+      <div class="top-resources">
+        <div class="resource-chip" id="chip-credits" title="代币">
+          <span class="coin-symbol">◆</span><span>代币</span><b id="r-credits">0</b>
+        </div>
+        <div class="resource-chip" id="chip-nitra" title="硝石">
+          <img src="assets/icons/res_nitra.png" alt=""><span>硝石</span><b id="r-nitra">0</b>
+        </div>
+        <button class="utility-chip" id="btn-idle-report" title="托管期间的收益汇总">
+          <span class="orbit-symbol" aria-hidden="true"></span><span>挂机收益</span>
+        </button>
+        <button class="utility-chip" id="btn-auto" title="开启或关闭三小时自动派遣">
+          <span class="ticket-symbol" aria-hidden="true"></span><span>挂机券</span><b>12</b>
+        </button>
+        <div class="utility-chip auto-running" id="auto-chip" title="挂机模式运行中，点击取消">
+          <span class="orbit-symbol" aria-hidden="true"></span><span>托管中</span><b id="auto-left">--</b>
+        </div>
+        <button class="overview-button" id="btn-res-overview"><span class="chart-symbol" aria-hidden="true"></span>资源总览</button>
+        <button class="sound-button" id="btn-lang" title="语言 / Language" style="font-size:12px;letter-spacing:0;">EN</button>
+        <button class="sound-button" id="btn-bgm" title="音乐开关">音</button>
+        <button class="settings-button" id="btn-settings" title="系统设置"><span aria-hidden="true"></span></button>
+      </div>
+    </div>
+
+    <div class="objective-deck">
+      <section class="objective-card kpi-console">
+        <div class="objective-kicker"><span>本季度目标</span><b id="kpi-term">第1季</b></div>
+        <div class="kpi-readout">
+          <span class="target-diamond" aria-hidden="true"></span>
+          <strong>KPI</strong>
+          <b id="kpi-txt">0 / 500</b>
+          <button class="btn pri kpi-claim" id="btn-kpi">领取</button>
+        </div>
+        <div class="bar kpi-bar"><i id="kpi-bar"></i></div>
+      </section>
+
+      <section class="objective-card campaign-console panel" id="campbar"></section>
+
+      <aside class="hero-message">
+        <strong>向地心进发</strong>
+        <b>开采人类的第二家园</b>
+        <span>BUILDING A BRIGHTER TOMORROW</span>
+      </aside>
+    </div>
+  </header>
+
+  <div id="rares" class="resource-ribbon"></div>
+
+  <div id="swarmalert" class="swarm-alert">
+    <span id="swarmalert-ic"></span>
+    <span>洞穴在震动：有队伍正悬挂虫潮事件，等待管理层决策。</span>
+  </div>
+
+  <main>
+    <section class="panel mission-panel m-main">
+      <h2>
+        <span class="panel-title">任务板 <small>MISSION</small></span>
+        <span class="panel-actions">
+          <button class="btn" id="btn-refresh"><span class="refresh-symbol" aria-hidden="true"></span>刷新任务</button>
+          <button class="btn" id="btn-board-compact">简洁</button>
+        </span>
+      </h2>
+      <div id="boardFoldSummary"></div>
+      <div class="bd" id="board"></div>
+    </section>
+
+    <section class="m-mid">
+      <div class="panel dispatch-panel">
+        <h2><span class="panel-title">派遣通道 <small>DISPATCH</small></span><span class="panel-code">DRG</span></h2>
+        <div class="bd" id="deps"></div>
+      </div>
+      <div class="panel log-panel" id="logPanel">
+        <h2>
+          <span class="fold-head panel-title" data-fold="log">管理终端日志 <small>OPERATION LOG</small><span class="arrow">▼</span></span>
+          <span class="logbar"><button class="btn btn-log-expand" id="btn-log-modal">全部日志</button></span>
+        </h2>
+        <div id="logMini" data-foldlog="open">点击展开日志</div>
+        <div class="bd"><div id="log"></div></div>
+      </div>
+    </section>
+
+    <section class="panel roster-panel m-side">
+      <div class="tabs" id="tabs">
+        <div class="tab on" data-tab="roster">名册</div>
+        <div class="tab" data-tab="gear">装备</div>
+        <div class="tab" data-tab="bar">酒吧</div>
+        <div class="tab" data-tab="med">医疗</div>
+        <div class="tab" data-tab="market">交易</div>
+        <div class="tab" data-tab="dive">深潜</div>
+        <div class="tab" data-tab="rig">钻井</div>
+        <div class="tab" data-tab="help">帮助</div>
+        <div class="tab" data-tab="sys">系统</div>
+      </div>
+      <div class="bd" id="side"></div>
+    </section>
+  </main>
+
+  <footer class="terminal-footer">
+    <div class="footer-brand"><img src="assets/ui/brand-mark.svg" alt=""><b>DRG</b><span>DEEP ROCK GALAXY CORP.</span></div>
+    <div class="footer-credits"><button id="btn-rename" type="button">✏️ 代号</button><button id="btn-credits" type="button">制作与鸣谢</button><span>J-C-MEOW × IRISCAT</span><a href="https://github.com/Flora233333/deep-rock-galactic-html" target="_blank" rel="noopener noreferrer">参考项目 FLORA233333</a></div>
+    <div class="footer-status"><span class="status-light"></span>系统正常运行</div>
+    <div class="footer-version">v1.0.0　　在更深处，遇见更大的明天。</div>
+  </footer>
+</div>
+
+<div class="modal" id="modal" style="display:none"><div class="box" id="modal-box"></div></div>
+<section class="realtime-shell" id="realtime-shell" hidden aria-hidden="true">
+  <div class="realtime-shell-bar">
+    <div>
+      <span class="realtime-shell-kicker">直接指挥</span>
+      <strong id="realtime-shell-title">实时下矿</strong>
+    </div>
+    <button class="btn realtime-shell-close" id="realtime-shell-close" type="button">返回管理终端</button>
+  </div>
+  <div id="realtime-app">
+  <canvas id="game"></canvas>
+
+  <!-- ============ boot / loading ============ -->
+  <section id="scr-boot" class="screen active boot">
+    <div class="boot-inner">
+      <img class="boot-logo" src="assets/img/logo_gsg.png" alt="Ghost Ship Games" loading="lazy" decoding="async">
+      <h1 class="boot-title">深岩银河</h1>
+      <p class="boot-sub">DEEP ROCK GALACTIC · HTML EDITION</p>
+      <div class="boot-bar"><i id="boot-fill"></i></div>
+      <p class="boot-status" id="boot-status">正在装载装备…</p>
+      <p class="boot-note">非官方粉丝作品 · 素材来自官方 Wiki（见制作说明）</p>
+    </div>
+  </section>
+
+  <!-- ============ main menu ============ -->
+  <section id="scr-menu" class="screen menu">
+    <div class="menu-bg"><img id="menu-rig" data-src="assets/img/spacerig.webp" alt="" decoding="async"></div>
+    <img id="menu-planet" data-src="assets/img/hoxxes.png" alt="Hoxxes IV" decoding="async">
+    <div class="menu-left">
+      <div class="menu-brand">
+        <img data-src="assets/img/logo_gsg.png" alt="" decoding="async">
+        <div>
+          <h1>深岩银河</h1>
+          <p>DEEP ROCK GALACTIC · <b>HTML EDITION</b></p>
+        </div>
+      </div>
+      <p class="menu-tag">“矮人不后退，矮人只挖得更深。”<br><span>ROCK AND STONE!</span></p>
+      <nav class="menu-nav">
+        <button class="btn big" data-act="play"><b>开始任务</b><span>选择星区、危险等级与职业</span></button>
+        <button class="btn" data-act="help"><b>操作说明</b><span>键鼠操作与任务流程</span></button>
+        <button class="btn" data-act="settings"><b>设置</b><span>音量、黑暗度、画质</span></button>
+        <button class="btn" data-act="credits"><b>制作说明 / 素材来源</b><span>致谢与版权声明</span></button>
+      </nav>
+      <div class="menu-stats" id="menu-stats"></div>
+    </div>
+  </section>
+
+  <!-- ============ mission select ============ -->
+  <section id="scr-select" class="screen select">
+    <header class="sel-head">
+      <button class="btn ghost" data-act="back">◀ 返回</button>
+      <h2>任务终端 · MISSION TERMINAL</h2>
+      <div class="sel-seed">
+        <label>种子 SEED</label>
+        <input id="seed-input" type="text" inputmode="numeric" value="424242">
+        <button class="btn tiny" id="seed-rand">随机</button>
+      </div>
+    </header>
+    <div class="sel-body">
+      <div class="panel biomes">
+        <h3>星区 REGION</h3>
+        <div class="biome-list" id="biome-list"></div>
+      </div>
+      <div class="panel middle">
+        <h3>危险等级 HAZARD</h3>
+        <div class="haz-row" id="haz-row"></div>
+        <div class="mission-card">
+          <img data-src="assets/img/mission_mining.png" alt="" decoding="async">
+          <div>
+            <b>采矿远征 MINING EXPEDITION</b>
+            <p>开采莫尔凯特并存入 M.U.L.E.，达成配额后呼叫撤离飞船。</p>
+          </div>
+        </div>
+        <ul class="brief-list" id="brief-list"></ul>
+        <div class="preview" id="biome-preview"></div>
+      </div>
+      <div class="panel classes">
+        <h3>职业 CLASS</h3>
+        <div class="class-list" id="class-list"></div>
+      </div>
+    </div>
+    <footer class="sel-foot">
+      <div class="sel-summary" id="sel-summary"></div>
+      <button class="btn launch" id="btn-launch">ROCK AND STONE! <span>启动下降舱</span></button>
+    </footer>
+  </section>
+
+  <!-- ============ debrief ============ -->
+  <section id="scr-debrief" class="screen debrief">
+    <div class="deb-inner">
+      <h2 id="deb-title">任务完成</h2>
+      <p id="deb-sub"></p>
+      <div class="deb-grid">
+        <div class="deb-stats" id="deb-stats"></div>
+        <div class="deb-side">
+          <img id="deb-art" alt="" decoding="async">
+          <div class="deb-xp">
+            <div class="xp-row"><span id="deb-level"></span><span id="deb-xpnum"></span></div>
+            <div class="xp-bar"><i id="deb-xpfill"></i></div>
+          </div>
+        </div>
+      </div>
+      <div class="deb-actions">
+        <button class="btn" data-act="again">再来一次</button>
+        <button class="btn" data-act="terminal">任务终端</button>
+        <button class="btn ghost" data-act="menu">返回主菜单</button>
+        <button class="btn" id="btn-manager-return" type="button" hidden>返回 17 号钻台并结算</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ modals ============ -->
+  <div id="ov-pause" class="modal">
+    <div class="modal-box">
+      <h3>任务暂停</h3>
+      <div class="modal-btns">
+        <button class="btn" data-act="resume">继续任务</button>
+        <button class="btn" data-act="autopilot">自动演示（自动驾驶一局）</button>
+        <button class="btn" data-act="help">操作说明</button>
+        <button class="btn" data-act="settings">设置</button>
+        <button class="btn danger" data-act="abandon">放弃任务</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="ov-help" class="modal">
+    <div class="modal-box wide">
+      <h3>操作说明 · CONTROLS</h3>
+      <div class="help-grid" id="help-grid"></div>
+      <p class="touch-help"><b>手机：</b>左摇杆移动（上推也可跳跃），右摇杆拖动瞄准并持续射击；右侧圆键负责跳跃、挖掘、互动和照明，其余指令在底部“装备”面板。</p>
+      <h4>任务流程</h4>
+      <ol class="help-flow">
+        <li>用 <b>右键 / 按住“挖掘”</b> 对着岩壁挖掘，绿色的 <b>莫尔凯特</b> 是主目标矿物。</li>
+        <li>矿石会自动吸入背包，走到 <b>M.U.L.E.（莫莉）</b> 旁按 <b>E / 互动</b> 存放。</li>
+        <li>存够 <b>80 硝石</b> 后按 <b>V / 装备→补给</b> 呼叫补给舱，补充弹药与生命。</li>
+        <li>配额达成后按 <b>R / 装备→撤离</b> 呼叫撤离飞船，然后在倒计时内跑到飞船按 <b>E / 互动</b> 登船。</li>
+        <li>洞穴很黑：按 <b>F / 照明</b> 扔照明弹。被击倒后 <b>BOSCO</b> 会来救你。</li>
+      </ol>
+      <button class="btn" data-act="close">明白了</button>
+    </div>
+  </div>
+
+  <div id="ov-settings" class="modal">
+    <div class="modal-box">
+      <h3>设置 · SETTINGS</h3>
+      <div class="set-list" id="set-list"></div>
+      <div class="modal-btns">
+        <button class="btn ghost" data-act="reset">重置存档</button>
+        <button class="btn" data-act="close">完成</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="ov-credits" class="modal">
+    <div class="modal-box wide">
+      <h3>制作说明 · CREDITS</h3>
+      <p class="cred-p">这是一个 <b>非官方粉丝作品</b>，用原生 HTML5 + Canvas 2D + WebAudio 手写实现，没有使用任何游戏引擎或第三方库。</p>
+      <ul class="cred-list">
+        <li><b>图像素材</b>：来自官方 <a href="https://deeprockgalactic.wiki.gg" target="_blank" rel="noopener">Deep Rock Galactic Wiki (wiki.gg)</a> — 职业渲染图、虫子模型图、矿物与 HUD 图标、星区宣传图。</li>
+        <li><b>语音 / 音效</b>：同样来自官方 Wiki 的游戏音频文件（任务控制中心播报、“Rock and Stone!”、虫子叫声、照明弹枪声）。</li>
+        <li><b>合成音效</b>：镐击、枪声、爆炸、脚步等由 WebAudio 实时合成。</li>
+        <li><b>字体</b>：Google Fonts 的 Saira Condensed / Chakra Petch（OFL 授权，已本地化）。</li>
+        <li><b>《深岩银河》</b> 及其全部美术、音频、角色版权归 <b>Ghost Ship Games</b> 所有。本项目仅用于学习与技术演示，不作商业用途。</li>
+      </ul>
+      <button class="btn" data-act="close">关闭</button>
+    </div>
+  </div>
+
+  <!-- descent transition -->
+  <div id="descend">
+    <div class="desc-inner">
+      <img data-src="assets/img/obj_droppod.png" alt="" decoding="async">
+      <h3 id="desc-title">下降舱脱离中…</h3>
+      <p id="desc-sub"></p>
+    </div>
+  </div>
+
+  <div id="toast-boot" class="assetwarn"></div>
+
+  <div id="touch-controls" class="touch-controls" aria-label="手机触控操作">
+    <div class="touch-stick touch-move" data-touch-stick="move" role="application" aria-label="移动摇杆，上推跳跃">
+      <span class="touch-stick-ring"></span>
+      <span class="touch-stick-knob"></span>
+      <small>移动 · 上推跳跃</small>
+    </div>
+
+    <button class="touch-action touch-jump" type="button" data-touch-key="Space" aria-label="跳跃">
+      <b>↑</b><span>跳跃</span>
+    </button>
+    <button class="touch-action touch-mine" type="button" data-touch-hold="KeyC" aria-label="按住挖掘">
+      <b>⛏</b><span>挖掘</span>
+    </button>
+    <button class="touch-action touch-interact" type="button" data-touch-key="KeyE" aria-label="互动或存矿">
+      <b>E</b><span>互动</span>
+    </button>
+    <button class="touch-action touch-flare" type="button" data-touch-key="KeyF" aria-label="投掷照明弹">
+      <b>✦</b><span>照明</span>
+    </button>
+
+    <div class="touch-stick touch-aim" data-touch-stick="aim" role="application" aria-label="瞄准射击摇杆">
+      <span class="touch-stick-ring"></span>
+      <span class="touch-stick-knob"></span>
+      <small>拖动瞄准 · 按住射击</small>
+    </div>
+
+    <button class="touch-more" id="touch-more" type="button" aria-expanded="false" aria-controls="touch-utility">装备</button>
+    <div class="touch-utility" id="touch-utility" role="group" aria-label="装备与任务操作">
+      <button type="button" data-touch-switch aria-label="切换武器">换枪</button>
+      <button type="button" data-touch-key="KeyR" aria-label="装填或呼叫撤离">装填<br><small>撤离</small></button>
+      <button type="button" data-touch-key="KeyG" aria-label="投掷手雷">手雷</button>
+      <button type="button" data-touch-key="KeyQ" aria-label="使用职业工具">工具</button>
+      <button type="button" data-touch-key="KeyX" aria-label="使用特殊装备">特殊</button>
+      <button type="button" data-touch-key="KeyV" aria-label="呼叫补给">补给</button>
+      <button type="button" data-touch-key="KeyT" aria-label="呼叫莫莉">莫莉</button>
+      <button type="button" data-touch-combo="ShiftLeft+KeyQ" aria-label="指挥博斯科">Bosco</button>
+    </div>
+  </div>
+</div>
+
+</section>
+
+<script src="scripts/app.js?v=mu7ddwu9-189464e6"></script>
+<script src="scripts/manager/game-data.js?v=mu7ddwu9-189464e6"></script>
+<script src="scripts/manager/lang-en.js?v=mu7ddwu9-189464e6"></script>
+<script src="scripts/manager/state.js?v=mu7ddwu9-189464e6"></script>
+<script src="scripts/manager/missions.js?v=mu7ddwu9-189464e6"></script>
+<script src="scripts/realtime/core.js?v=mu7ddwu9-189464e6"></script>
+<script src="scripts/realtime/assets.js?v=mu7ddwu9-189464e6"></script>
+<script src="scripts/realtime/audio.js?v=mu7ddwu9-189464e6"></script>
+<script src="scripts/realtime/input.js?v=mu7ddwu9-189464e6"></script>
+<script src="scripts/realtime/gfx.js?v=mu7ddwu9-189464e6"></script>
+<script src="scripts/realtime/lighting.js?v=mu7ddwu9-189464e6"></script>
+<script src="scripts/realtime/particles.js?v=mu7ddwu9-189464e6"></script>
+<script src="scripts/realtime/world.js?v=mu7ddwu9-189464e6"></script>
+<script src="scripts/realtime/entities.js?v=mu7ddwu9-189464e6"></script>
+<script src="scripts/realtime/doretta.js?v=mu7ddwu9-189464e6"></script>
+<script src="scripts/realtime/enemies.js?v=mu7ddwu9-189464e6"></script>
+<script src="scripts/realtime/player.js?v=mu7ddwu9-189464e6"></script>
+<script src="scripts/realtime/mission.js?v=mu7ddwu9-189464e6"></script>
+<script src="scripts/realtime/hud.js?v=mu7ddwu9-189464e6"></script>
+<script src="scripts/realtime/ui.js?v=mu7ddwu9-189464e6"></script>
+<script src="scripts/realtime/integration.js?v=mu7ddwu9-189464e6"></script>
+<script src="scripts/manager/realtime-controller.js?v=mu7ddwu9-189464e6"></script>
+<script src="scripts/manager/ui.js?v=mu7ddwu9-189464e6"></script>
+<script src="scripts/manager/main.js?v=mu7ddwu9-189464e6"></script>
+<script src="scripts/realtime/game.js?v=mu7ddwu9-189464e6"></script>
+<script src="scripts/realtime/autopilot.js?v=mu7ddwu9-189464e6"></script>
+</body>
+</html>

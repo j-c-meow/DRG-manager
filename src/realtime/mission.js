@@ -16,6 +16,8 @@
     this.opt = opt;
     this.type = opt.type || 'exp';
     this.isEscort = this.type === 'escort';
+    this.isPoint = this.type === 'point';       // 定点提取
+    this.isSalv = this.type === 'salv';         // 搜救行动
     this.biome = opt.biome;
     this.hazard = DRG.HAZARDS[M.clamp(opt.haz, 1, 5) - 1];
     this.seed = opt.seed;
@@ -23,7 +25,9 @@
     this.time = 0;
     this.world = new DRG.World(this.isEscort
       ? { w: 340, h: 96, seed: opt.seed, biome: opt.biome, mode: 'escort' }
-      : { w: 400, h: 160, seed: opt.seed, biome: opt.biome });
+      : this.isSalv
+        ? { w: 460, h: 180, seed: opt.seed, biome: opt.biome }   // 搜救：更大更暗
+        : { w: 400, h: 160, seed: opt.seed, biome: opt.biome });
 
     var st = this.world.start;
     var spawnX = st.tx * T + T / 2, spawnY = st.ty * T;
@@ -44,9 +48,43 @@
         Math.round(100 * (1 + (this.hazard.lv - 1) * 0.12)));
     }
 
+    // 定点提取：3 处富矿信标 + 矿块入库计数（配额 = 3 + (危险度-1)）
+    this.beacons = [];
+    this.pointQuota = 3 + (this.hazard.lv - 1);
+    this.chunksDeposited = 0;
+    // 搜救行动：信号信标 ×4 + 矿骡腿 ×4 + 残骸框架 + 长按修复
+    this.salvBeacons = [];
+    this.wreck = null;
+    this.repairWaveT = 0;
+
     this.enemies = []; this.bullets = []; this.pickups = []; this.flares = []; this.props = [];
     this.fx = new DRG.Particles(1500);
     this.pod = null; this.shield = null; this.muzzle = null;
+
+    // 点位布置（须在 props 就绪后）：信标 / 矿骡腿 / 残骸
+    if (this.isPoint && DRG.PointBeacon) {
+      if (DRG.loadPointSprites) DRG.loadPointSprites();
+      var rngB = DRG.RNG((this.seed ^ 0xbeac0) | 0);
+      var spots = this.pickFarFloors(rngB, 3, 560, 0, 430);
+      var yield3 = Math.ceil(this.pointQuota / 3);   // 每处可采矿块数（保证配额可达成）
+      if (!spots.length) spots = [{ x: this.player.x + 420, y: this.player.y }];
+      for (var bi = 0; bi < spots.length; bi++) this.beacons.push(new DRG.PointBeacon(spots[bi].x, spots[bi].y, yield3));
+    }
+    if (this.isSalv && DRG.MuleWreck) {
+      if (DRG.loadSalvSprites) DRG.loadSalvSprites();
+      var rngW = DRG.RNG((this.seed ^ 0xbaadd) | 0);
+      var wreckSpots = this.pickFarFloors(rngW, 1, 1000, 0, 0);
+      var ws = wreckSpots[0] || { x: this.player.x + 800, y: this.player.y };
+      this.wreck = new DRG.MuleWreck(ws.x, ws.y);
+      var rngL = DRG.RNG((this.seed ^ 0x1e955) | 0);
+      var legSpots = this.pickFarFloors(rngL, 4, 560, 0, 360);
+      while (legSpots.length < 4) legSpots.push({ x: this.player.x + 300 + legSpots.length * 180, y: this.player.y });
+      for (var li = 0; li < legSpots.length; li++) {
+        var leg = new DRG.MuleLeg(legSpots[li].x, legSpots[li].y);
+        this.props.push(leg);
+        this.salvBeacons.push(new DRG.SalvBeacon(legSpots[li].x, legSpots[li].y, leg));
+      }
+    }
     this.cam = { x: 0, y: 0, w: 100, h: 100, sx: 0, sy: 0 };
     this.shakeAmt = 0; this.shakeT = 0;
     this.toasts = [];
@@ -95,6 +133,22 @@
         { t: 11, text: '虫子会优先啃咬朵蕾妲——听到「遭受攻击」警报立刻回防', col: '#ff8a5a' },
         { t: 19, text: '她停车时会放下燃料罐：走近按 E 拾起，再对油箱口按 E 加入', col: '#ffd76a' },
         { t: 27, text: '存够 80 硝石后按 V 呼叫补给舱 · 左键开火，Q 使用职业装备', col: '#8ad4ff' }
+      ];
+    }
+    if (this.isPoint) {
+      this.hints = [
+        { t: 3.5, text: '定点提取：跟着蓝色光柱找到富矿信标（共 3 处）', col: '#7fd4ff' },
+        { t: 11, text: '走近信标按住左键钻采大矿结，采出的矿块顶在头上', col: '#7fd4ff' },
+        { t: 19, text: '携带矿块时移速 -10%、只能用副手武器——把它搬回莫莉旁按 E 入库', col: '#ffd76a' },
+        { t: 27, text: '每入库 1 块会引来一小波虫潮；集齐 ' + this.pointQuota + ' 块即可撤离', col: '#ff8a5a' }
+      ];
+    }
+    if (this.isSalv) {
+      this.hints = [
+        { t: 3.5, text: '搜救行动：信号信标指向失联的矿骡腿——跟着 HUD 箭头走', col: '#ffd76a' },
+        { t: 11, text: '走近矿骡腿按 E 扛起来：移速 -30%，只能用副手武器', col: '#b0ff7a' },
+        { t: 19, text: '把腿搬到矿骡残骸处按 E 安装；每装一条会刷出防御虫', col: '#ff8a5a' },
+        { t: 27, text: '四条腿装齐后，对准矿骡长按 E 修复 3 秒（松开保留进度）', col: '#b0ff7a' }
       ];
     }
 
@@ -355,6 +409,169 @@
     return null;
   };
 
+  /* ---------------- point / salv：定点提取 + 搜救行动 ---------------- */
+
+  /** 在地板点位里挑 count 个：距出生点 minD~maxD、彼此至少 apart（距离逐轮放宽兜底） */
+  Mission.prototype.pickFarFloors = function (rng, count, minD, maxD, apart) {
+    var floors = this.world.floors.slice();
+    rng.shuffle(floors);
+    var sx = this.world.start.tx * T, sy = this.world.start.ty * T;
+    var out = [];
+    for (var pass = 0; pass < 3 && out.length < count; pass++) {
+      var mn = minD / (pass + 1), ap = apart / (pass + 1), mx = pass === 0 ? maxD : 0;
+      for (var i = 0; i < floors.length && out.length < count; i++) {
+        var f = floors[i], fx = f.tx * T + T / 2, fy = f.ty * T + T;
+        var d = M.dist(fx, fy, sx, sy);
+        if (d < mn) continue;
+        if (mx && d > mx) continue;
+        var ok = true;
+        for (var j = 0; j < out.length; j++) if (M.dist(fx, fy, out[j].x, out[j].y) < ap) { ok = false; break; }
+        if (ok) out.push({ x: fx, y: fy });
+      }
+    }
+    return out;
+  };
+
+  /** 玩家按住攻击时命中的可钻采大矿结（定点提取） */
+  Mission.prototype.drillVeinAt = function (p) {
+    if (!this.isPoint || p.carriedItem || p.downed) return null;
+    for (var i = 0; i < this.beacons.length; i++)
+      if (this.beacons[i].canDrill(p)) return this.beacons[i];
+    return null;
+  };
+
+  /** 钻采完成：矿块从矿结里蹦出来 */
+  Mission.prototype.spawnChunk = function (x, y) {
+    var c = new DRG.OreChunk(x, y);
+    this.props.push(c);
+    this.fx.burst(x, y, 18, { col: ['#7fd4ff', '#c8ecff', '#ffffff'], speed: 220, life: 0.6, kind: 1 });
+    DRG.audio.clipOf(['lootbug', 'rns_5'], 0.5, true);
+    this.toast('采出矿块！按 E 扛起来（只能用副手武器）', '#7fd4ff', 3);
+    return c;
+  };
+
+  /** E 键的定点提取交互：入库 > 拾取矿块 */
+  Mission.prototype.pointInteract = function () {
+    var p = this.player;
+    if (p.carriedItem && p.carriedItem.kind === 'chunk' && this.mule.canDeposit(p)) {
+      this.depositChunk(p.carriedItem);
+      return true;
+    }
+    if (!p.carriedItem && !p.carriedCan) {
+      var best = null, bd = 56;
+      for (var i = 0; i < this.props.length; i++) {
+        var pr = this.props[i];
+        if (!(pr instanceof DRG.OreChunk) || pr.state !== 'idle') continue;
+        var d = M.dist(pr.x, pr.y, p.x, p.y);
+        if (d < bd) { bd = d; best = pr; }
+      }
+      if (best) {
+        best.state = 'carried';
+        p.carriedItem = best;
+        p.toolSelected = false;
+        this.toast('扛起矿块 · 搬回莫莉处按 E 入库', '#7fd4ff', 2.5);
+        DRG.audio.sfx('beep');
+        return true;
+      }
+    }
+    return false;
+  };
+
+  /** 矿块入库 +1 → 一小波虫潮 → 配额达成自动召pod */
+  Mission.prototype.depositChunk = function (chunk) {
+    var p = this.player;
+    p.carriedItem = null;
+    chunk.state = 'spent';
+    this.chunksDeposited++;
+    this.deposited.morkite += 1;
+    this.stats.deposits++;
+    this.stats.credits += 26 * this.hazard.credit;
+    this.stats.xp += 30 * this.hazard.xp;
+    this.mule.flash = 1;
+    this.fx.text(this.mule.x, this.mule.y - 50, '入库 ' + this.chunksDeposited + ' / ' + this.pointQuota, '#7fd4ff', 16);
+    DRG.audio.sfx('deposit');
+    DRG.audio.clipOf(['rns_4', 'rns_5', 'rns_6'], 0.55, true);
+    this.spawnWaveAt(this.mule.x, this.mule.y, 0.85);   // 每入库 1 块触发一小波虫潮
+    this.checkObjectivePoint();
+  };
+
+  Mission.prototype.checkObjectivePoint = function () {
+    if (this.objectiveDone || this.chunksDeposited < this.pointQuota) return;
+    this.objectiveDone = true;
+    this.mc('定点提取完成！矿块全部入库，撤离飞船正在赶来。', 'mc_objective_1');
+    this.toast('配额达成 · 撤离飞船已呼叫', '#7fff9a', 6);
+    DRG.audio.clipOf(['salute_1', 'salute_2', 'salute_3'], 0.9, true);
+    this.stats.credits += 250 * this.hazard.credit;
+    this.stats.xp += 320 * this.hazard.xp;
+    this.callPod();
+  };
+
+  /** E 键的搜救交互：安装矿骡腿 > 拾起矿骡腿（修复走 salvDirector 的长按） */
+  Mission.prototype.salvInteract = function () {
+    var p = this.player;
+    if (this.wreck && p.carriedItem && p.carriedItem.kind === 'leg' && this.wreck.canInstall(p)) {
+      this.wreck.install(p, this);
+      this.spawnWaveAt(this.wreck.x, this.wreck.y, 0.9);   // 每装 1 条刷一小波防御虫
+      return true;
+    }
+    if (!p.carriedItem && !p.carriedCan) {
+      var best = null, bd = 56;
+      for (var i = 0; i < this.props.length; i++) {
+        var pr = this.props[i];
+        if (!(pr instanceof DRG.MuleLeg) || pr.state !== 'idle') continue;
+        var d = M.dist(pr.x, pr.y, p.x, p.y);
+        if (d < bd) { bd = d; best = pr; }
+      }
+      if (best) {
+        best.state = 'carried';
+        p.carriedItem = best;
+        p.toolSelected = false;
+        this.toast('扛起矿骡腿 · 送到矿骡残骸处按 E 安装', '#b0ff7a', 2.5);
+        DRG.audio.sfx('beep');
+        return true;
+      }
+    }
+    return false;
+  };
+
+  /** 搜救导演：长按修复（松开保留进度）+ 修复期持续刷防御虫 */
+  Mission.prototype.salvDirector = function (dt) {
+    var w = this.wreck;
+    if (!w || this.state !== 'play') return;
+    var p = this.player;
+    if (w.state === 'ready') {
+      var holding = DRG.input.key('KeyE') && w.canRepair(p);
+      w.repair(dt, holding, this);
+      if (w.repairing) {
+        this.repairWaveT -= dt;
+        if (this.repairWaveT <= 0) {
+          this.repairWaveT = 6.5 / this.hazard.rate;
+          this.spawnWaveAt(w.x, w.y, 0.8);              // 修复期间持续刷虫
+          this.toast('防御虫涌向矿骡——顶住！', '#ff5a4a', 2.5);
+        }
+      }
+    }
+    if (w.repairing) this.shake(0.6, 0.04);
+  };
+
+  /** 修复完成 → 自动呼叫撤离 */
+  Mission.prototype.onWreckRepaired = function () {
+    if (this.state !== 'play') return;
+    this.mc('矿骡修好了！她能自己走回降落区——我们撤！');
+    this.toast('矿骡已修复 · 撤离飞船已呼叫', '#7fff9a', 6);
+    DRG.audio.clipOf(['salute_1', 'salute_2', 'salute_3'], 0.9, true);
+    this.stats.credits += 300 * this.hazard.credit;
+    this.stats.xp += 380 * this.hazard.xp;
+    this.objectiveDone = true;
+    this.callPod();
+  };
+
+  /** 小股虫潮：以 (x,y) 为中心（入库/安装/修复的定向压力） */
+  Mission.prototype.spawnWaveAt = function (x, y, mul) {
+    var spawned = this.spawnWave(mul || 1, false, { x: x, y: y });
+    if (!spawned) this.spawnWave(mul || 1);             // 中心附近没地板就退回常规潮
+  };
+
   /* ---------------- objectives ---------------- */
   Mission.prototype.deposit = function () {
     var p = this.player, any = 0, credits = 0;
@@ -378,7 +595,7 @@
   };
 
   Mission.prototype.checkObjective = function () {
-    if (this.objectiveDone || this.isEscort) return;
+    if (this.objectiveDone || this.isEscort || this.isPoint || this.isSalv) return;
     if (this.deposited.morkite >= this.quota) {
       this.objectiveDone = true;
       this.mc('主要目标完成！莫尔凯特配额已达成，按 R 呼叫撤离飞船。', 'mc_objective_1');
@@ -424,7 +641,8 @@
   };
 
   /* ---------------- wave director ---------------- */
-  Mission.prototype.spawnWave = function (mul, near) {
+  /** center：可选的虫潮中心（spawnWaveAt 用），near=true 时默认绕朵蕾妲 */
+  Mission.prototype.spawnWave = function (mul, near, center) {
     mul = mul || 1;
     this.waveNo++;
     this.stats.waves++;
@@ -444,7 +662,7 @@
     while (budget > 0 && guard++ < 200) {
       var pick = pool[rng.int(0, pool.length - 1)];
       if (pick[1] > budget + 1) continue;
-      var spot = this.pickSpawnSpot(rng, pick[0] === 'mactera' || pick[0] === 'breeder', near);
+      var spot = this.pickSpawnSpot(rng, pick[0] === 'mactera' || pick[0] === 'breeder', near, center);
       if (!spot) break;
       this.spawnEnemy(pick[0], spot.x, spot.y);
       budget -= pick[1];
@@ -457,10 +675,11 @@
       DRG.audio.sfx('alarm');
     }
     this.nextWave = (this.state === 'extract' ? 26 : 68 + Math.random() * 34) / haz.rate;
+    return spawned;
   };
 
-  Mission.prototype.pickSpawnSpot = function (rng, flying, near) {
-    var p = (near && this.doretta) ? this.doretta : this.player, w = this.world;
+  Mission.prototype.pickSpawnSpot = function (rng, flying, near, center) {
+    var p = center || ((near && this.doretta) ? this.doretta : this.player), w = this.world;
     for (var i = 0; i < 90; i++) {
       var f = w.floors[rng.int(0, w.floors.length - 1)];
       if (!f) return null;
@@ -490,6 +709,10 @@
       this.bosco.update(dt, this);
       this.mule.update(dt, this);
       if (this.doretta && this.state === 'play') this.doretta.update(dt, this);
+      for (i = 0; i < this.beacons.length; i++) this.beacons[i].update(dt, this);
+      for (i = 0; i < this.salvBeacons.length; i++) this.salvBeacons[i].update(dt, this);
+      if (this.wreck) this.wreck.t += dt;
+      if (this.isSalv) this.salvDirector(dt);
       if (this.shield && this.shield.life <= 0) this.shield = null;
 
       // interactions
@@ -497,6 +720,8 @@
       if (I.hit('KeyE')) {
         if (this.pod && this.pod.canBoard(this.player)) this.board();
         else if (this.isEscort && this.escortInteract()) { /* 油罐拾取 / 加油 */ }
+        else if (this.isPoint && this.pointInteract()) { /* 矿块入库 / 拾取 */ }
+        else if (this.isSalv && this.salvInteract()) { /* 安装 / 拾起矿骡腿 */ }
         else if (this.mule.canDeposit(this.player)) this.deposit();
         else {
           var used = false;
@@ -678,6 +903,9 @@
     for (i = 0; i < this.pickups.length; i++) this.pickups[i].draw(g, cam);
     for (i = 0; i < this.flares.length; i++) this.flares[i].draw(g, cam);
     for (i = 0; i < this.props.length; i++) this.props[i].draw(g, cam);
+    for (i = 0; i < this.beacons.length; i++) this.beacons[i].draw(g, cam);
+    for (i = 0; i < this.salvBeacons.length; i++) this.salvBeacons[i].draw(g, cam);
+    if (this.wreck) this.wreck.draw(g, cam);
     this.mule.draw(g, cam);
     if (this.doretta) this.doretta.draw(g, cam);
     if (this.pod) this.pod.draw(g, cam);
@@ -685,16 +913,21 @@
     this.bosco.draw(g, cam);
     this.player.draw(g, cam);
     if (this.player.carriedCan) this.player.carriedCan.draw(g, cam);   // 头顶燃料罐盖在玩家之上
+    if (this.player.carriedItem) this.player.carriedItem.draw(g, cam); // 头顶矿块 / 矿骡腿
     for (i = 0; i < this.bullets.length; i++) this.bullets[i].draw(g, cam);
     this.fx.draw(g, cam);
 
     /* lighting */
     var ambient = 0.085 + 0.07 * (1 - DRG.opts().darkness);
+    if (this.isSalv) ambient *= 0.7;            // 搜救：环境光再压 30%
     DRG.light.begin(view.w, view.h, ambient, this.biome.tint);
     this.player.lights(cam, this);
     this.bosco.lights(cam);
     this.mule.lights(cam);
     if (this.doretta) this.doretta.lights(cam);
+    for (i = 0; i < this.beacons.length; i++) this.beacons[i].lights(cam);
+    for (i = 0; i < this.salvBeacons.length; i++) this.salvBeacons[i].lights(cam);
+    if (this.wreck && this.wreck.lights) this.wreck.lights(cam);
     for (i = 0; i < this.flares.length; i++) this.flares[i].lights(cam);
     for (i = 0; i < this.pickups.length; i++) this.pickups[i].lights(cam);
     for (i = 0; i < this.props.length; i++) if (this.props[i].lights) this.props[i].lights(cam);
