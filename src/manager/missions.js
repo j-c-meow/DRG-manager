@@ -927,6 +927,8 @@ function worldAdvanceBody(gm, offline){
               S.deps = S.deps.filter(x => x !== d);
               closeModal(true);   /* 序章结束日志已由 endPrologue 打过，此处不再重复 */
               renderAll(); save();
+              /* 起名钩子（与 endPrologue 同步）：接班路径也要弹代号登记 */
+              if(!S.flags.nameChosen && typeof showNameRegistration==='function') setTimeout(showNameRegistration, 500);
             };
           };
           continue;
