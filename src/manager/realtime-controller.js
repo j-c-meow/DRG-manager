@@ -24,6 +24,8 @@ function openRealtime(mid){
   const m = S.board.find(x=>x.id===mid);
   /* 采矿探险 / 执勤护送 / 定点提取 / 搜救行动 / 就地精炼 / 消灭任务都可实时下场（三期放开 refi/elim） */
   if(!m || LIVE_TYPES.indexOf(m.type) < 0) return;
+  /* 终局强制实时（危5）：清账行动期间的危5任务走专用编队入口，不经单人选人 */
+  if(isForcedFinaleMission(m)){ openFinaleRealtime(mid); return; }
   const t = mtypeById(m.type);
   const isEscort = m.type === 'escort';
   const isPoint = m.type === 'point';
@@ -64,6 +66,64 @@ function openRealtime(mid){
     const miner = selected && S.miners.find(x=>x.id===selected.dataset.rtMiner);
     if(miner) startRealtimeMission(m, miner, cost);
   };
+}
+
+/* ---------------- 终局强制实时（危5，用户 09-19 拍板） ----------------
+   清账行动（战役 id=finale）进行期间的危 5 任务＝终局任务：不允许普通挂机派遣，
+   board 卡与派遣弹窗都会被导向这里——自动编队（最多 4 名最适矿工，主控=任务适配
+   优先、等级次之），不经挂机派遣路径（不抽出发酒、不占派遣位）。
+   胜=全队按实战表现结算并推进战役；败/召回=任务回板可重试，不卡死战役进度。 */
+function isForcedFinaleMission(m){
+  return !!(m && S.campaign && CAMPAIGNS[S.campaign.ci] && CAMPAIGNS[S.campaign.ci].id === 'finale' && m.hazard >= 5);
+}
+
+function openFinaleRealtime(mid){
+  if(S.realtime){ showPendingRealtime(); return; }
+  const m = S.board.find(x=>x.id===mid);
+  if(!m || !isForcedFinaleMission(m)) return;
+  const t = mtypeById(m.type);
+  const cost = realtimeCost(m);
+  /* 自动编队：空闲且士气 ≥25 → 任务适配优先、等级次之，最多 4 人 */
+  const squad = S.miners.filter(x=>x.state==='idle' && x.morale>=25)
+    .sort((a,b)=>Number(b.cls===t.best)-Number(a.cls===t.best) || b.lv-a.lv)
+    .slice(0, 4);
+  const names = squad.map(minerName).join('、');
+  let html = '<h3 style="color:var(--red)">▶ '+L('终局任务 · 必须亲自下场')+' · '+L(biomeById(m.biome).name)+'</h3>'+
+    '<div class="note">'+L('清账行动的终局任务不接受挂机派遣：管理层必须亲自进入洞穴。系统将自动编入最多 4 名最适矿工，胜利后按实战表现结算并推进战役；失败后任务回到任务板，可重新编队再战。')+'</div>'+
+    '<div class="meta">危险等级 '+'★'.repeat(m.hazard)+'　出舱补给 -'+cost+' 硝石（持有 '+Math.floor(S.nitra)+'）</div>'+
+    '<h3 class="sec">'+L('终局编队已就绪')+'</h3>'+
+    (squad.length ? '<div class="note">'+names+'</div>' : '<div class="note">'+L('没有可出勤的矿工（需空闲且士气 ≥25）。')+'</div>')+
+    '<button class="btn live" id="finale-go" style="width:100%;margin-top:8px" '+(!squad.length || S.nitra<cost?'disabled':'')+'>'+L('进入洞穴')+'</button>';
+  showModal(html, false);
+  const go = $('#finale-go');
+  if(go) go.onclick = () => startFinaleMission(m, squad, cost);
+}
+
+function startFinaleMission(m, squad, cost){
+  if(!squad || !squad.length) return;
+  const lead = squad[0];   /* 主控 = 队首（任务适配优先、等级最高） */
+  const requestId = 'rt'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+  let request;
+  try{
+    request = DRGUnified.domain.startDirectMission(S, {
+      requestId,
+      seed:realtimeSeed(m),
+      mission:Object.assign({}, m, {rewards:Object.assign({}, m.r)}),
+      miner:{id:lead.id, cls:lead.cls, name:minerName(lead), level:lead.lv},
+      nitraCost:cost,
+      now:Date.now(),
+      minerIds:squad.map(x=>x.id),
+      finale:true,
+    });
+  }catch(error){
+    log('终局任务启动失败：'+(error && error.message || error), 'bad');
+    closeModal(true);
+    return;
+  }
+  DRG.integration.setRequest(request);
+  log('▶ 终局任务：'+minerName(lead)+' 领队（'+squad.map(minerName).join('、')+'）亲自进入 '+biomeById(m.biome).name+'。胜则全队即刻结算，败则任务回板再战。', 'gold');
+  save();
+  openRealtimeGame();
 }
 
 function realtimeShell(){
@@ -258,9 +318,18 @@ function recallRealtime(){
     save();
     return;
   }
+  const pending = S.realtime;
+  const wasFinale = !!pending.finale;
+  const mission = pending.mission;
   DRGUnified.domain.abortDirectMission(S, 15);
-  S.stats.realtimeFailed = (S.stats.realtimeFailed||0) + 1;
-  log('实时任务已中止：矿工被紧急召回，士气 -15，出舱补给不退。', 'bad');
+  if(wasFinale){
+    /* 终局召回：任务回板可重试，不许卡死战役进度 */
+    if(!S.board.some(x=>x.id===mission.id)) S.board.push(mission);
+    log('终局任务已召回：全队归队（士气 -15），任务回到任务板——整理装备后再战。', 'bad');
+  } else {
+    S.stats.realtimeFailed = (S.stats.realtimeFailed||0) + 1;
+    log('实时任务已中止：矿工被紧急召回，士气 -15，出舱补给不退。', 'bad');
+  }
   clearRealtimeBridge();
   closeRealtimeGame();
   closeModal(true);
@@ -276,9 +345,11 @@ function consumeRealtimeResult(explicitResult){
   const m = pending.mission;
   const miner = S.miners.find(x=>x.id===pending.minerId);
   if(!m || !miner) return null;
+  /* 终局强制实时：结算/归队对象是整个随行小队 */
+  const squadIds = pending.minerIds && pending.minerIds.length ? pending.minerIds : [miner.id];
   /* 介入模式：结算对象是原派遣单本身 */
   const dep = pending.depId ? S.deps.find(x=>x.id===pending.depId) : null;
-  const summary = {win:!!result.win, result, mission:m, miner:minerName(miner), gain:{}, intervene:!!dep};
+  const summary = {win:!!result.win, result, mission:m, miner:minerName(miner), gain:{}, intervene:!!dep, finale:!!pending.finale && !dep};
   try{
     if(result.win){
       const before = {credits:S.credits, nitra:S.nitra, morkite:S.morkite, moil:S.moil, gold:S.gold};
@@ -290,9 +361,12 @@ function consumeRealtimeResult(explicitResult){
         settle(dep, false, performance);
         S.deps = S.deps.filter(x=>x!==dep);
       }else{
+        /* 终局/单人实时：小队全员按实战表现结算 */
+        const best = mtypeById(m.type).best;
         settle({
-          id:'live-'+pending.requestId, m, hc:1, minerIds:[miner.id],
-          fitN:miner.cls===mtypeById(m.type).best?1:0, modEff:squadModEffects([miner.id]),
+          id:'live-'+pending.requestId, m, hc:squadIds.length, minerIds:squadIds,
+          fitN:squadIds.filter(id=>{ const mm=S.miners.find(x=>x.id===id); return mm && mm.cls===best; }).length,
+          modEff:squadModEffects(squadIds),
           bonus:1, rewardBonus:1, morkiteBuff:1, mode:'realtime', nitraSpent:pending.nitraSpent,
         }, false, performance);
       }
@@ -306,10 +380,18 @@ function consumeRealtimeResult(explicitResult){
       S.stats.realtimeFailed = (S.stats.realtimeFailed||0) + 1;
       log('实时介入失败：'+minerName(miner)+' 归队，士气 -15。派遣恢复自动推进。', 'bad');
     }else{
-      miner.state = 'idle';
-      miner.morale = clamp(miner.morale-15, 10, 100);
+      /* 失败：小队全员归队；终局任务回板可重试 */
+      squadIds.forEach(id=>{
+        const mn = S.miners.find(x=>x.id===id);
+        if(mn){ mn.state = 'idle'; mn.morale = clamp(mn.morale-15, 10, 100); }
+      });
       S.stats.realtimeFailed = (S.stats.realtimeFailed||0) + 1;
-      log('实时任务失败：'+minerName(miner)+' 已归队，士气 -15。'+(result.failReason?' '+result.failReason:''), 'bad');
+      if(pending.finale){
+        if(!S.board.some(x=>x.id===m.id)) S.board.push(m);
+        log('终局任务失败：'+squadIds.length+' 人小队已归队（士气 -15）。任务回到任务板——可重新编队再战。'+(result.failReason?' '+result.failReason:''), 'bad');
+      }else{
+        log('实时任务失败：'+minerName(miner)+' 已归队，士气 -15。'+(result.failReason?' '+result.failReason:''), 'bad');
+      }
     }
     DRGUnified.domain.markMissionSettled(S, result.requestId, result.finishedAt);
     S.realtime = null;
@@ -327,7 +409,10 @@ function showRealtimeSummary(summary){
   const r = summary.result;
   const elapsed = Math.max(0, Math.round(r.time||0));
   const elapsedText = Math.floor(elapsed/60)+':'+String(elapsed%60).padStart(2,'0');
-  const outcome = summary.win ? (summary.intervene?'介入成功 · 派遣完成':'任务完成') : (summary.intervene?'介入失败 · 派遣继续':'任务失败');
+  const outcome = summary.win ? (summary.intervene?'介入成功 · 派遣完成':'任务完成')
+    : summary.intervene ? '介入失败 · 派遣继续'
+    : summary.finale ? '终局失败 · 任务回板可重试'
+    : '任务失败';
   let reward = '<div class="note">本次没有管理终端报酬。</div>';
   if(summary.win){
     const g = summary.gain;

@@ -771,6 +771,15 @@ const I18N_EN = {
   '直接操控 1 名矿工消灭任务：直捣竞技场中心长按破茧，唤醒无畏机甲。装甲态只有腹部发光弱点吃伤害（×3），弱点随时间换位，它还会召唤小虫；血量过半进入狂暴（移速/攻速 +30%，新增酸弹三连）。击杀即胜。':
     'Directly control one miner in Elimination: push to the arena center and crack the cocoon to wake the Dreadnought. While armored only its glowing abdomen weak point takes real damage (×3) and it relocates over time; past half health it enrages (+30% speed/attack, triple acid spit). Kill it to win.',
 
+  /* —— 终局强制实时（危5）—— */
+  '终局任务 · 必须亲自下场':'Finale contract · you must take the field',
+  '终局 · 亲自下场':'Finale · take the wheel',
+  '清账行动的终局任务不接受挂机派遣：管理层必须亲自进入洞穴。系统将自动编入最多 4 名最适矿工，胜利后按实战表现结算并推进战役；失败后任务回到任务板，可重新编队再战。':
+    'Finale contracts of the Cleanup Operation refuse idle dispatch: management must enter the cave in person. Up to 4 best-fit miners are auto-squadded; a win settles on live performance and advances the campaign; on a loss the mission returns to the board for another attempt.',
+  '进入洞穴':'Enter the Cave',
+  '终局编队已就绪':'Finale squad ready',
+  '没有可出勤的矿工（需空闲且士气 ≥25）。':'No miners available for duty (idle with morale ≥25 required).',
+
   /* —— 生物群系（官方）—— */
   '水晶洞穴':'Crystalline Caverns', '盐坑':'Salt Pits', '霉菌沼泽':'Fungus Bogs',
   '飞沙走廊':'Sandblasted Corridors', '放射性禁区':'Radioactive Exclusion Zone',

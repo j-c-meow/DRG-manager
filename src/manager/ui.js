@@ -8,10 +8,12 @@ function fmtDur(gm){
   return (gm/60).toFixed(1)+L(' 游戏小时');
 }
 /* 实时小游戏接线（二期拍板 exp/escort/point/salv，三期放开 refi/elim）：
-   board 卡按钮文案按类型显示（护送=实时护送，其余=实时进入） */
+   board 卡按钮文案按类型显示（护送=实时护送，其余=实时进入）；
+   清账行动期间的危 5 任务＝终局任务：强制实时，派遣按钮导向终局编队入口 */
 const LIVE_TYPES = ['exp','escort','point','salv','refi','elim'];
 const isLiveType = (t) => LIVE_TYPES.indexOf(t) >= 0;
 const liveBtnText = (t) => t==='escort' ? L('实时护送') : L('实时进入');
+const isForcedFinale = (m) => isForcedFinaleMission(m);   /* 实现在 realtime-controller.js */
 /* ---------------- 成就系统（四系统补充设计 §一，40 项） ---------------- */
 const ACHIEVEMENTS = [
   /* 入门 8 */
@@ -206,8 +208,8 @@ function renderBoard(){
       html += '<div class="mcard compact-card">'+
         '<span class="nm" style="flex:1">'+t.name+' · '+b.name+' <span class="hz">'+'★'.repeat(m.hazard)+'</span>'+
         (m.clause?' <span class="note">'+L('【')+L(m.clause.name)+L('】')+'</span>':'')+'</span>'+
-        (isLiveType(m.type)?'<button class="btn live" data-live="'+m.id+'">'+liveBtnText(m.type)+'</button>':'')+
-        '<button class="btn pri" data-disp="'+m.id+'">'+L('派遣小队')+'</button></div>';
+        (isLiveType(m.type) && !isForcedFinale(m)?'<button class="btn live" data-live="'+m.id+'">'+liveBtnText(m.type)+'</button>':'')+
+        '<button class="btn '+(isForcedFinale(m)?'live':'pri')+'" data-disp="'+m.id+'">'+(isForcedFinale(m)?L('终局 · 亲自下场'):L('派遣小队'))+'</button></div>';
       return;
     }
     const rewards = Object.entries(m.r).map(([k,v])=>
@@ -224,8 +226,8 @@ function renderBoard(){
         '<div class="det" style="display:none">'+L('深度档 ')+b.tier+L(' · 建议职业：')+
           (t.best?(CLASSES[t.best]?L(CLASSES[t.best].name):L(t.best)):L('任意'))+
           (m.clause?' · '+L(m.clause.name)+L('：')+L(m.clause.d):'')+'</div>'+
-        '<div class="mission-actions"><button class="btn pri" data-disp="'+m.id+'">'+L('派遣小队')+'</button>'+
-          (isLiveType(m.type)?'<button class="btn live" data-live="'+m.id+'">'+liveBtnText(m.type)+'</button>':'')+
+        '<div class="mission-actions"><button class="btn '+(isForcedFinale(m)?'live':'pri')+'" data-disp="'+m.id+'">'+(isForcedFinale(m)?L('终局 · 亲自下场'):L('派遣小队'))+'</button>'+
+          (isLiveType(m.type) && !isForcedFinale(m)?'<button class="btn live" data-live="'+m.id+'">'+liveBtnText(m.type)+'</button>':'')+
         '</div></div></article>';
   });
   $('#board').innerHTML = html;

@@ -1,5 +1,5 @@
 import { SAVE_SCHEMA_VERSION, realtimeBiomeByManagerId } from './definitions';
-import type { DirectMissionRequest, MissionDefinition, MissionResult, UnifiedSaveState } from './contracts';
+import type { DirectMissionRequest, MissionDefinition, MissionResult, RealtimeState, UnifiedSaveState } from './contracts';
 
 interface StartDirectMissionInput {
   requestId: string;
@@ -8,6 +8,10 @@ interface StartDirectMissionInput {
   miner: { id: string; cls: string; name: string; level: number };
   nitraCost: number;
   now: number;
+  /** 终局强制实时：随行小队（含主控 miner.id）；全员须空闲且士气 ≥25 */
+  minerIds?: string[];
+  /** 终局强制实时标记：败/召回时任务回到任务板可重试 */
+  finale?: boolean;
 }
 
 export function migrateSave<T extends UnifiedSaveState>(state: T): T {
@@ -25,6 +29,16 @@ export function startDirectMission(state: UnifiedSaveState, input: StartDirectMi
   if (!miner || miner.state !== 'idle' || miner.morale < 25) throw new Error('矿工当前不可出勤');
   if (state.nitra < input.nitraCost) throw new Error('硝石不足');
 
+  /* 终局强制实时：随行小队全员校验（主控 miner.id 必须在队首） */
+  const squadIds = input.minerIds && input.minerIds.length ? input.minerIds.slice() : null;
+  const squad = squadIds
+    ? squadIds.map(id => {
+        const mn = state.miners.find(item => item.id === id);
+        if (!mn || mn.state !== 'idle' || mn.morale < 25) throw new Error('随行矿工当前不可出勤');
+        return mn;
+      })
+    : null;
+
   const realtimeBiome = realtimeBiomeByManagerId[input.mission.biome as keyof typeof realtimeBiomeByManagerId] ?? 'crystalline';
   const request: DirectMissionRequest = {
     version: 2,
@@ -38,7 +52,8 @@ export function startDirectMission(state: UnifiedSaveState, input: StartDirectMi
 
   state.nitra -= input.nitraCost;
   miner.state = 'mission';
-  state.realtime = {
+  if (squad) squad.forEach(mn => { mn.state = 'mission'; });
+  const realtime: RealtimeState = {
     requestId: request.id,
     missionId: input.mission.id,
     minerId: miner.id,
@@ -47,6 +62,11 @@ export function startDirectMission(state: UnifiedSaveState, input: StartDirectMi
     startedAt: input.now,
     resolution: 'direct',
   };
+  if (squadIds) {
+    realtime.minerIds = squadIds;
+    realtime.finale = !!input.finale;
+  }
+  state.realtime = realtime;
   state.board.splice(missionIndex, 1);
   return request;
 }
@@ -112,11 +132,17 @@ export function markMissionSettled(state: UnifiedSaveState, requestId: string, s
 export function abortDirectMission(state: UnifiedSaveState, moralePenalty = 15): string | null {
   if (!state.realtime) return null;
   const requestId = state.realtime.requestId;
-  const miner = state.miners.find(item => item.id === state.realtime!.minerId);
-  if (miner) {
-    miner.state = 'idle';
-    miner.morale = Math.max(10, Math.min(100, miner.morale - moralePenalty));
-  }
+  /* 随行小队全员归队（无小队时等价于只处理主控矿工） */
+  const ids = state.realtime.minerIds && state.realtime.minerIds.length
+    ? state.realtime.minerIds
+    : [state.realtime.minerId];
+  ids.forEach(id => {
+    const mn = state.miners.find(item => item.id === id);
+    if (mn) {
+      mn.state = 'idle';
+      mn.morale = Math.max(10, Math.min(100, mn.morale - moralePenalty));
+    }
+  });
   state.realtime = null;
   return requestId;
 }

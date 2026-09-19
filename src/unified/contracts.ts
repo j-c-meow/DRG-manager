@@ -60,6 +60,10 @@ export interface RealtimeState {
   resolution: 'direct';
   /** 实时介入来源的派遣单 id（介入模式：胜=该派遣直接结算，败/召回=派遣恢复挂机） */
   depId?: string;
+  /** 终局强制实时：随行小队（minerId 为主控），胜=全队结算，败=任务回板可重试 */
+  minerIds?: string[];
+  /** 终局强制实时标记：败/召回时任务必须回到任务板 */
+  finale?: boolean;
 }
 
 /** 派遣单最小快照（管理端 S.deps 元素，介入模式用） */

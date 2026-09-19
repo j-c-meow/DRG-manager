@@ -54,6 +54,9 @@ function dispatchCost(m, hc, modEff, dur){
 
 function openDispatch(mid){
   const m = S.board.find(x=>x.id===mid); if(!m) return;
+  /* 终局强制实时（危5）：清账行动期间的危 5 任务不接受挂机派遣，
+     派遣弹窗（含「选择派遣任务」入口）一律导向终局编队实时入口 */
+  if(typeof isForcedFinaleMission === 'function' && isForcedFinaleMission(m)){ openFinaleRealtime(mid); return; }
   const t = mtypeById(m.type);
   const idle = S.miners.filter(x=>x.state==='idle' && x.morale>=25);
   const defaultMinerId = idle.length ? idle[0].id : '';
