@@ -405,6 +405,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     const buildVersion = document.querySelector('meta[name="drg-build-version"]')?.content;
     navigator.serviceWorker.register('sw.js' + (buildVersion ? '?v=' + encodeURIComponent(buildVersion) : ''));
   }
+  /* 页脚显示构建号（用户 09-19 需求：一眼识别新旧构建，排查"功能没生效"类问题） */
+  try{
+    const bv = document.querySelector('meta[name="drg-build-version"]')?.content;
+    const fv = document.querySelector('.footer-version');
+    if(bv && fv) fv.textContent = '构建 ' + bv.slice(0, 12) + '　　在更深处，遇见更大的明天。';
+  }catch(e){}
   /* 挂机券：3 小时自动游玩（自动事件决策 + 自动派遣空闲矿工） */
   const toggleAuto = () => {
     if(S.mode === 'rush'){ log(TEXT.dm_auto_rush_lock, 'bad'); return; }
