@@ -27,8 +27,17 @@ function genMission(typeId){
           min: Math.round(t.min * rnd(0.92,1.08) * (trit?1.25:1))};
 }
 function genBoard(){
+  /* 卡尔遗单常驻（用户 09-19 实测：刷新任务会把开局剧情单刷丢）：
+     板上已有的剧情单无条件保留（直到被派遣走）；被派遣期间不回板；
+     异常丢失（既不在板也不在飞）且序章未完成时自动回板 */
+  const keptPrologue = S.board.filter(x => x.kind === 'prologue');
   S.board = [genMission('exp')];
   for(let i=1;i<6;i++) S.board.push(genMission());
+  if(keptPrologue.length){
+    S.board.unshift(keptPrologue[0]);
+  } else if(!S.flags.prologueDone && !S.deps.some(d => d.kind === 'prologue' || (d.m && d.m.kind === 'prologue'))){
+    spawnKarlMission();
+  }
   S.boardAt = S.gm;
 }
 
