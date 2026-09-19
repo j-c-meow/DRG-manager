@@ -73,8 +73,16 @@ function openRealtime(mid){
    board 卡与派遣弹窗都会被导向这里——自动编队（最多 4 名最适矿工，主控=任务适配
    优先、等级次之），不经挂机派遣路径（不抽出发酒、不占派遣位）。
    胜=全队按实战表现结算并推进战役；败/召回=任务回板可重试，不卡死战役进度。 */
+/* ---------------- 终局强制实时（危5，用户 09-19 拍板） ----------------
+   最终战役（c10 集团大单，最后一战）进行期间的危 5 任务＝终局任务：不允许普通挂机派遣，
+   board 卡与派遣弹窗都会被导向这里——自动编队（最多 4 名最适矿工，主控=任务适配
+   优先、等级次之），不经挂机派遣路径（不抽出发酒、不占派遣位）。
+   胜=全队按实战表现结算并推进战役；败/召回=任务回板可重试，不卡死战役进度。
+   09-20 修复：原判定检查战役 id==='finale'——CAMPAIGNS 里没有这个 id，判定永远为假，
+   强制终局从未生效。改为按「当前战役是最后一个」判定。 */
 function isForcedFinaleMission(m){
-  return !!(m && S.campaign && CAMPAIGNS[S.campaign.ci] && CAMPAIGNS[S.campaign.ci].id === 'finale' && m.hazard >= 5);
+  const lastCamp = CAMPAIGNS && CAMPAIGNS[CAMPAIGNS.length-1];
+  return !!(m && S.campaign && lastCamp && CAMPAIGNS[S.campaign.ci] === lastCamp && m.hazard >= 5);
 }
 
 function openFinaleRealtime(mid){
