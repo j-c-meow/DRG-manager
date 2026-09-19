@@ -933,6 +933,8 @@ body.realtime-open{overflow:hidden;padding-bottom:0}
   .mission-card{grid-template-columns:95px minmax(0,1fr);min-height:118px}
   .mission-cover{min-height:116px}
   .mission-description{display:none}
+  /* 用户实录（09-19）：派遣通道多单时最后一张卡被面板内滚动区裁掉——手机端取消内滚，内容自然展开交给整页滚动 */
+  .dispatch-panel>.bd{flex:0 0 auto;overflow-y:visible}
   .panel h2{min-height:38px}.panel-title{font-size:15px}
   .btn{padding:5px 9px}
   .modal{padding:8px}.modal .box{width:96vw;max-height:91vh;padding:13px}
