@@ -19,6 +19,7 @@
     this.isPoint = this.type === 'point';       // 定点提取
     this.isSalv = this.type === 'salv';         // 搜救行动
     this.isRefi = this.type === 'refi';         // 就地精炼
+    this.isElim = this.type === 'elim';         // 消灭任务（无畏机甲）
     this.biome = opt.biome;
     this.hazard = DRG.HAZARDS[M.clamp(opt.haz, 1, 5) - 1];
     this.seed = opt.seed;
@@ -30,7 +31,9 @@
         ? { w: 460, h: 180, seed: opt.seed, biome: opt.biome }   // 搜救：更大更暗
         : this.isRefi
           ? { w: 440, h: 170, seed: opt.seed, biome: opt.biome } // 精炼：更大，管线拉得远
-          : { w: 400, h: 160, seed: opt.seed, biome: opt.biome });
+          : this.isElim
+            ? { w: 240, h: 150, seed: opt.seed, biome: opt.biome, mode: 'elim' }  // 消灭：圆形竞技场
+            : { w: 400, h: 160, seed: opt.seed, biome: opt.biome });
 
     var st = this.world.start;
     var spawnX = st.tx * T + T / 2, spawnY = st.ty * T;
@@ -64,6 +67,9 @@
     this.wells = [];
     this.oilRefined = 0;
     this.oilQuota = DRG.REFI ? DRG.REFI.quotaOf(this.hazard.lv) : 12;
+    // 消灭任务：中央虫茧 + 无畏机甲
+    this.cocoon = null;
+    this.boss = null;
 
     this.enemies = []; this.bullets = []; this.pickups = []; this.flares = []; this.props = [];
     this.fx = new DRG.Particles(1500);
@@ -103,6 +109,11 @@
       while (wellSpots.length < nWells) wellSpots.push({ x: this.player.x + 500 + wellSpots.length * 260, y: this.player.y });
       for (var wi = 0; wi < wellSpots.length; wi++) this.wells.push(new DRG.OilWell(wellSpots[wi].x, wellSpots[wi].y));
     }
+    if (this.isElim && DRG.Cocoon && this.world.elimArena) {
+      if (DRG.loadElimSprites) DRG.loadElimSprites();
+      var ar = this.world.elimArena;
+      this.cocoon = new DRG.Cocoon(ar.x, ar.y);
+    }
     this.cam = { x: 0, y: 0, w: 100, h: 100, sx: 0, sy: 0 };
     this.shakeAmt = 0; this.shakeT = 0;
     this.toasts = [];
@@ -126,16 +137,16 @@
     // starting fauna: a few lootbugs and idle grunts scattered around
     var rng = DRG.RNG(opt.seed ^ 0x1234);
     var floors = this.world.floors;
-    for (var i = 0; i < 12 && floors.length; i++) {
+    for (var i = 0; i < 12 && floors.length && !this.isElim; i++) {
       var f = floors[rng.int(0, floors.length - 1)];
       if (M.dist(f.tx * T, f.ty * T, this.player.x, this.player.y) < 400) continue;
       this.spawnEnemy(rng.chance(0.12) ? 'goldbug' : 'lootbug', f.tx * T + T / 2, f.ty * T + T);
     }
-    if (!this.isEscort) for (i = 0; i < Math.round(5 * this.hazard.rate) && floors.length; i++) {
+    if (!this.isEscort && !this.isElim) for (i = 0; i < Math.round(5 * this.hazard.rate) && floors.length; i++) {
       f = floors[rng.int(0, floors.length - 1)];
       if (M.dist(f.tx * T, f.ty * T, this.player.x, this.player.y) < 700) continue;
       this.spawnEnemy('grunt', f.tx * T + T / 2, f.ty * T + T);
-    }   // 护送局不预置敌对虫：压力全部交给 25/50/75% 虫潮导演，避免开局就把朵蕾妲啃穿
+    }   // 护送/消灭局不预置虫：护送的压力全在虫潮导演；消灭的压力全在破茧之后
 
     // gentle onboarding: the controls that matter, spread over the first minute
     this.hints = [
@@ -177,6 +188,14 @@
         { t: 27, text: '泵停摆后长按 E 修理（松开保留进度）；集齐 ' + this.oilQuota + ' 单位原油即可撤离', col: '#3ad98a' }
       ];
     }
+    if (this.isElim) {
+      this.hints = [
+        { t: 3.5, text: '消灭任务：直捣竞技场中心——对无畏虫茧长按 E 破茧（2 秒）', col: '#ff7a5a' },
+        { t: 11, text: '无畏机甲处于装甲态：只有腹部发光弱点吃伤害（×3），打装甲基本刮痧', col: '#ffb03c' },
+        { t: 19, text: '弱点会随时间换位——听到低吼就找橙色的光；它还会召唤小虫', col: '#ff8a5a' },
+        { t: 27, text: '血量过半它会狂暴：移速/攻速 +30%，还会吐酸弹三连——保持走位', col: '#ff5a4a' }
+      ];
+    }
 
     this.tileFx = function (type, tx, ty, broken) { self.handleTile(type, tx, ty, broken); };
     DRG.bus.on('pod-landed', function () { });
@@ -209,7 +228,7 @@
   };
 
   Mission.prototype.damageEnemy = function (e, dmg, x, y, vx, vy, silent) {
-    e.hurt(dmg, this, x);
+    e.hurt(dmg, this, x, y);    // 第 4 参为命中纵坐标：elim 无畏机甲按它判弱点
     if (!silent) {
       this.fx.burst(x || e.x, y || e.y - e.h / 2, 3, { col: ['#8fe08a', '#d8ff9a'], speed: 130, life: 0.3, size: 2.2, kind: 3 });
       if (dmg >= 25) this.fx.text(e.x, e.y - e.h - 8, String(Math.round(dmg)), '#ffe6a0', 12);
@@ -680,6 +699,45 @@
       : null;
   };
 
+  /* ---------------- elim：消灭任务（无畏机甲） ---------------- */
+
+  /** 破茧完成：无畏机甲破土而出 */
+  Mission.prototype.onCocoonBroken = function (cocoon) {
+    if (this.state !== 'play') return;
+    this.mc('壳裂开了——无畏机甲！打它的腹部弱点，那是唯一的破口！');
+    this.toast('无畏机甲出场 · 装甲态：找橙色的弱点核', '#ff7a5a', 6);
+    DRG.audio.clip('prae_scream', 1);
+    DRG.audio.sfx('alarm');
+    this.shake(10, 0.5);
+    var hp = DRG.ELIM ? DRG.ELIM.bossHp(this.hazard.lv) : 2400;
+    this.boss = new DRG.Dreadnought(cocoon.x, cocoon.y - 6, hp);
+    this.enemies.push(this.boss);           // 进通用敌人列表：子弹/爆炸/绘制全部复用
+    this.spawnWave(1.2, false, { x: cocoon.x, y: cocoon.y });
+    this.stats.credits += 120 * this.hazard.credit;
+    this.stats.xp += 140 * this.hazard.xp;
+  };
+
+  /** Boss 血尽 → 胜利 */
+  Mission.prototype.onDreadDead = function () {
+    if (this.state !== 'play') return;
+    this.mc('干得漂亮！无畏机甲倒下了——任务完成，矮人！');
+    this.toast('消灭确认 · DREADNOUGHT DOWN', '#7fff9a', 6);
+    DRG.audio.clipOf(['salute_1', 'salute_2', 'salute_3'], 0.9, true);
+    this.objectiveDone = true;
+    this.stats.credits += 420 * this.hazard.credit;
+    this.stats.xp += 520 * this.hazard.xp;
+    this.state = 'success';
+    DRG.audio.stopAmbience();
+  };
+
+  /** 消灭导演：破茧长按 + 破茧前的零星骚扰；Boss 战期间虫压全部交给 Boss 自己 */
+  Mission.prototype.elimDirector = function (dt) {
+    var c = this.cocoon;
+    if (!c || c.state !== 'intact' || this.boss) return;
+    var holding = DRG.input.key('KeyE') && c.canBreak(this.player);
+    c.breakUpdate(dt, holding, this);
+  };
+
 
   /* ---------------- objectives ---------------- */
   Mission.prototype.deposit = function () {
@@ -824,6 +882,7 @@
       if (this.isSalv) this.salvDirector(dt);
       if (this.refinery) this.refinery.update(dt, this);
       for (i = 0; i < this.wells.length; i++) this.wells[i].update(dt, this);
+      if (this.cocoon) this.cocoon.update(dt, this);
       if (this.shield && this.shield.life <= 0) this.shield = null;
 
       // interactions
@@ -874,12 +933,14 @@
         this.escortDirector(dt);
       } else if (this.state === 'play') {
         if (this.isRefi) this.refiDirector(dt);
+        if (this.isElim) this.elimDirector(dt);
+        var bossUp = !!(this.isElim && this.boss && !this.boss.dead);
         this.nextWave -= dt;
-        if (this.nextWave <= 0 && this.time > 25) this.spawnWave();
+        if (this.nextWave <= 0 && this.time > 25 && !bossUp) this.spawnWave();
         this.ambientCd -= dt;
         if (this.ambientCd <= 0) {
           this.ambientCd = 16 / this.hazard.rate;
-          if (this.enemies.length < 24) {
+          if (this.enemies.length < 24 && !bossUp) {
             var rng = DRG.RNG((this.time * 1000) | 0);
             var s = this.pickSpawnSpot(rng, false);
             if (s) this.spawnEnemy(rng.chance(0.25) ? 'swarmer' : 'grunt', s.x, s.y);
@@ -1025,6 +1086,7 @@
     if (this.wreck) this.wreck.draw(g, cam);
       if (this.refinery) this.refinery.draw(g, cam);
       for (i = 0; i < this.wells.length; i++) this.wells[i].draw(g, cam);
+      if (this.cocoon) this.cocoon.draw(g, cam);
       this.mule.draw(g, cam);
     if (this.doretta) this.doretta.draw(g, cam);
     if (this.pod) this.pod.draw(g, cam);
@@ -1049,6 +1111,7 @@
     if (this.wreck && this.wreck.lights) this.wreck.lights(cam);
     if (this.refinery) this.refinery.lights(cam);
     for (i = 0; i < this.wells.length; i++) this.wells[i].lights(cam);
+    if (this.cocoon) this.cocoon.lights(cam);
     for (i = 0; i < this.flares.length; i++) this.flares[i].lights(cam);
     for (i = 0; i < this.pickups.length; i++) this.pickups[i].lights(cam);
     for (i = 0; i < this.props.length; i++) if (this.props[i].lights) this.props[i].lights(cam);
@@ -1186,6 +1249,13 @@
           var well = this.wells[rw];
           if (well.state === 'dry') targets.push({ x: well.x, y: well.y - 66, col: '#ffd76a', label: '油井' });
           else if (well.state === 'broken') targets.push({ x: well.x, y: well.y - 66, col: '#ff5a4a', label: '泵停摆' });
+        }
+      }
+      if (this.isElim) {
+        if (this.cocoon && this.cocoon.state === 'intact') targets.push({ x: this.cocoon.x, y: this.cocoon.y - 64, col: '#ff7a5a', label: '虫茧' });
+        if (this.boss && !this.boss.dead) {
+          var wp = this.boss.weakPos();
+          targets.push({ x: wp.x, y: wp.y - 22, col: '#ffb03c', label: '弱点' });
         }
       }
     }

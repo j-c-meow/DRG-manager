@@ -7,9 +7,9 @@ function fmtDur(gm){
   if(gm < 120) return gm+L(' 游戏分钟');
   return (gm/60).toFixed(1)+L(' 游戏小时');
 }
-/* 实时小游戏接线（二期拍板 exp/escort/point/salv，三期放开 refi）：
+/* 实时小游戏接线（二期拍板 exp/escort/point/salv，三期放开 refi/elim）：
    board 卡按钮文案按类型显示（护送=实时护送，其余=实时进入） */
-const LIVE_TYPES = ['exp','escort','point','salv','refi'];
+const LIVE_TYPES = ['exp','escort','point','salv','refi','elim'];
 const isLiveType = (t) => LIVE_TYPES.indexOf(t) >= 0;
 const liveBtnText = (t) => t==='escort' ? L('实时护送') : L('实时进入');
 /* ---------------- 成就系统（四系统补充设计 §一，40 项） ---------------- */

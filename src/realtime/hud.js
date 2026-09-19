@@ -259,6 +259,28 @@
           size: 12,
           col: brokenN ? gfx.pulse(m.time, '#ff4a3a', '#ffb0a0', 8) : (m.objectiveDone ? gfx.pulse(m.time, '#7fff9a', '#ffffff', 5) : '#9aa8b6')
         });
+      } else if (m.isElim) {
+        /* 消灭任务：虫茧 → Boss 血条（阶段读数） */
+        gfx.sprite(g, A().get('mission_elim'), x + 26, y + 30, 34);
+        gfx.text(g, '消灭任务 · ELIMINATION', x + 50, y + 20, { size: 13, col: GOLD });
+        gfx.text(g, m.biome.name + ' · ' + m.hazard.name, x + 50, y + 36, { size: 12, col: '#9aa8b6' });
+
+        var boss = m.boss;
+        var eFrac = boss ? M.clamp(boss.hp / boss.maxHp, 0, 1) : 0;
+        gfx.bar(g, x + 12, y + 48, w - 24, 14, eFrac, boss && boss.phase === 2 ? gfx.pulse(m.time, '#ff4a3a', '#ff9a6a', 9) : '#ffb03c', { grad: true });
+        gfx.sprite(g, A().get('mission_elim'), x + 22, y + 55, 16);
+        gfx.text(g, boss ? (boss.dead ? '已消灭' : Math.ceil(boss.hp) + ' / ' + boss.maxHp) : '目标休眠中', x + 34, y + 60, { size: 12, col: '#fff0e0' });
+
+        var ePhase;
+        if (!boss) ePhase = '无畏虫茧 · 走近长按 E 破茧（2 秒）';
+        else if (boss.dead) ePhase = 'DREADNOUGHT DOWN · 任务完成';
+        else if (boss.emergeT > 0) ePhase = '它正在破土而出……';
+        else if (boss.phase === 2) ePhase = '狂暴态 · 弱点换位更快 · 小心酸弹';
+        else ePhase = '装甲态 · 打腹部发光弱点（×3 伤害）';
+        gfx.text(g, ePhase, x + 12, y + 78, {
+          size: 12,
+          col: boss && boss.phase === 2 ? gfx.pulse(m.time, '#ff4a3a', '#ffb0a0', 8) : (boss && !boss.dead ? '#ffb03c' : '#9aa8b6')
+        });
       } else {
         gfx.sprite(g, A().get('mission_mining'), x + 26, y + 30, 34);
         gfx.text(g, '采矿远征 · MINING EXPEDITION', x + 50, y + 20, { size: 13, col: GOLD });
@@ -432,6 +454,8 @@
         blip(m.wells[rw].x, m.wells[rw].y, wst === 'pumping' ? '#3ad98a' : wst === 'broken' ? '#ff5a4a' : '#ffd76a', 3);
       }
       if (m.refinery) blip(m.refinery.x, m.refinery.y - 20, '#8ad4ff', 3.4);
+      if (m.cocoon && m.cocoon.state === 'intact') blip(m.cocoon.x, m.cocoon.y - 26, '#ff7a5a', 4);
+      if (m.boss && !m.boss.dead) blip(m.boss.x, m.boss.y - 30, '#ff4a3a', 4.4);
       blip(p.x, p.y, '#ffd76a', 3.4);
       g.restore();
       gfx.text(g, 'TAB 全图', x + size - 8, y + 14, { size: 10, align: 'right', col: '#7f8a96' });
@@ -470,6 +494,8 @@
         put(m.wells[rw2].x, m.wells[rw2].y, wst2 === 'pumping' ? '#3ad98a' : wst2 === 'broken' ? '#ff5a4a' : '#ffd76a', 4, wst2 === 'dry' ? '油井' : wst2 === 'broken' ? '泵停摆' : '油井 ✓');
       }
       if (m.refinery) put(m.refinery.x, m.refinery.y - 20, '#8ad4ff', 5, '精炼单元');
+      if (m.cocoon && m.cocoon.state === 'intact') put(m.cocoon.x, m.cocoon.y - 26, '#ff7a5a', 5, '虫茧');
+      if (m.boss && !m.boss.dead) put(m.boss.x, m.boss.y - 30, '#ff4a3a', 5, '无畏机甲');
       put(m.player.x, m.player.y, '#ffd76a', 5, '你');
       gfx.text(g, '地形扫描仪 · 按 TAB 关闭', view.w / 2, oy - 16, { size: 15, align: 'center', col: GOLD });
       g.restore();
@@ -584,6 +610,9 @@
             }
           }
         }
+      } else if (m.isElim) {
+        if (m.cocoon && m.cocoon.state === 'intact' && m.cocoon.canBreak(p)) msg = '长按 E 破茧（惊动无畏机甲！）';
+        else if (m.boss && m.boss.windup > 0) msg = '它要扑过来了——躲开！';
       } else {
         if (m.pod && m.pod.canBoard(p)) msg = '按 E 登船撤离';
         else if (m.mule.canDeposit(p)) {

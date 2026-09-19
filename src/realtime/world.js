@@ -38,7 +38,7 @@
   function World(opt) {
     this.w = opt.w || 400;
     this.h = opt.h || 165;
-    this.mode = opt.mode || 'cave';       // cave | escort
+    this.mode = opt.mode || 'cave';       // cave | escort | elim
     this.seed = opt.seed || 1;
     this.biome = opt.biome || DRG.BIOMES[0];
     this.rng = DRG.RNG(this.seed);
@@ -56,6 +56,7 @@
     this.mmBox = null;                    // dirty bbox for incremental minimap redraws
     this.shade = new Uint8Array(n);       // per-tile colour jitter
     if (this.mode === 'escort') this.generateEscort();
+    else if (this.mode === 'elim') this.generateElim();
     else this.generate();
   }
   World.prototype.idx = function (tx, ty) { return ty * this.w + tx; };
@@ -418,6 +419,136 @@
       }
     }
     DRG.log('escort world', this.w + 'x' + this.h, 'stations', JSON.stringify(stations), 'floors', this.floors.length);
+  };
+
+  /* ---------------- elim: 圆形竞技场（消灭任务 Boss 战） ----------------
+     开阔圆腔 + 中央茧台（虫茧立于此处）+ 一条入场隧道；边缘若干岩柱掩体。
+     生成后暴露 elimArena = {x, y}（茧台地面像素坐标），供 mission 放虫茧。 */
+  World.prototype.generateElim = function () {
+    var w = this.w, h = this.h, rng = this.rng, i, x, y;
+    var cx = Math.round(w * 0.58), cy = Math.round(h * 0.52);
+    var R = Math.min(Math.round(h * 0.42), 44);
+    var self = this;
+
+    // 1. solid rock everywhere
+    for (i = 0; i < w * h; i++) this.tiles[i] = TT.ROCK;
+    for (y = 0; y < h; y++) for (x = 0; x < w; x++) this.shade[y * w + x] = Math.floor(this.noise2(x * 0.7, y * 0.7) * 255);
+
+    // 2. 圆形开阔腔（噪声边缘，别太像正圆）
+    for (y = 3; y < h - 3; y++) {
+      for (x = 3; x < w - 3; x++) {
+        var d = M.dist(x, y, cx, cy);
+        var wob = (self.noise(x * 0.11, y * 0.11) - 0.5) * 7;
+        if (d + wob < R) this.tiles[y * w + x] = TT.EMPTY;
+      }
+    }
+
+    // 3. 中央茧台：3 宽 2 高实心台，虫茧立在台面上
+    var padTop = cy - 3;
+    for (y = padTop; y <= cy - 1; y++) {
+      for (x = cx - 1; x <= cx + 1; x++) this.tiles[y * w + x] = TT.DIRT;
+    }
+    this.elimArena = { x: cx * T + T / 2, y: padTop * T };
+
+    // 4. 入场隧道：左缘 → 腔体，出生小室
+    var tunnelY = cy;
+    for (x = 4; x <= cx - R + 8; x++) {
+      for (y = tunnelY - 3; y < tunnelY; y++) {
+        if (this.inside(x, y)) this.tiles[y * w + x] = TT.EMPTY;
+      }
+    }
+    for (y = tunnelY - 5; y < tunnelY; y++) {
+      for (x = 5; x <= 13; x++) {
+        if (this.inside(x, y) && this.tiles[y * w + x] !== TT.HARD) this.tiles[y * w + x] = TT.EMPTY;
+      }
+    }
+    for (x = 4; x <= 14; x++) {
+      for (y = tunnelY; y < Math.min(h - 4, tunnelY + 3); y++) {
+        if (this.inside(x, y) && this.tiles[y * w + x] === TT.EMPTY) this.tiles[y * w + x] = TT.DIRT;
+      }
+    }
+
+    // 5. 腔内掩体岩柱（不贴茧台）
+    var pillars = 4 + rng.int(0, 3);
+    for (i = 0; i < pillars; i++) {
+      var ang = rng.range(0, 6.283), pr = rng.range(R * 0.4, R * 0.8);
+      var px = Math.round(cx + Math.cos(ang) * pr), py = Math.round(cy + Math.sin(ang) * pr * 0.8);
+      if (M.dist(px, py, cx, cy) < 9) continue;
+      var ph = rng.int(2, 4);
+      for (y = py; y < py + ph; y++) {
+        if (this.inside(px, y) && this.tiles[y * w + px] === TT.EMPTY) this.tiles[y * w + px] = TT.DIRT;
+        if (this.inside(px + 1, y) && this.tiles[y * w + px + 1] === TT.EMPTY && rng.chance(0.6)) this.tiles[y * w + px + 1] = TT.DIRT;
+      }
+    }
+
+    // 6. materialise：边界硬岩，腔外保留可挖岩层（含少量矿物维持补给循环）
+    for (y = 0; y < h; y++) {
+      for (x = 0; x < w; x++) {
+        i = y * w + x;
+        if (x < 3 || y < 3 || x >= w - 3 || y >= h - 3) { this.tiles[i] = TT.HARD; continue; }
+        if (this.tiles[i] === TT.EMPTY || this.tiles[i] === TT.DIRT) continue;
+        var nv = this.noise(x * 0.055, y * 0.055);
+        if (this.noise2(x * 0.11 + 40, y * 0.11 - 20) > 0.845 && nv > 0.4) this.tiles[i] = TT.HARD;
+        else this.tiles[i] = nv > 0.52 ? TT.DIRT : TT.ROCK;
+      }
+    }
+
+    // 7. 矿物 vein（硝石维持补给舱循环，其余少量）
+    var surface = [];
+    for (y = 4; y < h - 4; y++) {
+      for (x = 4; x < w - 4; x++) {
+        i = y * w + x;
+        if (this.tiles[i] === TT.EMPTY || this.tiles[i] === TT.HARD) continue;
+        if (this.tiles[i - 1] === TT.EMPTY || this.tiles[i + 1] === TT.EMPTY ||
+            this.tiles[i - w] === TT.EMPTY || this.tiles[i + w] === TT.EMPTY) surface.push(i);
+      }
+    }
+    rng.shuffle(surface);
+    function vein(startIdx, type, size) {
+      var open = [startIdx], placed = 0, guard = 0;
+      while (open.length && placed < size && guard++ < 160) {
+        var k = open.splice(rng.int(0, open.length - 1), 1)[0];
+        if (self.tiles[k] === TT.EMPTY || self.tiles[k] === TT.HARD || self.tiles[k] === type) continue;
+        self.tiles[k] = type; self.hp[k] = HP[type]; placed++;
+        var kx = k % w, ky = (k - kx) / w;
+        if (kx > 4) open.push(k - 1);
+        if (kx < w - 5) open.push(k + 1);
+        if (ky > 4) open.push(k - w);
+        if (ky < h - 5) open.push(k + w);
+      }
+      return placed;
+    }
+    var plan = [
+      ['nitra', TT.NITRA, 16, 2, 5],
+      ['gold', TT.GOLD, 8, 2, 4],
+      ['morkite', TT.MORKITE, 4, 2, 3]
+    ];
+    var cursor = 0;
+    for (var pi = 0; pi < plan.length; pi++) {
+      var pl = plan[pi];
+      for (var v = 0; v < pl[2] && cursor < surface.length; v++) {
+        var n2 = vein(surface[cursor += Math.max(1, rng.int(3, 11))], pl[1], rng.int(pl[3], pl[4]));
+        this.oreCount[pl[0]] += n2;
+      }
+    }
+
+    // 8. spawn：入场小室
+    this.start = { tx: 9, ty: tunnelY - 1 };
+    this.startNode = { x: 9, y: tunnelY - 3 };
+
+    // 9. tile hp + floors cache
+    for (i = 0; i < w * h; i++) this.hp[i] = HP[this.tiles[i]];
+    this.floors = [];
+    for (y = 6; y < h - 6; y++) {
+      for (x = 6; x < w - 6; x++) {
+        i = y * w + x;
+        if (this.tiles[i] !== TT.EMPTY) continue;
+        if (this.tiles[i + w] === TT.EMPTY || this.tiles[i + w] === TT.HARD) continue;
+        if (this.tiles[i - w] !== TT.EMPTY || this.tiles[i - 2 * w] !== TT.EMPTY) continue;
+        this.floors.push({ tx: x, ty: y });
+      }
+    }
+    DRG.log('elim world', this.w + 'x' + this.h, 'arena', JSON.stringify(this.elimArena), 'floors', this.floors.length);
   };
 
   /* ---------------- queries ---------------- */

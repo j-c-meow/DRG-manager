@@ -127,7 +127,9 @@
               ? '欢迎来到 ' + opt.biome.name + '。搜救行动：找回 4 条矿骡腿，修好她，然后一起回家。'
               : opt.type === 'refi'
                 ? '欢迎来到 ' + opt.biome.name + '。就地精炼：把管线拉到油井上，装泵抽油——集齐 ' + m.oilQuota + ' 单位原油，管线就是你的命根子。'
-                : '欢迎来到 ' + opt.biome.name + '，矮人。开采 ' + m.quota + ' 单位莫尔凯特并存入 M.U.L.E.。', 'mc_begin_1');
+                : opt.type === 'elim'
+                  ? '欢迎来到 ' + opt.biome.name + '。消灭任务：竞技场中心有个虫茧——准备好就破茧，无畏机甲在里面睡觉。'
+                  : '欢迎来到 ' + opt.biome.name + '，矮人。开采 ' + m.quota + ' 单位莫尔凯特并存入 M.U.L.E.。', 'mc_begin_1');
       }, 700);
       DRG.log('mission start', opt.biome.id, 'haz', opt.haz, 'cls', opt.cls, 'seed', opt.seed);
     },
