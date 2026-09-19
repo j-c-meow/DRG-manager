@@ -303,11 +303,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   }catch(e){}
   renderAll();
   if(realtimeSummary) showRealtimeSummary(realtimeSummary);
-  /* 语言选择（自愈版，09-19 实测）：任何存档状态未选过语言就弹；
-     选完若序章尚未完成（含旧版被顶掉序章的中毒档）自动补开序章；
-     语言已选而代号未登记的老档 → 补一次起名登记。二选一，避免同框互顶 */
+  /* 开局弹窗调度（自愈版，09-19 实测）：
+     ① 语言未选 → 弹语言选择；选完若序章未完成自动补开序章，若序章已完成而代号未登记则补起名；
+     ② 语言已选但序章被中断（老档/中毒档 prologueDone=false）→ 重放序章（含起名环节）；
+     ③ 序章已完成而代号未登记 → 补起名登记 */
   if(localStorage.getItem('drg_lang') === null && typeof showLangChooser === 'function'){
-    showLangChooser(() => { if(S && !S.flags.prologueDone && typeof playPrologue==='function') playPrologue(); });
+    showLangChooser(() => { if(S && !S.flags.prologueDone && typeof playPrologue==='function') playPrologue(); else if(S && !S.flags.nameChosen && typeof showNameRegistration==='function') showNameRegistration(); });
+  } else if(S && !S.flags.prologueDone && typeof playPrologue === 'function'){
+    playPrologue();
   } else if(S.flags.prologueDone && !S.flags.nameChosen && typeof showNameRegistration === 'function'){
     showNameRegistration();
   }
