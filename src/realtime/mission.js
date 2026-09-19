@@ -881,6 +881,7 @@
     var i;
 
     /* parallax cave backdrop */
+    var isEscort = this.type === 'escort';
     g.fillStyle = this.biome.fog;
     g.fillRect(0, 0, view.w, view.h);
     var art = A().get(this.biome.art);
@@ -889,10 +890,10 @@
       var bw = art.width * scale, bh = art.height * scale;
       var px = -((cam.x * 0.22) % bw), py = -M.clamp(cam.y * 0.06, 0, Math.max(0, bh - view.h));
       g.save();
-      g.globalAlpha = 0.5;
+      g.globalAlpha = isEscort ? 0.32 : 0.5;   /* 护送走廊更暗：衬出实体（用户实录：模型发虚） */
       for (var bx = px; bx < view.w; bx += bw) g.drawImage(art, bx, py, bw, bh);
       g.globalAlpha = 1;
-      g.fillStyle = 'rgba(0,0,0,0.45)';
+      g.fillStyle = 'rgba(0,0,0,' + (isEscort ? 0.58 : 0.45) + ')';
       g.fillRect(0, 0, view.w, view.h);
       g.restore();
     }
