@@ -760,11 +760,14 @@ const I18N_EN = {
   /* —— 实时小游戏（二期：point/salv 接线）—— */
   '实时进入':'Enter Live Mission', '实时护送':'Live Escort', '实时下矿':'Live Mining',
   '实时定点提取':'Live Point Extraction', '实时搜救':'Live Salvage Operation',
+  '实时精炼':'Live On-Site Refining',
   '实时介入 · 亲自下场':'Live intervention · take the wheel',
   '直接操控 1 名矿工定点提取：跟随信标按住左键钻采矿结，把矿块搬回莫莉入库（每入库 1 块引来一小波虫潮）；携带矿块时移速降低且只能用副手武器。配额完成后撤离即胜。':
     'Directly control one miner in Point Extraction: follow the beacons and hold attack to drill the rich nodules, haul chunks back to Molly and deposit (each deposit draws a small swarm); while carrying a chunk you move slower and can only fire your secondary. Extract after quota to win.',
   '直接操控 1 名矿工搜救：找回 4 条矿骡腿装上残骸（每装 1 条刷防御虫），再长按互动键修复矿骡 3 秒；运腿与修复期间压力十足。修好后撤离即胜。':
     'Directly control one miner in Salvage Operation: recover 4 M.U.L.E. legs and mount them on the wreck (each mount spawns defenders), then hold the interact key to repair the M.U.L.E. for 3 seconds; hauling legs and repairing draw constant pressure. Extract after repairs to win.',
+  '直接操控 1 名矿工就地精炼：从精炼单元领取管道段（一次一段，携带时移速 -20% 且只能用副手武器），到远处油井按 E 铺设管线并安装泵；泵自动抽油汇入精炼单元，但虫子会专门啃泵——停摆后长按互动键修理。集齐原油配额即胜。':
+    'Directly control one miner in On-Site Refining: grab pipe segments at the refinery unit (one at a time, -20% speed and secondary-only while carrying), then press interact at a distant oil well to lay the pipeline and install the pump; pumps feed crude oil back automatically but bugs chew on them — hold interact to repair a wrecked pump. Win by meeting the crude quota.',
 
   /* —— 生物群系（官方）—— */
   '水晶洞穴':'Crystalline Caverns', '盐坑':'Salt Pits', '霉菌沼泽':'Fungus Bogs',

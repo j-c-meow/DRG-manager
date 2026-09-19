@@ -45,6 +45,7 @@
     mc_portrait: 'mc_portrait.png', salute: 'salute.png',
     mission_mining: 'mission_mining.png', mission_egg: 'mission_egg.png',
     mission_point: 'mission_point.png', mission_elim: 'mission_elim.png',
+    mission_refi: 'mission_refi.png',
     mission_escort: 'mission_escort.png',
     haz_1: 'haz_1.png', haz_2: 'haz_2.png', haz_3: 'haz_3.png', haz_4: 'haz_4.png', haz_5: 'haz_5.png',
     // biome art

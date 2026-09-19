@@ -88,8 +88,8 @@
     this.hitFlash = Math.max(0, this.hitFlash - dt * 4);
     this.attackCd -= dt; this.spitCd -= dt; this.alarm -= dt;
     var p = m.player, w = m.world;
-    /* 执勤护送目标权重：朵蕾妲 > 玩家（m.escortPrey 返回 {x,y,doretta} 或 null） */
-    var prey = m.escortPrey ? m.escortPrey(this) : null;
+    /* 目标权重：refi 运转中的泵 > 朵蕾妲 > 玩家（m.refiPrey / m.escortPrey 返回 {x,y,…} 或 null） */
+    var prey = (m.refiPrey && m.refiPrey(this)) || (m.escortPrey ? m.escortPrey(this) : null);
     var px = prey ? prey.x : p.x, py = prey ? prey.y : (p.y - 10);
     var dx = px - this.x, dy = py - this.y;
     var dist = M.len(dx, dy);
@@ -113,13 +113,18 @@
 
   Enemy.prototype.tryAttack = function (m, dist, prey) {
     var p = m.player;
-    var tgt = prey && prey.doretta && !prey.doretta.dead ? prey.doretta : null;
+    var tgt = prey && prey.doretta && !prey.doretta.dead ? prey.doretta
+      : (prey && prey.pump && prey.pump.state === 'pumping' ? prey.pump : null);
     if (this.def.melee && dist < this.def.melee * 46 + 18 && this.attackCd <= 0 && (tgt || !p.downed)) {
       this.attackCd = 1.15;
-      if (tgt) {
+      if (tgt === prey.doretta) {
         /* 优先啃咬朵蕾妲 */
         tgt.hurt(this.def.dmg * m.hazard.dmgMul, m, this.x);
         m.fx.burst(tgt.x + (this.x < tgt.x ? -30 : 30), tgt.y - tgt.h * 0.5, 6, { col: ['#ff6a5a', '#ffd08a'], speed: 160, life: 0.35, kind: 1 });
+      } else if (tgt) {
+        /* refi：啃泵（泵咬伤减半——修理是唯一失败出口，别一击打穿） */
+        tgt.hurt(this.def.dmg * m.hazard.dmgMul * 0.6, m, this.x);
+        m.fx.burst(tgt.x + (this.x < tgt.x ? -20 : 20), tgt.y - 22, 6, { col: ['#ff6a5a', '#ffd08a'], speed: 160, life: 0.35, kind: 1 });
       } else {
         p.hurt(this.def.dmg * m.hazard.dmgMul, m, 'bite');
         m.fx.burst(p.x, p.y - 10, 6, { col: ['#ff6a5a', '#ffd08a'], speed: 160, life: 0.35, kind: 1 });
@@ -138,8 +143,8 @@
       this.state = 'chase';
       this.tryAttack(m, dist, prey);
       if (this.def.kind === 'boom' && dist < 54 && this.fuse === 0) { this.fuse = 0.65; DRG.audio.clip('exploder_scream', 0.6); }
-      /* 锁定朵蕾妲的虫不吐酸（酸弹只判玩家命中），贴上去用咬的 */
-      if (this.def.spit && !(prey && prey.doretta) && this.spitCd <= 0 && dist > 120 && dist < 460) {
+      /* 锁定朵蕾妲/油井泵的虫不吐酸（酸弹只判玩家命中），贴上去用咬的 */
+      if (this.def.spit && !(prey && (prey.doretta || prey.pump)) && this.spitCd <= 0 && dist > 120 && dist < 460) {
         this.spitCd = this.def.spit + Math.random();
         var a = Math.atan2((p.y - 12) - (this.y - 10), p.x - this.x);
         m.bullets.push(new DRG.Ent.Bullet({
@@ -230,7 +235,7 @@
       tx = p.x - Math.cos(ang) * pref;
       ty = (p.y - 40) - Math.sin(ang) * pref * 0.5 - 30;
       this.face = M.sign(dx) || this.face;
-      if (this.def.spit && !(prey && prey.doretta) && this.spitCd <= 0 && dist < 460) {
+      if (this.def.spit && !(prey && (prey.doretta || prey.pump)) && this.spitCd <= 0 && dist < 460) {
         this.spitCd = this.def.spit + Math.random() * 0.8;
         var a2 = Math.atan2((p.y - 12) - this.y, p.x - this.x);
         m.bullets.push(new DRG.Ent.Bullet({

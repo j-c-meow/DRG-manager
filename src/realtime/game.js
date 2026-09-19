@@ -125,7 +125,9 @@
             ? '欢迎来到 ' + opt.biome.name + '。定点提取：开采 ' + m.pointQuota + ' 块矿块并送回莫莉入库。信标已经点亮，动手吧矮人！'
             : opt.type === 'salv'
               ? '欢迎来到 ' + opt.biome.name + '。搜救行动：找回 4 条矿骡腿，修好她，然后一起回家。'
-              : '欢迎来到 ' + opt.biome.name + '，矮人。开采 ' + m.quota + ' 单位莫尔凯特并存入 M.U.L.E.。', 'mc_begin_1');
+              : opt.type === 'refi'
+                ? '欢迎来到 ' + opt.biome.name + '。就地精炼：把管线拉到油井上，装泵抽油——集齐 ' + m.oilQuota + ' 单位原油，管线就是你的命根子。'
+                : '欢迎来到 ' + opt.biome.name + '，矮人。开采 ' + m.quota + ' 单位莫尔凯特并存入 M.U.L.E.。', 'mc_begin_1');
       }, 700);
       DRG.log('mission start', opt.biome.id, 'haz', opt.haz, 'cls', opt.cls, 'seed', opt.seed);
     },

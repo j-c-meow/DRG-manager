@@ -18,6 +18,7 @@
     this.isEscort = this.type === 'escort';
     this.isPoint = this.type === 'point';       // 定点提取
     this.isSalv = this.type === 'salv';         // 搜救行动
+    this.isRefi = this.type === 'refi';         // 就地精炼
     this.biome = opt.biome;
     this.hazard = DRG.HAZARDS[M.clamp(opt.haz, 1, 5) - 1];
     this.seed = opt.seed;
@@ -27,7 +28,9 @@
       ? { w: 340, h: 96, seed: opt.seed, biome: opt.biome, mode: 'escort' }
       : this.isSalv
         ? { w: 460, h: 180, seed: opt.seed, biome: opt.biome }   // 搜救：更大更暗
-        : { w: 400, h: 160, seed: opt.seed, biome: opt.biome });
+        : this.isRefi
+          ? { w: 440, h: 170, seed: opt.seed, biome: opt.biome } // 精炼：更大，管线拉得远
+          : { w: 400, h: 160, seed: opt.seed, biome: opt.biome });
 
     var st = this.world.start;
     var spawnX = st.tx * T + T / 2, spawnY = st.ty * T;
@@ -56,6 +59,11 @@
     this.salvBeacons = [];
     this.wreck = null;
     this.repairWaveT = 0;
+    // 就地精炼：精炼单元（出生点）+ 远处油井 ×(危险度决定) + 管线 + 产油汇总
+    this.refinery = null;
+    this.wells = [];
+    this.oilRefined = 0;
+    this.oilQuota = DRG.REFI ? DRG.REFI.quotaOf(this.hazard.lv) : 12;
 
     this.enemies = []; this.bullets = []; this.pickups = []; this.flares = []; this.props = [];
     this.fx = new DRG.Particles(1500);
@@ -84,6 +92,16 @@
         this.props.push(leg);
         this.salvBeacons.push(new DRG.SalvBeacon(legSpots[li].x, legSpots[li].y, leg));
       }
+    }
+    if (this.isRefi && DRG.OilWell) {
+      var st0 = this.world.start;
+      var baseSpot = this.findStandSpotNear(st0.tx * T + 120, st0.ty * T, 7) || { x: st0.tx * T + 120, y: st0.ty * T };
+      this.refinery = new DRG.RefineryUnit(baseSpot.x, baseSpot.y);
+      var nWells = DRG.REFI ? DRG.REFI.wellCount(this.hazard.lv) : 2;
+      var rngO = DRG.RNG((this.seed ^ 0x0115) | 0);
+      var wellSpots = this.pickFarFloors(rngO, nWells, 680, 0, 460);
+      while (wellSpots.length < nWells) wellSpots.push({ x: this.player.x + 500 + wellSpots.length * 260, y: this.player.y });
+      for (var wi = 0; wi < wellSpots.length; wi++) this.wells.push(new DRG.OilWell(wellSpots[wi].x, wellSpots[wi].y));
     }
     this.cam = { x: 0, y: 0, w: 100, h: 100, sx: 0, sy: 0 };
     this.shakeAmt = 0; this.shakeT = 0;
@@ -149,6 +167,14 @@
         { t: 11, text: '走近矿骡腿按 E 扛起来：移速 -30%，只能用副手武器', col: '#b0ff7a' },
         { t: 19, text: '把腿搬到矿骡残骸处按 E 安装；每装一条会刷出防御虫', col: '#ff8a5a' },
         { t: 27, text: '四条腿装齐后，对准矿骡长按 E 修复 3 秒（松开保留进度）', col: '#b0ff7a' }
+      ];
+    }
+    if (this.isRefi) {
+      this.hints = [
+        { t: 3.5, text: '就地精炼：在精炼单元旁按 E 领取管道段（移速 -20%，只能用副手武器）', col: '#6fbde8' },
+        { t: 11, text: '跟着蓝色光柱找到墨菱油井——对准油井按 E 铺设管线并安装泵', col: '#6fbde8' },
+        { t: 19, text: '泵会自动抽油汇进精炼单元；虫子会专门啃泵——听到警报就回防', col: '#ff8a5a' },
+        { t: 27, text: '泵停摆后长按 E 修理（松开保留进度）；集齐 ' + this.oilQuota + ' 单位原油即可撤离', col: '#3ad98a' }
       ];
     }
 
@@ -572,6 +598,89 @@
     if (!spawned) this.spawnWave(mul || 1);             // 中心附近没地板就退回常规潮
   };
 
+  /* ---------------- refi：就地精炼 ---------------- */
+
+  /** 泵产油汇总：每口泵独立产出，向精炼单元记账 */
+  Mission.prototype.addOil = function (amount, well) {
+    if (this.state !== 'play' || this.objectiveDone) return;
+    var before = this.oilRefined;
+    this.oilRefined = Math.min(this.oilQuota, this.oilRefined + amount);
+    if (well) well.flow = this.oilRefined;
+    if (this.refinery && Math.floor(this.oilRefined) > Math.floor(before)) {
+      this.refinery.flash = 1;                          // 一单位原油到账的闪亮
+    }
+    this.checkObjectiveRefi();
+  };
+
+  Mission.prototype.checkObjectiveRefi = function () {
+    if (this.objectiveDone || this.oilRefined < this.oilQuota) return;
+    this.objectiveDone = true;
+    this.mc('精炼配额达成！原油全部入罐，撤离飞船正在赶来。', 'mc_objective_1');
+    this.toast('配额达成 · 撤离飞船已呼叫', '#7fff9a', 6);
+    DRG.audio.clipOf(['salute_1', 'salute_2', 'salute_3'], 0.9, true);
+    this.stats.credits += 280 * this.hazard.credit;
+    this.stats.xp += 340 * this.hazard.xp;
+    this.callPod();
+  };
+
+  /** E 键的就地精炼交互：铺管装泵 > 领取管道段（修泵走 refiDirector 的长按） */
+  Mission.prototype.refiInteract = function () {
+    var p = this.player, i, well;
+    if (p.carriedItem && p.carriedItem.kind === 'pipe') {
+      for (i = 0; i < this.wells.length; i++) {
+        well = this.wells[i];
+        if (well.canInstall(p)) return well.install(p, this);
+      }
+      return false;
+    }
+    if (!p.carriedItem && !p.carriedCan && this.refinery && this.refinery.canTakePipe(p)) {
+      return this.refinery.takePipe(p, this);
+    }
+    return false;
+  };
+
+  /** 精炼导演：停摆泵的长按修理 + 周期性啃泵虫潮（压力压向泵，不压向玩家） */
+  Mission.prototype.refiDirector = function (dt) {
+    var p = this.player, i, well;
+    for (i = 0; i < this.wells.length; i++) {
+      well = this.wells[i];
+      if (well.state === 'broken') {
+        var holding = DRG.input.key('KeyE') && well.canRepair(p);
+        well.repair(dt, holding, this);
+      }
+    }
+    // 泵运营压力：每 26/危险系数 秒对一口运转中的泵刷一小波虫
+    this.pumpSiegeT = (this.pumpSiegeT || 14) - dt;
+    if (this.pumpSiegeT <= 0) {
+      this.pumpSiegeT = 26 / this.hazard.rate;
+      var pumping = [];
+      for (i = 0; i < this.wells.length; i++) if (this.wells[i].state === 'pumping') pumping.push(this.wells[i]);
+      if (pumping.length) {
+        var target = pumping[(Math.random() * pumping.length) | 0];
+        this.spawnWaveAt(target.x, target.y, 0.85);
+        this.toast('警报：虫群扑向油井的泵！', '#ff5a4a', 3);
+      }
+    }
+  };
+
+  /** 虫潮目标权重（enemies.js 调用）：运转中的泵 > 玩家 */
+  Mission.prototype.refiPrey = function (e) {
+    if (!this.isRefi) return null;
+    var best = null, bd = 560;
+    for (var i = 0; i < this.wells.length; i++) {
+      var well = this.wells[i];
+      if (well.state !== 'pumping') continue;
+      var d = M.dist(e.x, e.y, well.x, well.y - 20);
+      if (d < bd) { bd = d; best = well; }
+    }
+    if (!best) return null;
+    if (e._preyBias == null) e._preyBias = Math.random();
+    return (bd < 300 || e._preyBias < 0.7)
+      ? { x: best.x, y: best.y - 20, pump: best }
+      : null;
+  };
+
+
   /* ---------------- objectives ---------------- */
   Mission.prototype.deposit = function () {
     var p = this.player, any = 0, credits = 0;
@@ -595,7 +704,7 @@
   };
 
   Mission.prototype.checkObjective = function () {
-    if (this.objectiveDone || this.isEscort || this.isPoint || this.isSalv) return;
+    if (this.objectiveDone || this.isEscort || this.isPoint || this.isSalv || this.isRefi || this.isElim) return;
     if (this.deposited.morkite >= this.quota) {
       this.objectiveDone = true;
       this.mc('主要目标完成！莫尔凯特配额已达成，按 R 呼叫撤离飞船。', 'mc_objective_1');
@@ -713,6 +822,8 @@
       for (i = 0; i < this.salvBeacons.length; i++) this.salvBeacons[i].update(dt, this);
       if (this.wreck) this.wreck.t += dt;
       if (this.isSalv) this.salvDirector(dt);
+      if (this.refinery) this.refinery.update(dt, this);
+      for (i = 0; i < this.wells.length; i++) this.wells[i].update(dt, this);
       if (this.shield && this.shield.life <= 0) this.shield = null;
 
       // interactions
@@ -722,6 +833,7 @@
         else if (this.isEscort && this.escortInteract()) { /* 油罐拾取 / 加油 */ }
         else if (this.isPoint && this.pointInteract()) { /* 矿块入库 / 拾取 */ }
         else if (this.isSalv && this.salvInteract()) { /* 安装 / 拾起矿骡腿 */ }
+        else if (this.isRefi && this.refiInteract()) { /* 铺管装泵 / 领取管道段 */ }
         else if (this.mule.canDeposit(this.player)) this.deposit();
         else {
           var used = false;
@@ -761,6 +873,7 @@
       if (this.isEscort && this.state === 'play') {
         this.escortDirector(dt);
       } else if (this.state === 'play') {
+        if (this.isRefi) this.refiDirector(dt);
         this.nextWave -= dt;
         if (this.nextWave <= 0 && this.time > 25) this.spawnWave();
         this.ambientCd -= dt;
@@ -900,6 +1013,9 @@
 
     this.world.draw(g, cam);
 
+    /* 精炼管线（画在实体之下：地面线段 + 节点圈 + 流动脉冲） */
+    if (this.wells.length) this.drawRefiPipes(g, cam);
+
     /* entities */
     for (i = 0; i < this.pickups.length; i++) this.pickups[i].draw(g, cam);
     for (i = 0; i < this.flares.length; i++) this.flares[i].draw(g, cam);
@@ -907,7 +1023,9 @@
     for (i = 0; i < this.beacons.length; i++) this.beacons[i].draw(g, cam);
     for (i = 0; i < this.salvBeacons.length; i++) this.salvBeacons[i].draw(g, cam);
     if (this.wreck) this.wreck.draw(g, cam);
-    this.mule.draw(g, cam);
+      if (this.refinery) this.refinery.draw(g, cam);
+      for (i = 0; i < this.wells.length; i++) this.wells[i].draw(g, cam);
+      this.mule.draw(g, cam);
     if (this.doretta) this.doretta.draw(g, cam);
     if (this.pod) this.pod.draw(g, cam);
     for (i = 0; i < this.enemies.length; i++) this.enemies[i].draw(g, cam);
@@ -929,6 +1047,8 @@
     for (i = 0; i < this.beacons.length; i++) this.beacons[i].lights(cam);
     for (i = 0; i < this.salvBeacons.length; i++) this.salvBeacons[i].lights(cam);
     if (this.wreck && this.wreck.lights) this.wreck.lights(cam);
+    if (this.refinery) this.refinery.lights(cam);
+    for (i = 0; i < this.wells.length; i++) this.wells[i].lights(cam);
     for (i = 0; i < this.flares.length; i++) this.flares[i].lights(cam);
     for (i = 0; i < this.pickups.length; i++) this.pickups[i].lights(cam);
     for (i = 0; i < this.props.length; i++) if (this.props[i].lights) this.props[i].lights(cam);
@@ -945,10 +1065,65 @@
     this.drawMarkers(g, cam, view);
   };
 
-  /** 信标光柱附加通道（point 富矿信标 / salv 信号信标）——盖在黑暗之上，远处可见 */
+  /** 信标光柱附加通道（point 富矿信标 / salv 信号信标 / refi 未装泵油井）——盖在黑暗之上，远处可见 */
   Mission.prototype.drawBeamPass = function (g, cam) {
-    var list = this.isPoint ? this.beacons : this.salvBeacons;
-    for (var i = 0; i < list.length; i++) list[i].beam(g, cam);
+    var i;
+    if (this.isPoint || this.isSalv) {
+      var list = this.isPoint ? this.beacons : this.salvBeacons;
+      for (i = 0; i < list.length; i++) list[i].beam(g, cam);
+    }
+    if (this.isRefi) {
+      for (i = 0; i < this.wells.length; i++) if (this.wells[i].beam) this.wells[i].beam(g, cam);
+    }
+  };
+
+  /** 精炼管线：井→精炼单元的地面线段 + 节点圈 + 泵运转时的流动脉冲（纯视觉） */
+  Mission.prototype.drawRefiPipes = function (g, cam) {
+    for (var i = 0; i < this.wells.length; i++) {
+      var well = this.wells[i];
+      if (!well.pipe) continue;
+      var p = well.pipe;
+      var x1 = p.x1 - cam.x, y1 = p.y1 - cam.y, x2 = p.x2 - cam.x, y2 = p.y2 - cam.y;
+      var len = M.dist(p.x1, p.y1, p.x2, p.y2);
+      var ang = Math.atan2(y2 - y1, x2 - x1);
+      var live = well.state === 'pumping';
+
+      g.save();
+      // 外壳
+      g.strokeStyle = '#3c414b'; g.lineWidth = 6; g.lineCap = 'round';
+      g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke();
+      // 内芯（运转时流动的墨菱油辉光）
+      g.strokeStyle = live ? '#3ad98a' : '#565d69'; g.lineWidth = 2.4;
+      g.globalAlpha = live ? 0.9 : 0.6;
+      g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke();
+      g.restore();
+
+      // 节点圈（每 ~64px 一枚）
+      var n = Math.max(1, Math.round(len / 64));
+      for (var k = 1; k < n; k++) {
+        var nx = x1 + (x2 - x1) * k / n, ny = y1 + (y2 - y1) * k / n;
+        g.save();
+        g.fillStyle = '#2a3038';
+        g.beginPath(); g.arc(nx, ny, 4.6, 0, 6.283); g.fill();
+        g.strokeStyle = live ? '#3ad98a' : '#7f8a96'; g.lineWidth = 1.6;
+        g.beginPath(); g.arc(nx, ny, 4.6, 0, 6.283); g.stroke();
+        g.restore();
+      }
+
+      // 流动脉冲：一单位油沿管线滚回精炼单元
+      if (live) {
+        var prog = (well.flow % 4) / 4;                 // 每 4 秒一脉冲
+        var px = x1 + (x2 - x1) * prog, py = y1 + (y2 - y1) * prog;
+        g.save();
+        g.globalCompositeOperation = 'lighter';
+        var grd = g.createRadialGradient(px, py, 0, px, py, 10);
+        grd.addColorStop(0, 'rgba(120,255,180,0.95)');
+        grd.addColorStop(1, 'rgba(120,255,180,0)');
+        g.fillStyle = grd;
+        g.beginPath(); g.arc(px, py, 10, 0, 6.283); g.fill();
+        g.restore();
+      }
+    }
   };
 
   /** exposed mineral tiles twinkle in the dark, DRG's best navigation cue */
@@ -1004,6 +1179,14 @@
         }
         if (this.wreck.state !== 'repaired' || this.player.carriedItem)
           targets.push({ x: this.wreck.x, y: this.wreck.y - 40, col: '#8ad4ff', label: '矿骡残骸' });
+      }
+      if (this.isRefi) {
+        if (this.refinery) targets.push({ x: this.refinery.x, y: this.refinery.y - 66, col: '#8ad4ff', label: '精炼单元' });
+        for (var rw = 0; rw < this.wells.length; rw++) {
+          var well = this.wells[rw];
+          if (well.state === 'dry') targets.push({ x: well.x, y: well.y - 66, col: '#ffd76a', label: '油井' });
+          else if (well.state === 'broken') targets.push({ x: well.x, y: well.y - 66, col: '#ff5a4a', label: '泵停摆' });
+        }
       }
     }
 

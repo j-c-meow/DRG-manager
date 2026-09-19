@@ -231,6 +231,34 @@
           size: 12,
           col: done ? gfx.pulse(m.time, '#7fff9a', '#ffffff', 5) : '#9aa8b6'
         });
+      } else if (m.isRefi) {
+        /* 就地精炼：产油进度 + 泵状态 */
+        var refiIcon = A().get('mission_refi');
+        gfx.sprite(g, refiIcon && refiIcon.width > 2 ? refiIcon : A().get('mission_point'), x + 26, y + 30, 34);
+        gfx.text(g, '就地精炼 · ON-SITE REFINING', x + 50, y + 20, { size: 13, col: GOLD });
+        gfx.text(g, m.biome.name + ' · ' + m.hazard.name, x + 50, y + 36, { size: 12, col: '#9aa8b6' });
+
+        var q3 = M.clamp(m.oilRefined / m.oilQuota, 0, 1);
+        gfx.bar(g, x + 12, y + 48, w - 24, 14, q3, m.objectiveDone ? '#4ad06a' : '#3ad98a', { grad: true });
+        gfx.sprite(g, A().get('ore_morkite'), x + 22, y + 55, 16);
+        gfx.text(g, Math.floor(m.oilRefined) + ' / ' + m.oilQuota + ' 原油', x + 34, y + 60, { size: 12, col: '#eafff2' });
+
+        var pumping = 0, brokenN = 0, dryN = 0;
+        for (var rw = 0; rw < m.wells.length; rw++) {
+          if (m.wells[rw].state === 'pumping') pumping++;
+          else if (m.wells[rw].state === 'broken') brokenN++;
+          else dryN++;
+        }
+        var rPhase;
+        if (m.objectiveDone) rPhase = '目标完成 · 撤离飞船已呼叫';
+        else if (brokenN) rPhase = '泵停摆 ×' + brokenN + ' · 长按 E 修理！';
+        else if (dryN) rPhase = '未装泵油井 ×' + dryN + ' · 领管道段去铺设';
+        else if (m.player.carriedItem && m.player.carriedItem.kind === 'pipe') rPhase = '把管道段送到油井按 E 安装';
+        else rPhase = '运转中的泵 ×' + pumping + ' · 小心虫子啃泵';
+        gfx.text(g, rPhase, x + 12, y + 78, {
+          size: 12,
+          col: brokenN ? gfx.pulse(m.time, '#ff4a3a', '#ffb0a0', 8) : (m.objectiveDone ? gfx.pulse(m.time, '#7fff9a', '#ffffff', 5) : '#9aa8b6')
+        });
       } else {
         gfx.sprite(g, A().get('mission_mining'), x + 26, y + 30, 34);
         gfx.text(g, '采矿远征 · MINING EXPEDITION', x + 50, y + 20, { size: 13, col: GOLD });
@@ -399,6 +427,11 @@
       for (var bs = 0; bs < m.salvBeacons.length; bs++)
         if (m.salvBeacons[bs].leg && m.salvBeacons[bs].leg.state === 'idle') blip(m.salvBeacons[bs].x, m.salvBeacons[bs].y, '#b0ff7a', 2.4);
       if (m.wreck) blip(m.wreck.x, m.wreck.y, '#cfd8e0', 4);
+      for (var rw = 0; rw < m.wells.length; rw++) {
+        var wst = m.wells[rw].state;
+        blip(m.wells[rw].x, m.wells[rw].y, wst === 'pumping' ? '#3ad98a' : wst === 'broken' ? '#ff5a4a' : '#ffd76a', 3);
+      }
+      if (m.refinery) blip(m.refinery.x, m.refinery.y - 20, '#8ad4ff', 3.4);
       blip(p.x, p.y, '#ffd76a', 3.4);
       g.restore();
       gfx.text(g, 'TAB 全图', x + size - 8, y + 14, { size: 10, align: 'right', col: '#7f8a96' });
@@ -432,6 +465,11 @@
       for (var sb = 0; sb < m.salvBeacons.length; sb++)
         if (m.salvBeacons[sb].leg && m.salvBeacons[sb].leg.state === 'idle') put(m.salvBeacons[sb].x, m.salvBeacons[sb].y, '#b0ff7a', 3, '矿骡腿');
       if (m.wreck) put(m.wreck.x, m.wreck.y, '#cfd8e0', 5, '矿骡残骸');
+      for (var rw2 = 0; rw2 < m.wells.length; rw2++) {
+        var wst2 = m.wells[rw2].state;
+        put(m.wells[rw2].x, m.wells[rw2].y, wst2 === 'pumping' ? '#3ad98a' : wst2 === 'broken' ? '#ff5a4a' : '#ffd76a', 4, wst2 === 'dry' ? '油井' : wst2 === 'broken' ? '泵停摆' : '油井 ✓');
+      }
+      if (m.refinery) put(m.refinery.x, m.refinery.y - 20, '#8ad4ff', 5, '精炼单元');
       put(m.player.x, m.player.y, '#ffd76a', 5, '你');
       gfx.text(g, '地形扫描仪 · 按 TAB 关闭', view.w / 2, oy - 16, { size: 15, align: 'center', col: GOLD });
       g.restore();
@@ -527,6 +565,23 @@
             var prl = m.props[il];
             if (prl instanceof DRG.MuleLeg && prl.state === 'idle' && M.dist(prl.x, prl.y, p.x, p.y) < 56) { msg = '按 E 扛起矿骡腿'; break; }
             if (prl instanceof DRG.Ent.Resupply && prl.canUse(p)) { msg = '按 E 使用补给舱 (' + prl.uses + ')'; break; }
+          }
+        }
+      } else if (m.isRefi) {
+        if (m.pod && m.pod.canBoard(p)) msg = '按 E 登船撤离';
+        else if (p.carriedItem && p.carriedItem.kind === 'pipe') {
+          for (var iw = 0; iw < m.wells.length; iw++)
+            if (m.wells[iw].canInstall(p)) { msg = '按 E 铺设管线并安装泵'; break; }
+          if (!msg) msg = '把管道段送到未装泵的油井（跟随光柱）';
+        } else if (!p.carriedItem && m.refinery && m.refinery.canTakePipe(p)) msg = '按 E 领取管道段';
+        else {
+          for (var irb = 0; irb < m.wells.length; irb++)
+            if (m.wells[irb].state === 'broken' && m.wells[irb].canRepair(p)) { msg = '长按 E 修理泵（松开保留进度）'; break; }
+          if (!msg) {
+            for (var irs = 0; irs < m.props.length; irs++) {
+              var prr = m.props[irs];
+              if (prr instanceof DRG.Ent.Resupply && prr.canUse(p)) { msg = '按 E 使用补给舱 (' + prr.uses + ')'; break; }
+            }
           }
         }
       } else {

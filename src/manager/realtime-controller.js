@@ -22,20 +22,24 @@ function realtimeCost(m){
 function openRealtime(mid){
   if(S.realtime){ showPendingRealtime(); return; }
   const m = S.board.find(x=>x.id===mid);
-  /* 采矿探险 / 执勤护送 / 定点提取 / 搜救行动都可实时下场（二期放开 point/salv） */
-  if(!m || (m.type !== 'exp' && m.type !== 'escort' && m.type !== 'point' && m.type !== 'salv')) return;
+  /* 采矿探险 / 执勤护送 / 定点提取 / 搜救行动 / 就地精炼都可实时下场（三期放开 refi） */
+  if(!m || LIVE_TYPES.indexOf(m.type) < 0) return;
   const t = mtypeById(m.type);
   const isEscort = m.type === 'escort';
   const isPoint = m.type === 'point';
   const isSalv = m.type === 'salv';
-  const liveTitle = isEscort ? L('实时护送') : isPoint ? L('实时定点提取') : isSalv ? L('实时搜救') : L('实时下矿');
+  const isRefi = m.type === 'refi';
+  const liveTitle = isEscort ? L('实时护送') : isPoint ? L('实时定点提取') : isSalv ? L('实时搜救')
+    : isRefi ? L('实时精炼') : L('实时下矿');
   const liveDesc = isEscort
     ? L('直接操控 1 名矿工护送朵蕾妲掘进机：护车、两处停车加油与终点心石防守。胜利按任务基础报酬和实战表现结算；朵蕾妲被摧毁或矿工倒地不起则失败。')
     : isPoint
       ? L('直接操控 1 名矿工定点提取：跟随信标按住左键钻采矿结，把矿块搬回莫莉入库（每入库 1 块引来一小波虫潮）；携带矿块时移速降低且只能用副手武器。配额完成后撤离即胜。')
       : isSalv
         ? L('直接操控 1 名矿工搜救：找回 4 条矿骡腿装上残骸（每装 1 条刷防御虫），再长按互动键修复矿骡 3 秒；运腿与修复期间压力十足。修好后撤离即胜。')
-        : L('直接操控 1 名矿工完成采矿、虫潮与撤离。胜利按任务基础报酬和实战表现结算；失败无任务报酬。');
+        : isRefi
+          ? L('直接操控 1 名矿工就地精炼：从精炼单元领取管道段（一次一段，携带时移速 -20% 且只能用副手武器），到远处油井按 E 铺设管线并安装泵；泵自动抽油汇入精炼单元，但虫子会专门啃泵——停摆后长按互动键修理。集齐原油配额即胜。')
+          : L('直接操控 1 名矿工完成采矿、虫潮与撤离。胜利按任务基础报酬和实战表现结算；失败无任务报酬。');
   const idle = S.miners.filter(x=>x.state==='idle' && x.morale>=25)
     .sort((a,b)=>Number(b.cls===t.best)-Number(a.cls===t.best) || b.lv-a.lv);
   const cost = realtimeCost(m);
