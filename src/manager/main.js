@@ -38,10 +38,17 @@ function catchUpTick(){
   const dt = (now - S.lastReal)/1000;
   if(dt <= 1.5) return;
   const capped = Math.min(dt, 48*3600);
+  const idleSeen = (S.idleReport && S.idleReport.missions) || 0;
   worldAdvance(capped * CFG.RATE * CFG.OFFLINE_EFF, true);
   S.lastReal = now;
-  log(TEXT.ui_offline_msg.replace('{hours}', (dt/3600).toFixed(1)), 'sys');
+  log(L(TEXT.ui_offline_msg).replace('{hours}', (dt/3600).toFixed(1)), 'sys');
   renderAll(); save();
+  /* 挂机收益自动弹（用户 09-19）：离开期间有派遣入账 → 回到界面自动弹出收益报告
+     （有锁定弹窗在开时不抢——收益已入账，下次回来仍按增量弹出） */
+  const R = S.idleReport;
+  if(R && (R.missions||0) > idleSeen && !modalLocked){
+    setTimeout(showIdleReport, 350);
+  }
 }
 document.addEventListener('visibilitychange', () => { if(!document.hidden) setTimeout(catchUpTick, 60); });
 window.addEventListener('focus', () => setTimeout(catchUpTick, 60));
@@ -271,12 +278,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     realtimeSummary = consumeRealtimeResult();
     /* 离线结算 */
     const dt = Math.min((Date.now() - S.lastReal)/1000, 48*3600);
+    const idleSeen = (S.idleReport && S.idleReport.missions) || 0;
     if(dt > 60){
       const gm = dt * CFG.RATE * CFG.OFFLINE_EFF;
       worldAdvance(gm, true);
-      log('离线报告：你离开了 '+ (dt/3600).toFixed(1) +' 小时，钻台以 10% 效率运转。', 'sys');
+      log(L('离线报告：你离开了 '+ (dt/3600).toFixed(1) +' 小时，钻台以 10% 效率运转。'), 'sys');
     }
     S.lastReal = Date.now();
+    /* 挂机收益自动弹（用户 09-19）：重开页面期间有派遣入账 → 进界面自动弹收益报告
+       （弹窗调度尾部会弹语言/起名的场景则让位，不抢） */
+    if(dt > 60){
+      const R = S.idleReport;
+      if(R && (R.missions||0) > idleSeen){
+        const bootBusy = localStorage.getItem('drg_lang') === null
+          || !S.flags.prologueDone
+          || !S.flags.nameChosen;
+        if(!bootBusy) setTimeout(showIdleReport, 500);
+      }
+    }
   }
   applyLogFold();
   try{
