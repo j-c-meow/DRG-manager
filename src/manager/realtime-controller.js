@@ -22,17 +22,25 @@ function realtimeCost(m){
 function openRealtime(mid){
   if(S.realtime){ showPendingRealtime(); return; }
   const m = S.board.find(x=>x.id===mid);
-  /* 采矿探险 + 执勤护送都可实时下场 */
-  if(!m || (m.type !== 'exp' && m.type !== 'escort')) return;
+  /* 采矿探险 / 执勤护送 / 定点提取 / 搜救行动都可实时下场（二期放开 point/salv） */
+  if(!m || (m.type !== 'exp' && m.type !== 'escort' && m.type !== 'point' && m.type !== 'salv')) return;
   const t = mtypeById(m.type);
   const isEscort = m.type === 'escort';
+  const isPoint = m.type === 'point';
+  const isSalv = m.type === 'salv';
+  const liveTitle = isEscort ? L('实时护送') : isPoint ? L('实时定点提取') : isSalv ? L('实时搜救') : L('实时下矿');
+  const liveDesc = isEscort
+    ? L('直接操控 1 名矿工护送朵蕾妲掘进机：护车、两处停车加油与终点心石防守。胜利按任务基础报酬和实战表现结算；朵蕾妲被摧毁或矿工倒地不起则失败。')
+    : isPoint
+      ? L('直接操控 1 名矿工定点提取：跟随信标按住左键钻采矿结，把矿块搬回莫莉入库（每入库 1 块引来一小波虫潮）；携带矿块时移速降低且只能用副手武器。配额完成后撤离即胜。')
+      : isSalv
+        ? L('直接操控 1 名矿工搜救：找回 4 条矿骡腿装上残骸（每装 1 条刷防御虫），再长按互动键修复矿骡 3 秒；运腿与修复期间压力十足。修好后撤离即胜。')
+        : L('直接操控 1 名矿工完成采矿、虫潮与撤离。胜利按任务基础报酬和实战表现结算；失败无任务报酬。');
   const idle = S.miners.filter(x=>x.state==='idle' && x.morale>=25)
     .sort((a,b)=>Number(b.cls===t.best)-Number(a.cls===t.best) || b.lv-a.lv);
   const cost = realtimeCost(m);
-  let html = '<h3 style="color:var(--amber)">▶ '+(isEscort?'实时护送':'实时下矿')+' · '+biomeById(m.biome).name+'</h3>'+
-    '<div class="note">'+(isEscort
-      ?'直接操控 1 名矿工护送朵蕾妲掘进机：护车、两处停车加油与终点心石防守。胜利按任务基础报酬和实战表现结算；朵蕾妲被摧毁或矿工倒地不起则失败。'
-      :'直接操控 1 名矿工完成采矿、虫潮与撤离。胜利按任务基础报酬和实战表现结算；失败无任务报酬。')+'</div>'+
+  let html = '<h3 style="color:var(--amber)">▶ '+liveTitle+' · '+L(biomeById(m.biome).name)+'</h3>'+
+    '<div class="note">'+liveDesc+'</div>'+
     '<div class="meta">危险等级 '+'★'.repeat(m.hazard)+'　出舱补给 -'+cost+' 硝石（持有 '+Math.floor(S.nitra)+'）</div>'+
     '<h3 class="sec">选择主控矿工</h3>';
   if(!idle.length) html += '<div class="note">没有士气 ≥25 的空闲矿工。</div>';

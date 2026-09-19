@@ -57,7 +57,7 @@
       var spread = 6 + (wp.spread || 0) * 190 + (p.recoil * 8);
       g.save();
       g.globalCompositeOperation = 'lighter';
-      g.strokeStyle = p.mineTarget ? 'rgba(255,214,106,0.95)' : 'rgba(255,255,255,0.8)';
+      g.strokeStyle = (p.mineTarget || p.drillTarget) ? 'rgba(255,214,106,0.95)' : 'rgba(255,255,255,0.8)';
       g.lineWidth = 1.6;
       for (var i = 0; i < 4; i++) {
         var a = i * Math.PI / 2;
@@ -115,9 +115,10 @@
     /* ---------- weapons / item bar ---------- */
     itemBar: function (g, m, p, view) {
       var slots = [];
+      var carryLock = DRG.carryRestriction(p);   // 携带矿块/矿骡腿：主手槽灰显禁用
       for (var i = 0; i < 2; i++) {
         var wp = DRG.WEAPONS[p.weapons[i]];
-        slots.push({ icon: wp.hud, key: String(i + 1), sel: !p.toolSelected && p.cur === i, mag: p.mag[i], ammo: p.ammo[i], name: wp.name, flame: wp.flame });
+        slots.push({ icon: wp.hud, key: String(i + 1), sel: !p.toolSelected && p.cur === i, mag: p.mag[i], ammo: p.ammo[i], name: wp.name, flame: wp.flame, locked: !!carryLock && i === 0 });
       }
       slots.push({ icon: p.cls.drill ? 'hud_drill' : 'hud_pickaxe', key: 'RMB', name: p.cls.drill ? '钻机' : '镐', tool: true });
       slots.push({ icon: p.cls.tool.hud, key: 'Q', name: p.cls.tool.name, tool: true, sel: p.toolSelected, n: p.cls.tool.id === 'grapple' ? null : p.toolCharges });
@@ -134,11 +135,19 @@
           fill: s.sel ? 'rgba(48,36,12,0.9)' : INK,
           stroke: s.sel ? GOLD : 'rgba(255,255,255,0.16)', corner: false, lw: s.sel ? 2 : 1
         });
-        gfx.sprite(g, A().get(s.icon), x + sw / 2, y + 24, 30, { alpha: s.tool ? 0.85 : 1 });
-        gfx.text(g, s.key, x + 5, y + 13, { size: 11, col: s.sel ? GOLD : '#8d96a2' });
+        gfx.sprite(g, A().get(s.icon), x + sw / 2, y + 24, 30, { alpha: s.tool ? 0.85 : (s.locked ? 0.3 : 1) });
+        gfx.text(g, s.key, x + 5, y + 13, { size: 11, col: s.locked ? '#5d6772' : (s.sel ? GOLD : '#8d96a2') });
+        if (s.locked) {
+          // 主手禁用：暗淡图标 + 红色斜杠 + 标签
+          g.save();
+          g.strokeStyle = 'rgba(255,74,58,0.8)'; g.lineWidth = 2;
+          g.beginPath(); g.moveTo(x + 8, y + 40); g.lineTo(x + sw - 8, y + 8); g.stroke();
+          g.restore();
+          gfx.text(g, '禁用', x + sw - 6, y + 13, { size: 10, align: 'right', col: '#ff6a5a' });
+        }
         if (s.mag != null) {
           var txt = s.flame ? Math.ceil(s.mag) + '' : s.mag + '/' + s.ammo;
-          gfx.text(g, txt, x + sw / 2, y + 54, { size: 13, align: 'center', col: s.mag > 0 ? '#f2e9cf' : '#ff5a4a' });
+          gfx.text(g, txt, x + sw / 2, y + 54, { size: 13, align: 'center', col: s.locked ? '#5d6772' : (s.mag > 0 ? '#f2e9cf' : '#ff5a4a') });
         } else if (s.n != null) {
           gfx.text(g, 'x' + s.n, x + sw / 2, y + 54, { size: 13, align: 'center', col: '#cfd8e0' });
         }
@@ -180,6 +189,48 @@
           size: 12,
           col: d && d.state === 'hold' ? gfx.pulse(m.time, '#ff7adf', '#ffffff', 6) : (d && d.dead ? '#ff5a4a' : '#9aa8b6')
         });
+      } else if (m.isPoint) {
+        /* 定点提取：矿块入库进度 */
+        gfx.sprite(g, A().get('mission_point'), x + 26, y + 30, 34);
+        gfx.text(g, '定点提取 · POINT EXTRACTION', x + 50, y + 20, { size: 13, col: GOLD });
+        gfx.text(g, m.biome.name + ' · ' + m.hazard.name, x + 50, y + 36, { size: 12, col: '#9aa8b6' });
+
+        var q2 = M.clamp(m.chunksDeposited / m.pointQuota, 0, 1);
+        gfx.bar(g, x + 12, y + 48, w - 24, 14, q2, m.objectiveDone ? '#4ad06a' : '#7fd4ff', { grad: true });
+        var aq = A().get('aquarq');
+        if (aq && aq.width > 2) gfx.sprite(g, aq, x + 22, y + 55, 18);
+        else gfx.sprite(g, A().get('mission_point'), x + 22, y + 55, 16);
+        gfx.text(g, m.chunksDeposited + ' / ' + m.pointQuota + ' 矿块', x + 34, y + 60, { size: 12, col: '#e8f6ff' });
+
+        var pPhase;
+        if (m.objectiveDone) pPhase = '目标完成 · 撤离飞船已呼叫';
+        else if (m.player.carriedItem && m.player.carriedItem.kind === 'chunk') pPhase = '把矿块搬回莫莉处按 E 入库';
+        else pPhase = '跟随蓝色光柱 · 按住左键钻采矿结';
+        gfx.text(g, pPhase, x + 12, y + 78, {
+          size: 12,
+          col: m.objectiveDone ? gfx.pulse(m.time, '#7fff9a', '#ffffff', 5) : '#9aa8b6'
+        });
+      } else if (m.isSalv) {
+        /* 搜救行动：矿骡腿安装 + 修复进度 */
+        gfx.sprite(g, A().get('obj_molly'), x + 26, y + 30, 34);
+        gfx.text(g, '搜救行动 · SALVAGE OPERATION', x + 50, y + 20, { size: 13, col: GOLD });
+        gfx.text(g, m.biome.name + ' · ' + m.hazard.name, x + 50, y + 36, { size: 12, col: '#9aa8b6' });
+
+        var wr = m.wreck, inst = wr ? wr.installed : 0;
+        var done = wr && wr.state === 'repaired';
+        gfx.bar(g, x + 12, y + 48, w - 24, 14, done ? 1 : inst / 4, done ? '#4ad06a' : '#b0ff7a', { grad: true });
+        gfx.sprite(g, A().get('obj_molly'), x + 22, y + 55, 16);
+        gfx.text(g, done ? '矿骡已修复' : (wr && wr.state === 'ready' ? '修复中 ' + Math.round(wr.repairFrac() * 100) + '%' : '矿骡腿 ' + inst + ' / 4'), x + 34, y + 60, { size: 12, col: '#eefff0' });
+
+        var sPhase;
+        if (done) sPhase = '修复完成 · 撤离飞船已呼叫';
+        else if (wr && wr.state === 'ready') sPhase = '对准矿骡长按 E 修复（松开保留进度）';
+        else if (m.player.carriedItem && m.player.carriedItem.kind === 'leg') sPhase = '把矿骡腿搬到残骸处按 E 安装';
+        else sPhase = '最近的矿骡腿 ' + HUD.nearestLegDist(m) + 'm · 跟随信标';
+        gfx.text(g, sPhase, x + 12, y + 78, {
+          size: 12,
+          col: done ? gfx.pulse(m.time, '#7fff9a', '#ffffff', 5) : '#9aa8b6'
+        });
       } else {
         gfx.sprite(g, A().get('mission_mining'), x + 26, y + 30, 34);
         gfx.text(g, '采矿远征 · MINING EXPEDITION', x + 50, y + 20, { size: 13, col: GOLD });
@@ -208,6 +259,18 @@
     },
 
     /* ---------- escort：顶部朵蕾妲进度轨（车头位置 + 血条 + 燃料状态） ---------- */
+    /** 搜救：最近的散落矿骡腿距离（米读数，1 tile ≈ 1m） */
+    nearestLegDist: function (m) {
+      var best = -1;
+      for (var i = 0; i < m.props.length; i++) {
+        var pr = m.props[i];
+        if (!(pr instanceof DRG.MuleLeg) || pr.state !== 'idle') continue;
+        var d = M.dist(pr.x, pr.y, m.player.x, m.player.y);
+        if (best < 0 || d < best) best = d;
+      }
+      return best < 0 ? 0 : Math.round(best / T);
+    },
+
     escortTrack: function (g, m, view) {
       var d = m.doretta;
       if (!d) return;
@@ -331,6 +394,11 @@
       if (m.doretta) blip(m.doretta.x, m.doretta.y - 10, '#ffb03c', 4);
       blip(m.bosco.x, m.bosco.y, '#7ad7ff', 2);
       if (m.pod) blip(m.pod.x, m.pod.y, '#7fff9a', 4);
+      for (var bp = 0; bp < m.beacons.length; bp++)
+        if (m.beacons[bp].state === 'active') blip(m.beacons[bp].x, m.beacons[bp].y, '#7fd4ff', 3);
+      for (var bs = 0; bs < m.salvBeacons.length; bs++)
+        if (m.salvBeacons[bs].leg && m.salvBeacons[bs].leg.state === 'idle') blip(m.salvBeacons[bs].x, m.salvBeacons[bs].y, '#b0ff7a', 2.4);
+      if (m.wreck) blip(m.wreck.x, m.wreck.y, '#cfd8e0', 4);
       blip(p.x, p.y, '#ffd76a', 3.4);
       g.restore();
       gfx.text(g, 'TAB 全图', x + size - 8, y + 14, { size: 10, align: 'right', col: '#7f8a96' });
@@ -359,6 +427,11 @@
       if (m.pod) put(m.pod.x, m.pod.y, '#7fff9a', 5, '撤离飞船');
       for (var i = 0; i < m.props.length; i++)
         if (m.props[i] instanceof DRG.Ent.Resupply) put(m.props[i].x, m.props[i].y, '#ffd76a', 4, '补给');
+      for (var bq = 0; bq < m.beacons.length; bq++)
+        if (m.beacons[bq].state === 'active') put(m.beacons[bq].x, m.beacons[bq].y, '#7fd4ff', 4, '富矿点');
+      for (var sb = 0; sb < m.salvBeacons.length; sb++)
+        if (m.salvBeacons[sb].leg && m.salvBeacons[sb].leg.state === 'idle') put(m.salvBeacons[sb].x, m.salvBeacons[sb].y, '#b0ff7a', 3, '矿骡腿');
+      if (m.wreck) put(m.wreck.x, m.wreck.y, '#cfd8e0', 5, '矿骡残骸');
       put(m.player.x, m.player.y, '#ffd76a', 5, '你');
       gfx.text(g, '地形扫描仪 · 按 TAB 关闭', view.w / 2, oy - 16, { size: 15, align: 'center', col: GOLD });
       g.restore();
@@ -429,6 +502,32 @@
           }
           if (!msg && d.state === 'hold') msg = '守住朵蕾妲！还剩 ' + Math.ceil(m.defenseT) + ' 秒';
           if (!msg && d.state === 'waitFuel') msg = '朵蕾妲在等待燃料——找到她放下的燃料罐';
+        }
+      } else if (m.isPoint) {
+        if (m.pod && m.pod.canBoard(p)) msg = '按 E 登船撤离';
+        else if (m.player.carriedItem && m.player.carriedItem.kind === 'chunk' && m.mule.canDeposit(p))
+          msg = '按 E 矿块入库（' + m.chunksDeposited + '/' + m.pointQuota + '）';
+        else if (m.mule.canDeposit(p)) {
+          var totP = p.carry.morkite + p.carry.nitra + p.carry.gold + p.carry.crystal;
+          msg = totP > 0 ? '按 E 存放 ' + totP + ' 单位矿石' : null;
+        } else {
+          for (var ip = 0; ip < m.props.length; ip++) {
+            var prp = m.props[ip];
+            if (prp instanceof DRG.Ent.Resupply && prp.canUse(p)) { msg = '按 E 使用补给舱 (' + prp.uses + ')'; break; }
+          }
+        }
+        if (m.objectiveDone && !m.podCalled) msg = msg || '按 R 呼叫撤离飞船';
+      } else if (m.isSalv) {
+        var wr = m.wreck;
+        if (m.pod && m.pod.canBoard(p)) msg = '按 E 登船撤离';
+        else if (wr && p.carriedItem && p.carriedItem.kind === 'leg' && wr.canInstall(p)) msg = '按 E 安装矿骡腿';
+        else if (wr && wr.state === 'ready' && wr.canRepair(p)) msg = '长按 E 修复矿骡（松开保留进度）';
+        else {
+          for (var il = 0; il < m.props.length; il++) {
+            var prl = m.props[il];
+            if (prl instanceof DRG.MuleLeg && prl.state === 'idle' && M.dist(prl.x, prl.y, p.x, p.y) < 56) { msg = '按 E 扛起矿骡腿'; break; }
+            if (prl instanceof DRG.Ent.Resupply && prl.canUse(p)) { msg = '按 E 使用补给舱 (' + prl.uses + ')'; break; }
+          }
         }
       } else {
         if (m.pod && m.pod.canBoard(p)) msg = '按 E 登船撤离';

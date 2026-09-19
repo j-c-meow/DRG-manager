@@ -939,8 +939,15 @@
     DRG.light.end(g, view.w, view.h);
 
     /* additive extras that should punch through the darkness */
+    this.drawBeamPass(g, cam);
     this.fx.drawText(g, cam);
     this.drawMarkers(g, cam, view);
+  };
+
+  /** 信标光柱附加通道（point 富矿信标 / salv 信号信标）——盖在黑暗之上，远处可见 */
+  Mission.prototype.drawBeamPass = function (g, cam) {
+    var list = this.isPoint ? this.beacons : this.salvBeacons;
+    for (var i = 0; i < list.length; i++) list[i].beam(g, cam);
   };
 
   /** exposed mineral tiles twinkle in the dark, DRG's best navigation cue */
@@ -983,6 +990,20 @@
       if (this.pod) targets.push({ x: this.pod.x, y: this.pod.y - 40, col: '#7fff9a', label: '撤离' });
       for (var i = 0; i < this.props.length; i++)
         if (this.props[i] instanceof DRG.Ent.Resupply) targets.push({ x: this.props[i].x, y: this.props[i].y - 20, col: '#ffd76a', label: '补给' });
+      if (this.isPoint) {
+        for (i = 0; i < this.beacons.length; i++) {
+          var b = this.beacons[i];
+          if (b.state === 'active') targets.push({ x: b.x, y: b.y - 46, col: '#7fd4ff', label: '富矿点' });
+        }
+      }
+      if (this.isSalv && this.wreck) {
+        for (i = 0; i < this.props.length; i++) {
+          var leg = this.props[i];
+          if (leg instanceof DRG.MuleLeg && leg.state === 'idle') targets.push({ x: leg.x, y: leg.y - 26, col: '#b0ff7a', label: '矿骡腿' });
+        }
+        if (this.wreck.state !== 'repaired' || this.player.carriedItem)
+          targets.push({ x: this.wreck.x, y: this.wreck.y - 40, col: '#8ad4ff', label: '矿骡残骸' });
+      }
     }
 
     for (i = 0; i < targets.length; i++) {

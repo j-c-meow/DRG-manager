@@ -246,8 +246,14 @@
       $('#deb-art').src = win ? 'assets/img/salute.png' : 'assets/img/bug_grunt.png';
 
       var rows = [
-        [m.isEscort ? '朵蕾妲推进进度' : '存入莫尔凯特 MORKITE',
-          m.isEscort ? Math.round((m.doretta ? m.doretta.progress : 0) * 100) + '%' : Math.floor(m.deposited.morkite) + ' / ' + m.quota, win],
+        [m.isEscort ? '朵蕾妲推进进度'
+          : m.isPoint ? '入库矿块 AQUARQ'
+          : m.isSalv ? '矿骡修复 SALVAGE'
+          : '存入莫尔凯特 MORKITE',
+          m.isEscort ? Math.round((m.doretta ? m.doretta.progress : 0) * 100) + '%'
+          : m.isPoint ? m.chunksDeposited + ' / ' + m.pointQuota
+          : m.isSalv ? ((m.wreck ? m.wreck.installed : 0) + ' / 4') + (m.wreck && m.wreck.state === 'repaired' ? ' · 已修复' : '')
+          : Math.floor(m.deposited.morkite) + ' / ' + m.quota, win],
         ['存入硝石 NITRA', Math.floor(m.deposited.nitra)],
         ['存入黄金 GOLD', Math.floor(m.deposited.gold)],
         ['存入晶石 GEMS', Math.floor(m.deposited.crystal)],
