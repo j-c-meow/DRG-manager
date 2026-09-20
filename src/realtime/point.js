@@ -82,9 +82,9 @@
       m.spawnChunk(this.x, this.y - 18);
       if (this.chunksLeft <= 0) {
         this.state = 'depleted';
-        m.toast('这处富矿点采完了', '#9aa4b0', 2);
+        m.toast(L('这处富矿点采完了'), '#9aa4b0', 2);
       } else {
-        m.toast('矿结里还有矿块：剩余 ' + this.chunksLeft, '#7fd4ff', 2);
+        m.toast(L('矿结里还有矿块：剩余 ') + this.chunksLeft, '#7fd4ff', 2);
       }
       DRG.audio.clipOf(['rns_4', 'rns_5'], 0.5, true);
       return false;
@@ -141,7 +141,7 @@
     }
     // approach hint
     if (active && this.drillT <= 0.04 && this.near) {
-      gfx.text(g, '按住左键 钻采矿结', sx, sy - 66 + Math.sin(t * 5) * 2,
+      gfx.text(g, L('按住左键 钻采矿结'), sx, sy - 66 + Math.sin(t * 5) * 2,
         { size: 12, align: 'center', col: gfx.pulse(t, '#7fd4ff', '#ffffff', 6), alpha: 0.85 });
     }
   };
@@ -215,7 +215,7 @@
     this.state = 'idle';
     this.x = p.x; this.y = p.y - 10;
     this.vx = (Math.random() - 0.5) * 60; this.vy = -120;
-    if (m) m.toast('矿块掉落了——回来按 E 重新拾起', '#ffb03c', 3);
+    if (m) m.toast(L('矿块掉落了——回来按 E 重新拾起'), '#ffb03c', 3);
   };
   OreChunk.prototype.draw = function (g, cam) {
     if (this.state === 'spent') return;

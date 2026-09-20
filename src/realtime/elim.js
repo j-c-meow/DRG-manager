@@ -126,10 +126,10 @@
 
     if (this.breakT > 0.04) {
       gfx.ring(g, sx, sy - 74, 18, this.breakFrac(), '#ff7a5a', 5);
-      gfx.text(g, '破茧中 ' + Math.round(this.breakFrac() * 100) + '%' + (this.breaking ? '' : '（长按 E 继续）'),
+      gfx.text(g, L('破茧中 ') + Math.round(this.breakFrac() * 100) + '%' + (this.breaking ? '' : L('（长按 E 继续）')),
         sx, sy - 100, { size: 12, align: 'center', col: this.breaking ? '#ff7a5a' : '#cfd8e0' });
     } else {
-      gfx.text(g, '无畏虫茧 · 长按 E 破茧', sx, sy - 74 + Math.sin(t * 4) * 2,
+      gfx.text(g, L('无畏虫茧 · 长按 E 破茧'), sx, sy - 74 + Math.sin(t * 4) * 2,
         { size: 13, align: 'center', col: gfx.pulse(t, '#ff7a5a', '#ffd0c0', 5), alpha: 0.9 });
     }
   };
@@ -199,7 +199,7 @@
     if (weak) {
       dmg *= WEAK_MULT;
       m.fx.burst(wp.x, wp.y, 8, { col: ['#ffe6a0', '#ffb03c', '#ff7a5a'], speed: 220, life: 0.4, kind: 1, glow: 20 });
-      m.fx.text(wp.x, wp.y - 18, '弱点!', '#ffb03c', 13);
+      m.fx.text(wp.x, wp.y - 18, L('弱点!'), '#ffb03c', 13);
       DRG.audio.clipOf(['rns_5', 'rns_6'], 0.4, true);
     } else {
       dmg *= ARMOR_MULT;
@@ -218,8 +218,8 @@
   Dreadnought.prototype.enterPhase2 = function (m) {
     this.phase = 2;
     this.weakInterval = 4.5;
-    m.mc('它狂暴了！小心酸弹——盯着它的弱点打！');
-    m.toast('无畏机甲进入狂暴：移速/攻速 +30%，新增酸弹三连', '#ff5a4a', 5);
+    m.mc(L('它狂暴了！小心酸弹——盯着它的弱点打！'));
+    m.toast(L('无畏机甲进入狂暴：移速/攻速 +30%，新增酸弹三连'), '#ff5a4a', 5);
     DRG.audio.clip('prae_scream', 0.9);
     m.shake(8, 0.4);
     m.spawnWave(1.1, false, { x: this.x, y: this.y });
@@ -340,7 +340,7 @@
             var ey = this.y - 6;
             m.spawnEnemy(s === n - 1 && enraged ? 'grunt' : 'swarmer', ex, ey);
           }
-          m.toast('无畏机甲召唤了虫群！', '#ff8a5a', 2.5);
+          m.toast(L('无畏机甲召唤了虫群！'), '#ff8a5a', 2.5);
           DRG.audio.clip('swarm_detect_1', 0.6);
         }
       }
@@ -432,7 +432,7 @@
     g.strokeStyle = '#ffffff'; g.lineWidth = 1.4;
     g.beginPath(); g.moveTo(sx - 60 + 60, sy - this.size - 26); g.lineTo(sx - 60 + 60, sy - this.size - 18); g.stroke();
     g.restore();
-    gfx.text(g, this.phase === 2 ? '狂暴' : '装甲态', sx + 70, sy - this.size - 19,
+    gfx.text(g, this.phase === 2 ? L('狂暴') : L('装甲态'), sx + 70, sy - this.size - 19,
       { size: 12, col: this.phase === 2 ? gfx.pulse(this.t, '#ff4a3a', '#ffb0a0', 8) : '#9aa8b6' });
   };
 

@@ -278,7 +278,7 @@
       if (spot) {
         this.x = spot.x; this.y = spot.y; this.stuck = 0; this.lost = 0;
         m.fx.burst(this.x, this.y, 12, { col: ['#9ad7ff', '#ffffff'], speed: 130, life: 0.5, kind: 1 });
-        m.toast('M.U.L.E. 已重新定位到你身边', '#8ad4ff', 1.6);
+        m.toast(L('M.U.L.E. 已重新定位到你身边'), '#8ad4ff', 1.6);
       }
     }
     m.world.markExplored(this.x, this.y, 90);
@@ -492,7 +492,7 @@
         DRG.audio.sfx('podland');
         m.shake(14, 0.5);
         m.world.digCircle(this.x, this.y - 14, 58, 700, m.tileFx);
-        m.toast('补给舱已抵达 · RESUPPLY POD LANDED', '#8ad4ff');
+        m.toast(L('补给舱已抵达 · RESUPPLY POD LANDED'), '#8ad4ff');
       }
     }
     return this.uses > 0;

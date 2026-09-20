@@ -67,7 +67,7 @@
         var d = document.createElement('div');
         d.className = 'biome-item' + (b.id === UI.sel.biome ? ' on' : '');
         d.dataset.id = b.id;
-        d.innerHTML = '<img src="assets/img/' + DRG.IMG_MANIFEST[b.art] + '" alt=""><div><b>' + b.name + '</b><span>' + b.en + '</span></div>';
+        d.innerHTML = '<img src="assets/img/' + DRG.IMG_MANIFEST[b.art] + '" alt=""><div><b>' + L(b.name) + '</b><span>' + b.en + '</span></div>';
         d.addEventListener('click', function () {
           UI.sel.biome = b.id;
           $$('.biome-item').forEach(function (n) { n.classList.toggle('on', n.dataset.id === b.id); });
@@ -104,12 +104,12 @@
         d.dataset.id = c.id;
         d.innerHTML =
           '<img class="por" src="assets/img/' + DRG.IMG_MANIFEST[c.portrait] + '" alt="">' +
-          '<div><b style="color:' + c.color + '">' + c.name + ' · ' + c.en + '</b>' +
-          '<p>' + c.blurb + '</p>' +
-          '<div class="wep"><img src="assets/img/' + DRG.IMG_MANIFEST[w1.hud] + '"><small>' + w1.name + '</small>' +
-          '<img src="assets/img/' + DRG.IMG_MANIFEST[w2.hud] + '"><small>' + w2.name + '</small></div>' +
-          '<div class="wep"><img src="assets/img/' + DRG.IMG_MANIFEST[c.tool.hud] + '"><small>Q · ' + c.tool.name + '</small>' +
-          (c.extra ? '<img src="assets/img/' + DRG.IMG_MANIFEST[c.extra.hud] + '"><small>X · ' + c.extra.name + '</small>' : '') +
+          '<div><b style="color:' + c.color + '">' + L(c.name.toUpperCase() + ' · ' + c.en) + '</b>' +
+          '<p>' + L(c.blurb) + '</p>' +
+          '<div class="wep"><img src="assets/img/' + DRG.IMG_MANIFEST[w1.hud] + '"><small>' + L(w1) + '</small>' +
+          '<img src="assets/img/' + DRG.IMG_MANIFEST[w2.hud] + '"><small>' + L(w2) + '</small></div>' +
+          '<div class="wep"><img src="assets/img/' + DRG.IMG_MANIFEST[c.tool.hud] + '"><small>Q · ' + L(c.tool.name) + '</small>' +
+          (c.extra ? '<img src="assets/img/' + DRG.IMG_MANIFEST[c.extra.hud] + '"><small>X · ' + L(c.extra.name) + '</small>' : '') +
           '</div></div>';
         d.addEventListener('click', function () {
           UI.sel.cls = c.id;
@@ -122,14 +122,14 @@
 
     buildHelp: function () {
       var rows = [
-        ['A / D', '左右移动'], ['空格 / W', '跳跃'], ['鼠标', '瞄准'],
-        ['鼠标左键', '开火（当前武器）'], ['鼠标右键 / C', '挖掘（镐 / 钻机）'],
-        ['1 / 2 / 滚轮', '切换主副武器'], ['R', '装填 · 配额完成后呼叫飞船'],
-        ['F', '扔照明弹（照亮洞穴）'], ['G', '手雷'], ['Q', '职业装备（抓钩/平台/护盾/C4）'],
-        ['X', '工程师：部署哨戒炮'], ['Shift + Q', '命令 BOSCO 开采准星处矿石'],
-        ['E', '交互：存矿 / 补给 / 登船'], ['V', '呼叫补给舱（需 80 硝石）'],
-        ['T', '呼叫 M.U.L.E. 莫莉过来'], ['贴墙 + 空格', '蹬墙跳（爬出自己挖的竖井）'],
-        ['TAB', '地形扫描仪全图'], ['ESC', '暂停菜单']
+        ['A / D', L('左右移动')], ['空格 / W', L('跳跃')], ['鼠标', L('瞄准')],
+        ['鼠标左键', L('开火（当前武器）')], ['鼠标右键 / C', L('挖掘（镐 / 钻机）')],
+        ['1 / 2 / 滚轮', L('切换主副武器')], ['R', L('装填 · 配额完成后呼叫飞船')],
+        ['F', L('扔照明弹（照亮洞穴）')], ['G', L('手雷')], ['Q', L('职业装备（抓钩/平台/护盾/C4）')],
+        ['X', L('工程师：部署哨戒炮')], ['Shift + Q', L('命令 BOSCO 开采准星处矿石')],
+        ['E', L('交互：存矿 / 补给 / 登船')], ['V', L('呼叫补给舱（需 80 硝石）')],
+        ['T', L('呼叫 M.U.L.E. 莫莉过来')], ['贴墙 + 空格', L('蹬墙跳（爬出自己挖的竖井）')],
+        ['TAB', L('地形扫描仪全图')], ['ESC', L('暂停菜单')]
       ];
       $('#help-grid').innerHTML = rows.map(function (r) {
         return '<div class="help-item"><kbd>' + r[0] + '</kbd><span>' + r[1] + '</span></div>';
@@ -139,14 +139,14 @@
     buildSettings: function () {
       var o = DRG.opts();
       var defs = [
-        ['master', '总音量', 0, 1, .05],
-        ['sfx', '音效音量', 0, 1, .05],
-        ['voice', '语音音量', 0, 1, .05],
-        ['music', '环境音', 0, 1, .05],
-        ['darkness', '黑暗程度', 0, 1, .05],
-        ['shake', '镜头抖动', 0, 1, .1],
-        ['particles', '粒子密度', .3, 1, .1],
-        ['quality', '渲染精度', .6, 1.4, .1]
+        ['master', L('总音量'), 0, 1, .05],
+        ['sfx', L('音效音量'), 0, 1, .05],
+        ['voice', L('语音音量'), 0, 1, .05],
+        ['music', L('环境音'), 0, 1, .05],
+        ['darkness', L('黑暗程度'), 0, 1, .05],
+        ['shake', L('镜头抖动'), 0, 1, .1],
+        ['particles', L('粒子密度'), .3, 1, .1],
+        ['quality', L('渲染精度'), .6, 1.4, .1]
       ];
       var host = $('#set-list');
       host.innerHTML = defs.map(function (d) {
@@ -154,7 +154,7 @@
           '<input type="range" data-k="' + d[0] + '" min="' + d[2] + '" max="' + d[3] + '" step="' + d[4] + '" value="' + o[d[0]] + '">' +
           '<span data-v="' + d[0] + '">' + Math.round(o[d[0]] * 100) + '%</span></div>';
       }).join('') +
-        '<div class="set-row"><label>显示 FPS</label><input type="checkbox" data-k="fps"' + (o.fps ? ' checked' : '') + '><span></span></div>';
+        '<div class="set-row"><label>' + L('显示 FPS') + '</label><input type="checkbox" data-k="fps"' + (o.fps ? ' checked' : '') + '><span></span></div>';
 
       $$('#set-list input').forEach(function (inp) {
         inp.addEventListener('input', function () {
@@ -177,27 +177,27 @@
       var b = DRG.biomeById(UI.sel.biome), h = DRG.HAZARDS[UI.sel.haz - 1], c = DRG.classById(UI.sel.cls);
       var quota = Math.round(120 * h.quota);
       $('#brief-list').innerHTML =
-        '<li><span>主要目标</span><b>' + quota + ' 莫尔凯特</b></li>' +
-        '<li><span>虫潮强度</span><b>×' + h.rate.toFixed(2) + '</b></li>' +
-        '<li><span>敌人伤害</span><b>×' + h.dmgMul.toFixed(2) + '</b></li>' +
-        '<li><span>信用点奖励</span><b>×' + h.credit.toFixed(2) + '</b></li>' +
-        '<li><span>撤离时限</span><b>3:00</b></li>';
+        '<li><span>' + L('主要目标') + '</span><b>' + quota + L(' 莫尔凯特') + '</b></li>' +
+        '<li><span>' + L('虫潮强度') + '</span><b>×' + h.rate.toFixed(2) + '</b></li>' +
+        '<li><span>' + L('敌人伤害') + '</span><b>×' + h.dmgMul.toFixed(2) + '</b></li>' +
+        '<li><span>' + L('信用点奖励') + '</span><b>×' + h.credit.toFixed(2) + '</b></li>' +
+        '<li><span>' + L('撤离时限') + '</span><b>3:00</b></li>';
       var pv = $('#biome-preview');
       pv.style.backgroundImage = 'url(assets/img/' + DRG.IMG_MANIFEST[b.art] + ')';
-      pv.dataset.label = b.name + ' · ' + b.en;
+      pv.dataset.label = L(b.name) + ' · ' + b.en;
       $('#sel-summary').innerHTML =
-        '<b>' + b.name + '</b> · ' + h.name + ' · <b style="color:' + c.color + '">' + c.name + '</b><br>' +
-        '主武器 ' + DRG.WEAPONS[c.primary].name + ' / 副武器 ' + DRG.WEAPONS[c.secondary].name + ' · 装备 ' + c.tool.name;
+        '<b>' + L(b.name) + '</b> · ' + L(h.name) + ' · <b style="color:' + c.color + '">' + L(c.name) + '</b><br>' +
+        L('主武器 ') + L(DRG.WEAPONS[c.primary]) + L(' / 副武器 ') + L(DRG.WEAPONS[c.secondary]) + L(' · 装备 ') + L(c.tool.name);
     },
 
     refreshMenuStats: function () {
       var s = DRG.save.data, lv = DRG.levelFromXp(s.xp);
       $('#menu-stats').innerHTML =
-        '<div><b>' + M.fmtNum(s.credits) + '</b>信用点 CREDITS</div>' +
-        '<div><b>Lv.' + lv.level + '</b>矮人等级</div>' +
-        '<div><b>' + s.missions + '</b>完成任务</div>' +
-        '<div><b>' + M.fmtNum(s.kills) + '</b>击杀虫子</div>' +
-        '<div><b>' + M.fmtNum(s.morkite) + '</b>累计莫尔凯特</div>';
+        '<div><b>' + M.fmtNum(s.credits) + '</b>' + L('信用点 CREDITS') + '</div>' +
+        '<div><b>Lv.' + lv.level + '</b>' + L('矮人等级') + '</div>' +
+        '<div><b>' + s.missions + '</b>' + L('完成任务') + '</div>' +
+        '<div><b>' + M.fmtNum(s.kills) + '</b>' + L('击杀虫子') + '</div>' +
+        '<div><b>' + M.fmtNum(s.morkite) + '</b>' + L('累计莫尔凯特') + '</div>';
     },
 
     /* ---------------- descent transition ---------------- */
@@ -208,13 +208,13 @@
         podImage.src = podImage.dataset.src;
         delete podImage.dataset.src;
       }
-      $('#desc-title').textContent = '下降舱脱离中…';
-      $('#desc-sub').textContent = biome.name + ' · ' + biome.en + ' — 正在穿过地壳';
+      $('#desc-title').textContent = L('下降舱脱离中…');
+      $('#desc-sub').textContent = L(biome.name) + ' · ' + biome.en + L(' — 正在穿过地壳');
       el.classList.add('active');
       DRG.audio.sfx('podland');
       setTimeout(function () {
-        $('#desc-title').textContent = '接近洞穴层';
-        $('#desc-sub').textContent = '准备着陆 · ROCK AND STONE!';
+        $('#desc-title').textContent = L('接近洞穴层');
+        $('#desc-sub').textContent = L('准备着陆 · ROCK AND STONE!');
       }, 1100);
       setTimeout(function () {
         el.classList.remove('active');
@@ -239,38 +239,38 @@
       DRG.save.flush();
       if (DRG.integration) DRG.integration.complete(m, win, credits, xp);
 
-      $('#deb-title').textContent = win ? '任务完成 · MISSION COMPLETE' : '任务失败 · MISSION FAILED';
+      $('#deb-title').textContent = win ? L('任务完成 · MISSION COMPLETE') : L('任务失败 · MISSION FAILED');
       $('#deb-title').style.color = win ? '#7fff9a' : '#ff5a4a';
-      $('#deb-sub').textContent = (win ? '干得漂亮，矮人！' : (m.failReason || '再来一次。')) +
-        '　' + m.biome.name + ' · ' + m.hazard.name + ' · ' + DRG.classById(m.opt.cls).name + ' · 用时 ' + M.fmtTime(m.time);
+      $('#deb-sub').textContent = (win ? L('干得漂亮，矮人！') : (m.failReason ? L(m.failReason) : L('再来一次。'))) +
+        '　' + L(m.biome.name) + ' · ' + L(m.hazard.name) + ' · ' + L(DRG.classById(m.opt.cls).name) + L(' · 用时 ') + M.fmtTime(m.time);
       $('#deb-art').src = win ? 'assets/img/salute.png' : 'assets/img/bug_grunt.png';
 
       var rows = [
-        [m.isEscort ? '朵蕾妲推进进度'
-          : m.isPoint ? '入库矿块 AQUARQ'
-          : m.isSalv ? '矿骡修复 SALVAGE'
-          : '存入莫尔凯特 MORKITE',
+        [m.isEscort ? L('朵蕾妲推进进度')
+          : m.isPoint ? L('入库矿块 AQUARQ')
+          : m.isSalv ? L('矿骡修复 SALVAGE')
+          : L('存入莫尔凯特 MORKITE'),
           m.isEscort ? Math.round((m.doretta ? m.doretta.progress : 0) * 100) + '%'
           : m.isPoint ? m.chunksDeposited + ' / ' + m.pointQuota
-          : m.isSalv ? ((m.wreck ? m.wreck.installed : 0) + ' / 4') + (m.wreck && m.wreck.state === 'repaired' ? ' · 已修复' : '')
+          : m.isSalv ? ((m.wreck ? m.wreck.installed : 0) + ' / 4') + (m.wreck && m.wreck.state === 'repaired' ? L(' · 已修复') : '')
           : Math.floor(m.deposited.morkite) + ' / ' + m.quota, win],
-        ['存入硝石 NITRA', Math.floor(m.deposited.nitra)],
-        ['存入黄金 GOLD', Math.floor(m.deposited.gold)],
-        ['存入晶石 GEMS', Math.floor(m.deposited.crystal)],
-        ['开采矿石总量', Object.keys(mined).reduce(function (a, k) { return a + mined[k]; }, 0)],
-        ['击杀虫子 KILLS', s.kills],
-        ['挖穿方块 TILES DUG', s.dug],
-        ['遭遇虫潮 SWARMS', s.waves],
-        ['被击倒次数', s.downs],
-        ['获得信用点 CREDITS', '+' + M.fmtNum(credits), true],
-        ['获得经验 XP', '+' + M.fmtNum(xp), true]
+        [L('存入硝石 NITRA'), Math.floor(m.deposited.nitra)],
+        [L('存入黄金 GOLD'), Math.floor(m.deposited.gold)],
+        [L('存入晶石 GEMS'), Math.floor(m.deposited.crystal)],
+        [L('开采矿石总量'), Object.keys(mined).reduce(function (a, k) { return a + mined[k]; }, 0)],
+        [L('击杀虫子 KILLS'), s.kills],
+        [L('挖穿方块 TILES DUG'), s.dug],
+        [L('遭遇虫潮 SWARMS'), s.waves],
+        [L('被击倒次数'), s.downs],
+        [L('获得信用点 CREDITS'), '+' + M.fmtNum(credits), true],
+        [L('获得经验 XP'), '+' + M.fmtNum(xp), true]
       ];
       $('#deb-stats').innerHTML = rows.map(function (r) {
         return '<div class="deb-row' + (r[2] ? ' good' : '') + '"><span>' + r[0] + '</span><b>' + r[1] + '</b></div>';
       }).join('');
 
       var lv = DRG.levelFromXp(sv.xp);
-      $('#deb-level').textContent = '矮人等级 Lv.' + lv.level;
+      $('#deb-level').textContent = L('矮人等级 Lv.') + lv.level;
       $('#deb-xpnum').textContent = M.fmtNum(lv.xp) + ' / ' + M.fmtNum(lv.need) + ' XP';
       $('#deb-xpfill').style.width = '0%';
       setTimeout(function () { $('#deb-xpfill').style.width = Math.round(lv.xp / lv.need * 100) + '%'; }, 120);
@@ -341,7 +341,7 @@
           else if (act === 'settings') { UI.closeModals(); UI.modal('settings'); }
           else if (act === 'abandon') { UI.closeModals(); DRG.game.abandon(); }
           else if (act === 'reset') {
-            if (confirm('确定要清空本地存档（信用点 / 等级 / 统计）吗？')) {
+            if (confirm(L('确定要清空本地存档（信用点 / 等级 / 统计）吗？'))) {
               DRG.save.reset(); UI.refreshMenuStats(); UI.buildSettings();
             }
           }

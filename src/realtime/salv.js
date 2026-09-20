@@ -117,7 +117,7 @@
     this.state = 'idle';
     this.x = p.x; this.y = p.y - 10;
     this.vx = (Math.random() - 0.5) * 50; this.vy = -110;
-    if (m) m.toast('矿骡腿掉落了——回来按 E 重新扛起', '#ffb03c', 3);
+    if (m) m.toast(L('矿骡腿掉落了——回来按 E 重新扛起'), '#ffb03c', 3);
   };
   MuleLeg.prototype.draw = function (g, cam) {
     if (this.state === 'installed') return;
@@ -172,15 +172,15 @@
     this.installed++;
     this.legs.push(leg);
     m.fx.burst(this.x, this.y - 26, 16, { col: ['#b0ff7a', '#e8ffd0', '#ffd76a'], speed: 190, life: 0.5, kind: 1 });
-    m.fx.text(this.x, this.y - 70, '矿骡腿 ' + this.installed + '/4', '#b0ff7a', 16);
+    m.fx.text(this.x, this.y - 70, L('矿骡腿 ') + this.installed + '/4', '#b0ff7a', 16);
     DRG.audio.sfx('deposit');
     DRG.audio.clipOf(['rns_1', 'rns_2', 'rns_3'], 0.6, true);
     if (this.installed >= 4) {
       this.state = 'ready';
-      m.mc('所有矿骡腿都已装上！现在修复她——长按互动键，我们会送她回家的！');
-      m.toast('四条腿装齐 · 对准矿骡长按 E 修复（松开保留进度）', '#b0ff7a', 6);
+      m.mc(L('所有矿骡腿都已装上！现在修复她——长按互动键，我们会送她回家的！'));
+      m.toast(L('四条腿装齐 · 对准矿骡长按 E 修复（松开保留进度）'), '#b0ff7a', 6);
     } else {
-      m.toast('矿骡腿已安装（' + this.installed + '/4）· 防御虫来袭！', '#ff8a5a', 3);
+      m.toast(L('矿骡腿已安装（') + this.installed + L('/4）· 防御虫来袭！'), '#ff8a5a', 3);
     }
     return true;
   };
@@ -258,13 +258,13 @@
     // 修复进度环
     if (this.state === 'ready' && this.repairT > 0.02) {
       gfx.ring(g, sx, sy - 64, 20, this.repairFrac(), '#b0ff7a', 5);
-      gfx.text(g, this.repairing ? '修复中 ' + Math.round(this.repairFrac() * 100) + '%' : '修复进度 ' + Math.round(this.repairFrac() * 100) + '%（长按 E 继续）',
+      gfx.text(g, this.repairing ? L('修复中 ') + Math.round(this.repairFrac() * 100) + '%' : L('修复进度 ') + Math.round(this.repairFrac() * 100) + '%' + L('（长按 E 继续）'),
         sx, sy - 92, { size: 12, align: 'center', col: this.repairing ? '#b0ff7a' : '#cfd8e0' });
     } else if (this.state === 'ready') {
-      gfx.text(g, '长按 E 修复矿骡', sx, sy - 64 + Math.sin(this.t * 4) * 2,
+      gfx.text(g, L('长按 E 修复矿骡'), sx, sy - 64 + Math.sin(this.t * 4) * 2,
         { size: 13, align: 'center', col: gfx.pulse(this.t, '#b0ff7a', '#ffffff', 6), alpha: 0.9 });
     } else if (this.state === 'await') {
-      gfx.text(g, '矿骡残骸 · 还差 ' + (4 - this.installed) + ' 条腿', sx, sy - 60,
+      gfx.text(g, L('矿骡残骸 · 还差 ') + (4 - this.installed) + L(' 条腿'), sx, sy - 60,
         { size: 12, align: 'center', col: '#9aa8b6', alpha: 0.85 });
     }
     if (this.state === 'repaired') {

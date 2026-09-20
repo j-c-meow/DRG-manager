@@ -31,10 +31,12 @@ function migrateLegacyRealtimeStorage(){
    玩家开局登记代号后，日志/文案里"称呼位"的管理层自动升级为「管理层·代号」。
    只命中称呼位：管理层后紧跟标点/空白/串尾；复合词（如"管理层入职培训""管理层决策"）不受影响。 */
 function mgrTitle(){
-  return (S && S.managerName) ? ('管理层·' + S.managerName) : '管理层';
+  const base = (typeof currentLang === 'function' && currentLang() === 'en') ? 'Management' : '管理层';
+  return (S && S.managerName) ? (base + '·' + S.managerName) : base;
 }
 function applyMgrTitle(msg){
   if(!S || !S.managerName) return msg;
+  if(typeof currentLang === 'function' && currentLang() === 'en') return msg;   /* EN 文案无中文称呼位 */
   return String(msg).replace(/管理层(?=[，。！？、；：…—!? ]|$)/g, mgrTitle());
 }
 

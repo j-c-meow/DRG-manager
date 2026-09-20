@@ -99,7 +99,7 @@ function doCheat(code){
   S.campaign = {ci:0, si:0, prog:0};
   S.unlocked = {kpi:true, bar:true, market:true, med:true, gear:true};   /* F10：测试码=全解锁 */
   S.flags.prologueDone = true;
-  log('【测试协议 '+code+'】权限溢出确认：全模组解锁、资源注满、精英全员到齐、深潜刷新。请勿告诉财务部。', 'gold');
+  log(L('【测试协议 ')+code+L('】权限溢出确认：全模组解锁、资源注满、精英全员到齐、深潜刷新。请勿告诉财务部。'), 'gold');
   lastSig = ''; renderAll(); save();
 }
 document.addEventListener('keydown', e => {
@@ -124,7 +124,7 @@ function showCredits(){
         '<div><dt>'+L('参考项目')+'</dt><dd><a href="https://github.com/Flora233333/deep-rock-galactic-html" target="_blank" rel="noopener noreferrer">DS / Flora233333 · deep-rock-galactic-html</a></dd></div>'+
       '</dl>'+
       '<p class="credits-note">'+L('非商业粉丝作品，与 Ghost Ship Games 无隶属关系。游戏名称、美术、音频及商标归原权利人所有。')+'</p>'+
-      '<div class="credits-actions"><button class="btn pri" onclick="closeModal(true)">返回管理终端</button></div>'+
+      '<div class="credits-actions"><button class="btn pri" onclick="closeModal(true)">'+L('返回管理终端')+'</button></div>'+
     '</div>',
     true
   );
@@ -234,27 +234,27 @@ function nameBlacklisted(name){
   return NAME_BLACKLIST.some(b => norm.includes(b.toLowerCase().replace(/\s+/g,'')));
 }
 function showNameRegistration(){
-  showModal('<h3 style="color:var(--amber)">入职登记 · 代号核验</h3>'+
-    '<div class="note" style="margin:8px 0">集团规定：每位管理层须登记专属代号。此后董事会与全钻台将以「管理层·代号」称呼您。（留空则只称"管理层"）</div>'+
-    '<input id="reg-name" class="opt" style="text-align:center" maxlength="12" placeholder="例如：铁心、老矿灯" autocomplete="off" spellcheck="false">'+
-    '<div class="row" style="margin-top:10px"><button class="btn pri" id="reg-go" style="width:100%">登记完成</button></div>', true);
+  showModal('<h3 style="color:var(--amber)">'+L('入职登记 · 代号核验')+'</h3>'+
+    '<div class="note" style="margin:8px 0">'+L('集团规定：每位管理层须登记专属代号。此后董事会与全钻台将以「管理层·代号」称呼您。（留空则只称"管理层"）')+'</div>'+
+    '<input id="reg-name" class="opt" style="text-align:center" maxlength="12" placeholder="'+L('例如：铁心、老矿灯')+'" autocomplete="off" spellcheck="false">'+
+    '<div class="row" style="margin-top:10px"><button class="btn pri" id="reg-go" style="width:100%">'+L('登记完成')+'</button></div>', true);
   const inp = document.getElementById('reg-name');
   if(inp) inp.focus();
   $('#reg-go').onclick = () => {
     const name = (document.getElementById('reg-name').value||'').trim().slice(0,12);
     if(nameBlacklisted(name)){
-      log('【人事系统】代号核验失败：「'+name+'」已列入永不录用黑名单（案底：剽窃游戏攻略、攻击 Mod 作者与难度代码作者）。', 'bad');
-      showModal('<h3 style="color:var(--red)">⛔ 代号核验未通过</h3>'+
-        '<div class="note" style="margin:8px 0">人事档案提示：「<b style="color:var(--red)">'+name+'</b>」已被集团列入【永不录用】黑名单。<br>案底：剽窃游戏攻略、攻击 Mod 作者与难度代码作者。</div>'+
-        '<div class="note" style="margin:8px 0;color:var(--amber)">请更换一个体面的代号重新登记。</div>'+
-        '<div class="row"><button class="btn pri" id="reg-again" style="width:100%">重新登记</button></div>', true);
+      log(L('【人事系统】代号核验失败：「')+name+L('」已列入永不录用黑名单（案底：剽窃游戏攻略、攻击 Mod 作者与难度代码作者）。'), 'bad');
+      showModal('<h3 style="color:var(--red)">'+L('⛔ 代号核验未通过')+'</h3>'+
+        '<div class="note" style="margin:8px 0">'+L('人事档案提示：「<b style="color:var(--red)">')+name+L('</b>」已被集团列入【永不录用】黑名单。<br>案底：剽窃游戏攻略、攻击 Mod 作者与难度代码作者。')+'</div>'+
+        '<div class="note" style="margin:8px 0;color:var(--amber)">'+L('请更换一个体面的代号重新登记。')+'</div>'+
+        '<div class="row"><button class="btn pri" id="reg-again" style="width:100%">'+L('重新登记')+'</button></div>', true);
       $('#reg-again').onclick = showNameRegistration;
       return;
     }
     S.managerName = name;
     S.flags.nameChosen = true;
     closeModal(true);
-    log(name ? ('代号登记完成：从今天起，您就是 '+mgrTitle()+'。欢迎加入 17 号钻台。') : '跳过代号登记。集团将继续称呼您为管理层。', 'gold');
+    log(name ? (L('代号登记完成：从今天起，您就是 ')+mgrTitle()+L('。欢迎加入 17 号钻台。')) : L('跳过代号登记。集团将继续称呼您为管理层。'), 'gold');
     renderAll(); save();
   };
 }
@@ -282,7 +282,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if(dt > 60){
       const gm = dt * CFG.RATE * CFG.OFFLINE_EFF;
       worldAdvance(gm, true);
-      log(L('离线报告：你离开了 '+ (dt/3600).toFixed(1) +' 小时，钻台以 10% 效率运转。'), 'sys');
+      log(L('离线报告：你离开了 ')+ (dt/3600).toFixed(1) +L(' 小时，钻台以 10% 效率运转。'), 'sys');
     }
     S.lastReal = Date.now();
     /* 挂机收益自动弹（用户 09-19）：重开页面期间有派遣入账 → 进界面自动弹收益报告
@@ -405,8 +405,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   if(/MicroMessenger/i.test(navigator.userAgent)){
     const wxbar = document.createElement('div');
     wxbar.style.cssText = 'margin:0 0 8px;padding:7px 10px;font-size:12px;background:#33270f;border:1px solid #7d5a42;border-radius:3px;color:var(--amber);display:flex;gap:8px;align-items:center;';
-    wxbar.innerHTML = '<span style="flex:1;">微信内仅能试玩：无法"添加到主屏幕"，后台运行易被回收。建议点右上角菜单选"在浏览器打开"。</span>'+
-      '<button class="btn" id="btn-wx-close">知道了</button>';
+    wxbar.innerHTML = '<span style="flex:1;">'+L('微信内仅能试玩：无法"添加到主屏幕"，后台运行易被回收。建议点右上角菜单选"在浏览器打开"。')+'</span>'+
+      '<button class="btn" id="btn-wx-close">'+L('知道了')+'</button>';
     const appEl = document.getElementById('app');
     appEl.insertBefore(wxbar, appEl.firstChild);
     document.getElementById('btn-wx-close').onclick = () => wxbar.remove();
@@ -431,7 +431,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   try{
     const bv = document.querySelector('meta[name="drg-build-version"]')?.content;
     const fv = document.querySelector('.footer-version');
-    if(bv && fv) fv.textContent = '构建 ' + bv.slice(0, 12) + '　　在更深处，遇见更大的明天。';
+    if(bv && fv) fv.textContent = L('构建 ') + bv.slice(0, 12) + L('　　在更深处，遇见更大的明天。');
   }catch(e){}
   /* 挂机券：3 小时自动游玩（自动事件决策 + 自动派遣空闲矿工） */
   const toggleAuto = () => {

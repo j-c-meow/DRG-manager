@@ -222,7 +222,7 @@
       p.flares = p.maxFlares; p.grenades = p.maxGrenades;
       p.toolCharges = p.cls.tool.charges;
       if (p.cls.extra) p.extraCharges = p.cls.extra.charges;
-      m.toast('已补给：弹药 / 装备 / 生命', '#8ad4ff', 3);
+      m.toast(L('已补给：弹药 / 装备 / 生命'), '#8ad4ff', 3);
       DRG.audio.sfx('uibig');
     },
 
@@ -436,7 +436,7 @@
     drawBadge: function (g, view) {
       if (!AP.on) return;
       DRG.gfx.panel(g, view.w - 178, view.h - 46, 168, 34, { fill: 'rgba(30,12,4,0.85)', corner: false });
-      DRG.gfx.text(g, '自动演示中 · AUTOPILOT', view.w - 94, view.h - 23, {
+      DRG.gfx.text(g, L('自动演示中 · AUTOPILOT'), view.w - 94, view.h - 23, {
         size: 13, align: 'center', col: DRG.gfx.pulse(performance.now() / 1000, '#ffb03c', '#ffffff', 5)
       });
     }

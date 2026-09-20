@@ -150,50 +150,50 @@
 
     // gentle onboarding: the controls that matter, spread over the first minute
     this.hints = [
-      { t: 3.5, text: '按住鼠标右键对着岩壁挖掘 · 绿色晶体是莫尔凯特', col: '#3ad98a' },
-      { t: 11, text: '洞穴很黑 — 按 F 扔出照明弹', col: '#ffb03c' },
-      { t: 19, text: '矿石会自动进背包 · 走到莫莉 M.U.L.E. 旁按 E 存放（按 T 呼叫她）', col: '#8ad4ff' },
-      { t: 27, text: '存够 80 硝石后按 V 呼叫补给舱 · 左键开火，Q 使用职业装备', col: '#ffd76a' },
-      { t: 36, text: '贴着墙按空格可以蹬墙跳，爬出自己挖的竖井', col: '#c8a4ff' }
+      { t: 3.5, text: L('按住鼠标右键对着岩壁挖掘 · 绿色晶体是莫尔凯特'), col: '#3ad98a' },
+      { t: 11, text: L('洞穴很黑 — 按 F 扔出照明弹'), col: '#ffb03c' },
+      { t: 19, text: L('矿石会自动进背包 · 走到莫莉 M.U.L.E. 旁按 E 存放（按 T 呼叫她）'), col: '#8ad4ff' },
+      { t: 27, text: L('存够 80 硝石后按 V 呼叫补给舱 · 左键开火，Q 使用职业装备'), col: '#ffd76a' },
+      { t: 36, text: L('贴着墙按空格可以蹬墙跳，爬出自己挖的竖井'), col: '#c8a4ff' }
     ];
     if (this.isEscort) {
       this.hints = [
-        { t: 3.5, text: '朵蕾妲会自动掘进——跟紧她，别让她孤军奋战', col: '#ffb03c' },
-        { t: 11, text: '虫子会优先啃咬朵蕾妲——听到「遭受攻击」警报立刻回防', col: '#ff8a5a' },
-        { t: 19, text: '她停车时会放下燃料罐：走近按 E 拾起，再对油箱口按 E 加入', col: '#ffd76a' },
-        { t: 27, text: '存够 80 硝石后按 V 呼叫补给舱 · 左键开火，Q 使用职业装备', col: '#8ad4ff' }
+        { t: 3.5, text: L('朵蕾妲会自动掘进——跟紧她，别让她孤军奋战'), col: '#ffb03c' },
+        { t: 11, text: L('虫子会优先啃咬朵蕾妲——听到「遭受攻击」警报立刻回防'), col: '#ff8a5a' },
+        { t: 19, text: L('她停车时会放下燃料罐：走近按 E 拾起，再对油箱口按 E 加入'), col: '#ffd76a' },
+        { t: 27, text: L('存够 80 硝石后按 V 呼叫补给舱 · 左键开火，Q 使用职业装备'), col: '#8ad4ff' }
       ];
     }
     if (this.isPoint) {
       this.hints = [
-        { t: 3.5, text: '定点提取：跟着蓝色光柱找到富矿信标（共 3 处）', col: '#7fd4ff' },
-        { t: 11, text: '走近信标按住左键钻采大矿结，采出的矿块顶在头上', col: '#7fd4ff' },
-        { t: 19, text: '携带矿块时移速 -10%、只能用副手武器——把它搬回莫莉旁按 E 入库', col: '#ffd76a' },
-        { t: 27, text: '每入库 1 块会引来一小波虫潮；集齐 ' + this.pointQuota + ' 块即可撤离', col: '#ff8a5a' }
+        { t: 3.5, text: L('定点提取：跟着蓝色光柱找到富矿信标（共 3 处）'), col: '#7fd4ff' },
+        { t: 11, text: L('走近信标按住左键钻采大矿结，采出的矿块顶在头上'), col: '#7fd4ff' },
+        { t: 19, text: L('携带矿块时移速 -10%、只能用副手武器——把它搬回莫莉旁按 E 入库'), col: '#ffd76a' },
+        { t: 27, text: L('每入库 1 块会引来一小波虫潮；集齐 ') + this.pointQuota + L(' 块即可撤离'), col: '#ff8a5a' }
       ];
     }
     if (this.isSalv) {
       this.hints = [
-        { t: 3.5, text: '搜救行动：信号信标指向失联的矿骡腿——跟着 HUD 箭头走', col: '#ffd76a' },
-        { t: 11, text: '走近矿骡腿按 E 扛起来：移速 -30%，只能用副手武器', col: '#b0ff7a' },
-        { t: 19, text: '把腿搬到矿骡残骸处按 E 安装；每装一条会刷出防御虫', col: '#ff8a5a' },
-        { t: 27, text: '四条腿装齐后，对准矿骡长按 E 修复 3 秒（松开保留进度）', col: '#b0ff7a' }
+        { t: 3.5, text: L('搜救行动：信号信标指向失联的矿骡腿——跟着 HUD 箭头走'), col: '#ffd76a' },
+        { t: 11, text: L('走近矿骡腿按 E 扛起来：移速 -30%，只能用副手武器'), col: '#b0ff7a' },
+        { t: 19, text: L('把腿搬到矿骡残骸处按 E 安装；每装一条会刷出防御虫'), col: '#ff8a5a' },
+        { t: 27, text: L('四条腿装齐后，对准矿骡长按 E 修复 3 秒（松开保留进度）'), col: '#b0ff7a' }
       ];
     }
     if (this.isRefi) {
       this.hints = [
-        { t: 3.5, text: '就地精炼：在精炼单元旁按 E 领取管道段（移速 -20%，只能用副手武器）', col: '#6fbde8' },
-        { t: 11, text: '跟着蓝色光柱找到墨菱油井——对准油井按 E 铺设管线并安装泵', col: '#6fbde8' },
-        { t: 19, text: '泵会自动抽油汇进精炼单元；虫子会专门啃泵——听到警报就回防', col: '#ff8a5a' },
-        { t: 27, text: '泵停摆后长按 E 修理（松开保留进度）；集齐 ' + this.oilQuota + ' 单位原油即可撤离', col: '#3ad98a' }
+        { t: 3.5, text: L('就地精炼：在精炼单元旁按 E 领取管道段（移速 -20%，只能用副手武器）'), col: '#6fbde8' },
+        { t: 11, text: L('跟着蓝色光柱找到墨菱油井——对准油井按 E 铺设管线并安装泵'), col: '#6fbde8' },
+        { t: 19, text: L('泵会自动抽油汇进精炼单元；虫子会专门啃泵——听到警报就回防'), col: '#ff8a5a' },
+        { t: 27, text: L('泵停摆后长按 E 修理（松开保留进度）；集齐 ') + this.oilQuota + L(' 单位原油即可撤离'), col: '#3ad98a' }
       ];
     }
     if (this.isElim) {
       this.hints = [
-        { t: 3.5, text: '消灭任务：直捣竞技场中心——对无畏虫茧长按 E 破茧（2 秒）', col: '#ff7a5a' },
-        { t: 11, text: '无畏机甲处于装甲态：只有腹部发光弱点吃伤害（×3），打装甲基本刮痧', col: '#ffb03c' },
-        { t: 19, text: '弱点会随时间换位——听到低吼就找橙色的光；它还会召唤小虫', col: '#ff8a5a' },
-        { t: 27, text: '血量过半它会狂暴：移速/攻速 +30%，还会吐酸弹三连——保持走位', col: '#ff5a4a' }
+        { t: 3.5, text: L('消灭任务：直捣竞技场中心——对无畏虫茧长按 E 破茧（2 秒）'), col: '#ff7a5a' },
+        { t: 11, text: L('无畏机甲处于装甲态：只有腹部发光弱点吃伤害（×3），打装甲基本刮痧'), col: '#ffb03c' },
+        { t: 19, text: L('弱点会随时间换位——听到低吼就找橙色的光；它还会召唤小虫'), col: '#ff8a5a' },
+        { t: 27, text: L('血量过半它会狂暴：移速/攻速 +30%，还会吐酸弹三连——保持走位'), col: '#ff5a4a' }
       ];
     }
 
@@ -307,15 +307,15 @@
     this.stats.downs++;
     var cd = this.bosco.reviveCd;
     this.toast(cd > 0
-      ? 'BOSCO 复活模块充能中（' + Math.ceil(cd) + 's）— 撑住！'
-      : '你被击倒了！BOSCO 正在赶来…', '#ff5a4a', 4);
+      ? L('BOSCO 复活模块充能中（') + Math.ceil(cd) + L('s）— 撑住！')
+      : L('你被击倒了！BOSCO 正在赶来…'), '#ff5a4a', 4);
     DRG.audio.sfx('alarm');
   };
 
   Mission.prototype.onPlayerDead = function () {
     if (this.state === 'failed' || this.state === 'success') return;
     this.state = 'failed';
-    this.failReason = '矮人失去意识 · DWARF DOWN';
+    this.failReason = L('矮人失去意识 · DWARF DOWN');
     DRG.audio.stopAmbience();
   };
   Mission.prototype.onPlayerRevived = function () {
@@ -323,7 +323,7 @@
       this.state = 'play';
       this.failReason = null;
       DRG.audio.startAmbience(this.biome.tint);
-      this.toast('BOSCO 把你从鬼门关拉了回来 — 继续挖!', '#7ad7ff', 4);
+      this.toast(L('BOSCO 把你从鬼门关拉了回来 — 继续挖!'), '#7ad7ff', 4);
     }
   };
 
@@ -364,7 +364,7 @@
     if (best) {
       best.state = 'carried';
       p.carriedCan = best;
-      this.toast('拾起燃料罐 · 送到朵蕾妲油箱口按 E 加入', '#ffd76a', 2.5);
+      this.toast(L('拾起燃料罐 · 送到朵蕾妲油箱口按 E 加入'), '#ffd76a', 2.5);
       DRG.audio.sfx('beep');
       return true;
     }
@@ -387,16 +387,16 @@
   Mission.prototype.onDorettaArrived = function () {
     this.defenseT = 20;
     this.defenseWave = 0;
-    this.mc('完成！奥魔兰心石，我们来了！', 'mc_countdown');
-    this.toast('心石防守：守住朵蕾妲 20 秒！', '#ff7adf', 5);
+    this.mc(L('完成！奥魔兰心石，我们来了！'), 'mc_countdown');
+    this.toast(L('心石防守：守住朵蕾妲 20 秒！'), '#ff7adf', 5);
     DRG.audio.sfx('alarm');
   };
 
   Mission.prototype.onDorettaDestroyed = function () {
     if (this.state === 'failed' || this.state === 'success') return;
     this.state = 'failed';
-    this.failReason = '朵蕾妲被摧毁 · DRILLDOZER LOST';
-    this.toast('朵蕾妲被摧毁了……任务失败', '#ff5a4a', 5);
+    this.failReason = L('朵蕾妲被摧毁 · DRILLDOZER LOST');
+    this.toast(L('朵蕾妲被摧毁了……任务失败'), '#ff5a4a', 5);
     DRG.audio.stopAmbience();
   };
 
@@ -407,7 +407,7 @@
     this.state = 'success';
     this.stats.credits += 420 * this.hazard.credit;
     this.stats.xp += 520 * this.hazard.xp;
-    this.mc('完成！奥魔兰心石，我们来了！', 'mc_complete_1');
+    this.mc(L('完成！奥魔兰心石，我们来了！'), 'mc_complete_1');
     DRG.audio.clipOf(['salute_1', 'salute_2', 'salute_3'], 0.9, true);
     DRG.audio.stopAmbience();
   };
@@ -491,7 +491,7 @@
     this.props.push(c);
     this.fx.burst(x, y, 18, { col: ['#7fd4ff', '#c8ecff', '#ffffff'], speed: 220, life: 0.6, kind: 1 });
     DRG.audio.clipOf(['lootbug', 'rns_5'], 0.5, true);
-    this.toast('采出矿块！按 E 扛起来（只能用副手武器）', '#7fd4ff', 3);
+    this.toast(L('采出矿块！按 E 扛起来（只能用副手武器）'), '#7fd4ff', 3);
     return c;
   };
 
@@ -514,7 +514,7 @@
         best.state = 'carried';
         p.carriedItem = best;
         p.toolSelected = false;
-        this.toast('扛起矿块 · 搬回莫莉处按 E 入库', '#7fd4ff', 2.5);
+        this.toast(L('扛起矿块 · 搬回莫莉处按 E 入库'), '#7fd4ff', 2.5);
         DRG.audio.sfx('beep');
         return true;
       }
@@ -533,7 +533,7 @@
     this.stats.credits += 26 * this.hazard.credit;
     this.stats.xp += 30 * this.hazard.xp;
     this.mule.flash = 1;
-    this.fx.text(this.mule.x, this.mule.y - 50, '入库 ' + this.chunksDeposited + ' / ' + this.pointQuota, '#7fd4ff', 16);
+    this.fx.text(this.mule.x, this.mule.y - 50, L('入库 ') + this.chunksDeposited + ' / ' + this.pointQuota, '#7fd4ff', 16);
     DRG.audio.sfx('deposit');
     DRG.audio.clipOf(['rns_4', 'rns_5', 'rns_6'], 0.55, true);
     this.spawnWaveAt(this.mule.x, this.mule.y, 0.85);   // 每入库 1 块触发一小波虫潮
@@ -543,8 +543,8 @@
   Mission.prototype.checkObjectivePoint = function () {
     if (this.objectiveDone || this.chunksDeposited < this.pointQuota) return;
     this.objectiveDone = true;
-    this.mc('定点提取完成！矿块全部入库，撤离飞船正在赶来。', 'mc_objective_1');
-    this.toast('配额达成 · 撤离飞船已呼叫', '#7fff9a', 6);
+    this.mc(L('定点提取完成！矿块全部入库，撤离飞船正在赶来。'), 'mc_objective_1');
+    this.toast(L('配额达成 · 撤离飞船已呼叫'), '#7fff9a', 6);
     DRG.audio.clipOf(['salute_1', 'salute_2', 'salute_3'], 0.9, true);
     this.stats.credits += 250 * this.hazard.credit;
     this.stats.xp += 320 * this.hazard.xp;
@@ -571,7 +571,7 @@
         best.state = 'carried';
         p.carriedItem = best;
         p.toolSelected = false;
-        this.toast('扛起矿骡腿 · 送到矿骡残骸处按 E 安装', '#b0ff7a', 2.5);
+        this.toast(L('扛起矿骡腿 · 送到矿骡残骸处按 E 安装'), '#b0ff7a', 2.5);
         DRG.audio.sfx('beep');
         return true;
       }
@@ -592,7 +592,7 @@
         if (this.repairWaveT <= 0) {
           this.repairWaveT = 6.5 / this.hazard.rate;
           this.spawnWaveAt(w.x, w.y, 0.8);              // 修复期间持续刷虫
-          this.toast('防御虫涌向矿骡——顶住！', '#ff5a4a', 2.5);
+          this.toast(L('防御虫涌向矿骡——顶住！'), '#ff5a4a', 2.5);
         }
       }
     }
@@ -602,8 +602,8 @@
   /** 修复完成 → 自动呼叫撤离 */
   Mission.prototype.onWreckRepaired = function () {
     if (this.state !== 'play') return;
-    this.mc('矿骡修好了！她能自己走回降落区——我们撤！');
-    this.toast('矿骡已修复 · 撤离飞船已呼叫', '#7fff9a', 6);
+    this.mc(L('矿骡修好了！她能自己走回降落区——我们撤！'));
+    this.toast(L('矿骡已修复 · 撤离飞船已呼叫'), '#7fff9a', 6);
     DRG.audio.clipOf(['salute_1', 'salute_2', 'salute_3'], 0.9, true);
     this.stats.credits += 300 * this.hazard.credit;
     this.stats.xp += 380 * this.hazard.xp;
@@ -634,8 +634,8 @@
   Mission.prototype.checkObjectiveRefi = function () {
     if (this.objectiveDone || this.oilRefined < this.oilQuota) return;
     this.objectiveDone = true;
-    this.mc('精炼配额达成！原油全部入罐，撤离飞船正在赶来。', 'mc_objective_1');
-    this.toast('配额达成 · 撤离飞船已呼叫', '#7fff9a', 6);
+    this.mc(L('精炼配额达成！原油全部入罐，撤离飞船正在赶来。'), 'mc_objective_1');
+    this.toast(L('配额达成 · 撤离飞船已呼叫'), '#7fff9a', 6);
     DRG.audio.clipOf(['salute_1', 'salute_2', 'salute_3'], 0.9, true);
     this.stats.credits += 280 * this.hazard.credit;
     this.stats.xp += 340 * this.hazard.xp;
@@ -677,7 +677,7 @@
       if (pumping.length) {
         var target = pumping[(Math.random() * pumping.length) | 0];
         this.spawnWaveAt(target.x, target.y, 0.85);
-        this.toast('警报：虫群扑向油井的泵！', '#ff5a4a', 3);
+        this.toast(L('警报：虫群扑向油井的泵！'), '#ff5a4a', 3);
       }
     }
   };
@@ -704,8 +704,8 @@
   /** 破茧完成：无畏机甲破土而出 */
   Mission.prototype.onCocoonBroken = function (cocoon) {
     if (this.state !== 'play') return;
-    this.mc('壳裂开了——无畏机甲！打它的腹部弱点，那是唯一的破口！');
-    this.toast('无畏机甲出场 · 装甲态：找橙色的弱点核', '#ff7a5a', 6);
+    this.mc(L('壳裂开了——无畏机甲！打它的腹部弱点，那是唯一的破口！'));
+    this.toast(L('无畏机甲出场 · 装甲态：找橙色的弱点核'), '#ff7a5a', 6);
     DRG.audio.clip('prae_scream', 1);
     DRG.audio.sfx('alarm');
     this.shake(10, 0.5);
@@ -720,8 +720,8 @@
   /** Boss 血尽 → 胜利 */
   Mission.prototype.onDreadDead = function () {
     if (this.state !== 'play') return;
-    this.mc('干得漂亮！无畏机甲倒下了——任务完成，矮人！');
-    this.toast('消灭确认 · DREADNOUGHT DOWN', '#7fff9a', 6);
+    this.mc(L('干得漂亮！无畏机甲倒下了——任务完成，矮人！'));
+    this.toast(L('消灭确认 · DREADNOUGHT DOWN'), '#7fff9a', 6);
     DRG.audio.clipOf(['salute_1', 'salute_2', 'salute_3'], 0.9, true);
     this.objectiveDone = true;
     this.stats.credits += 420 * this.hazard.credit;
@@ -751,12 +751,12 @@
       credits += n * DRG.ORE_INFO[k].value;
       p.carry[k] = 0;
     }
-    if (!any) { this.toast('背包是空的', '#9aa4b0', 1.2); return; }
+    if (!any) { this.toast(L('背包是空的'), '#9aa4b0', 1.2); return; }
     this.stats.deposits++;
     this.stats.credits += credits * this.hazard.credit;
     this.mule.flash = 1;
     DRG.audio.sfx('deposit');
-    this.fx.text(this.mule.x, this.mule.y - 46, '存入 ' + any + ' 单位', '#7fff9a', 16);
+    this.fx.text(this.mule.x, this.mule.y - 46, L('存入 ') + any + L(' 单位'), '#7fff9a', 16);
     DRG.audio.clipOf(['rns_4', 'rns_5', 'rns_6'], 0.55, true);
     this.checkObjective();
   };
@@ -765,8 +765,8 @@
     if (this.objectiveDone || this.isEscort || this.isPoint || this.isSalv || this.isRefi || this.isElim) return;
     if (this.deposited.morkite >= this.quota) {
       this.objectiveDone = true;
-      this.mc('主要目标完成！莫尔凯特配额已达成，按 R 呼叫撤离飞船。', 'mc_objective_1');
-      this.toast('主要目标完成 · 按 R 呼叫飞船', '#7fff9a', 6);
+      this.mc(L('主要目标完成！莫尔凯特配额已达成，按 R 呼叫撤离飞船。'), 'mc_objective_1');
+      this.toast(L('主要目标完成 · 按 R 呼叫飞船'), '#7fff9a', 6);
       DRG.audio.clipOf(['salute_1', 'salute_2', 'salute_3'], 0.9, true);
       this.stats.credits += 250 * this.hazard.credit;
       this.stats.xp += 320 * this.hazard.xp;
@@ -774,12 +774,12 @@
   };
 
   Mission.prototype.callResupply = function () {
-    if (this.nitraBank < 80) { this.toast('硝石不足：需要 80（当前 ' + Math.floor(this.nitraBank) + '）', '#ff8a5a'); return; }
+    if (this.nitraBank < 80) { this.toast(L('硝石不足：需要 80（当前 ') + Math.floor(this.nitraBank) + L('）'), '#ff8a5a'); return; }
     var spot = this.findStandSpotNear(this.player.x, this.player.y - 10, 6);
-    if (!spot) { this.toast('这里没有空间投放补给舱', '#ff8a5a'); return; }
+    if (!spot) { this.toast(L('这里没有空间投放补给舱'), '#ff8a5a'); return; }
     this.nitraBank -= 80;
     this.props.push(new DRG.Ent.Resupply(spot.x, spot.y));
-    this.mc('补给舱已发射，注意上方。', 'mc_resupply');
+    this.mc(L('补给舱已发射，注意上方。'), 'mc_resupply');
     DRG.audio.clipOf(['dwarf_resupply_1', 'dwarf_resupply_2'], 0.9, true);
   };
 
@@ -790,8 +790,8 @@
     this.state = 'extract';
     this.escapeTime = 180;
     this.pod = new DRG.Ent.DropPod(spot.x, spot.y);
-    this.mc('撤离飞船正在下降！全速返回，虫子已经闻到你了！', 'mc_pod_arrived');
-    this.toast('撤离倒计时开始 · 快跑！', '#ff8a3a', 5);
+    this.mc(L('撤离飞船正在下降！全速返回，虫子已经闻到你了！'), 'mc_pod_arrived');
+    this.toast(L('撤离倒计时开始 · 快跑！'), '#ff8a3a', 5);
     DRG.audio.sfx('alarm');
     this.spawnWave(2.2);
   };
@@ -837,8 +837,8 @@
     }
     if (spawned) {
       DRG.audio.clipOf(['swarm_detect_1', 'swarm_detect_2'], 0.85, true);
-      this.toast('警报：虫潮来袭！(第 ' + this.waveNo + ' 波)', '#ff5a4a', 4);
-      this.mc('检测到大量生物信号 — 一大波虫子正在靠近！');
+      this.toast(L('警报：虫潮来袭！(第 ') + this.waveNo + L(' 波)'), '#ff5a4a', 4);
+      this.mc(L('检测到大量生物信号 — 一大波虫子正在靠近！'));
       DRG.audio.sfx('alarm');
     }
     this.nextWave = (this.state === 'extract' ? 26 : 68 + Math.random() * 34) / haz.rate;
@@ -909,7 +909,7 @@
               p.flares = p.maxFlares; p.grenades = p.maxGrenades;
               p.toolCharges = p.cls.tool.charges;
               if (p.cls.extra) p.extraCharges = p.cls.extra.charges;
-              this.toast('已补给：弹药 / 装备 / 生命', '#8ad4ff', 3);
+              this.toast(L('已补给：弹药 / 装备 / 生命'), '#8ad4ff', 3);
               DRG.audio.sfx('uibig');
               used = true;
               break;
@@ -923,7 +923,7 @@
       if (I.hit('KeyT')) {
         this.mule.state = 'called';
         this.mule.lost = 3.2;                       // she will reroute if she cannot walk it
-        this.toast('已呼叫 M.U.L.E.（莫莉）过来', '#8ad4ff', 2);
+        this.toast(L('已呼叫 M.U.L.E.（莫莉）过来'), '#8ad4ff', 2);
         DRG.audio.sfx('beep');
       }
       if (I.hit('KeyQ') && I.key('ShiftLeft', 'ShiftRight')) this.commandBosco();
@@ -952,7 +952,7 @@
         if (this.nextWave <= 0) this.spawnWave(1.4);
         if (this.escapeTime <= 0) {
           this.state = 'failed';
-          this.failReason = '错过撤离窗口 · LEFT BEHIND';
+          this.failReason = L('错过撤离窗口 · LEFT BEHIND');
           if (this.pod) this.pod.state = 'launching';
           DRG.audio.stopAmbience();
         }
@@ -973,7 +973,7 @@
           if (esc && M.dist(esc.x, esc.y, pl.x, pl.y) > 8) {
             pl.x = esc.x; pl.y = esc.y; pl.vx = pl.vy = 0;
             this.world.digCircle(pl.x, pl.y - 16, 34, 400, this.tileFx);
-            this.toast('岩层塌方 — 你被推到了一处空腔', '#ffb03c', 3);
+            this.toast(L('岩层塌方 — 你被推到了一处空腔'), '#ffb03c', 3);
           }
         }
       }
@@ -1021,10 +1021,10 @@
     var hit = this.world.ray(p.x, p.y - 18, Math.cos(p.aim), Math.sin(p.aim), 700);
     if (hit.hit && DRG.ORE_OF[this.world.at(hit.tx, hit.ty)]) {
       this.bosco.commandMine(hit.tx, hit.ty);
-      this.toast('BOSCO：正在开采标记的矿石', '#7ad7ff', 2);
+      this.toast(L('BOSCO：正在开采标记的矿石'), '#7ad7ff', 2);
       DRG.audio.sfx('beep');
     } else {
-      this.toast('用准星指向矿石后再按 Shift+Q', '#9aa4b0', 2);
+      this.toast(L('用准星指向矿石后再按 Shift+Q'), '#9aa4b0', 2);
     }
   };
 
@@ -1221,41 +1221,41 @@
   Mission.prototype.drawMarkers = function (g, cam, view) {
     var targets = [];
     if (this.doretta) {
-      targets.push({ x: this.doretta.x, y: this.doretta.y - 30, col: '#ffb03c', label: '朵蕾妲' });
+      targets.push({ x: this.doretta.x, y: this.doretta.y - 30, col: '#ffb03c', label: L('朵蕾妲') });
       if (this.player.carriedCan && !this.doretta.dead)
-        targets.push({ x: this.doretta.fuelPort().x, y: this.doretta.fuelPort().y - 14, col: '#ffd76a', label: '油箱口' });
+        targets.push({ x: this.doretta.fuelPort().x, y: this.doretta.fuelPort().y - 14, col: '#ffd76a', label: L('油箱口') });
     } else {
       targets.push({ x: this.mule.x, y: this.mule.y - 20, col: '#8ad4ff', label: 'M.U.L.E.' });
-      if (this.pod) targets.push({ x: this.pod.x, y: this.pod.y - 40, col: '#7fff9a', label: '撤离' });
+      if (this.pod) targets.push({ x: this.pod.x, y: this.pod.y - 40, col: '#7fff9a', label: L('撤离') });
       for (var i = 0; i < this.props.length; i++)
-        if (this.props[i] instanceof DRG.Ent.Resupply) targets.push({ x: this.props[i].x, y: this.props[i].y - 20, col: '#ffd76a', label: '补给' });
+        if (this.props[i] instanceof DRG.Ent.Resupply) targets.push({ x: this.props[i].x, y: this.props[i].y - 20, col: '#ffd76a', label: L('补给') });
       if (this.isPoint) {
         for (i = 0; i < this.beacons.length; i++) {
           var b = this.beacons[i];
-          if (b.state === 'active') targets.push({ x: b.x, y: b.y - 46, col: '#7fd4ff', label: '富矿点' });
+          if (b.state === 'active') targets.push({ x: b.x, y: b.y - 46, col: '#7fd4ff', label: L('富矿点') });
         }
       }
       if (this.isSalv && this.wreck) {
         for (i = 0; i < this.props.length; i++) {
           var leg = this.props[i];
-          if (leg instanceof DRG.MuleLeg && leg.state === 'idle') targets.push({ x: leg.x, y: leg.y - 26, col: '#b0ff7a', label: '矿骡腿' });
+          if (leg instanceof DRG.MuleLeg && leg.state === 'idle') targets.push({ x: leg.x, y: leg.y - 26, col: '#b0ff7a', label: L('矿骡腿') });
         }
         if (this.wreck.state !== 'repaired' || this.player.carriedItem)
-          targets.push({ x: this.wreck.x, y: this.wreck.y - 40, col: '#8ad4ff', label: '矿骡残骸' });
+          targets.push({ x: this.wreck.x, y: this.wreck.y - 40, col: '#8ad4ff', label: L('矿骡残骸') });
       }
       if (this.isRefi) {
-        if (this.refinery) targets.push({ x: this.refinery.x, y: this.refinery.y - 66, col: '#8ad4ff', label: '精炼单元' });
+        if (this.refinery) targets.push({ x: this.refinery.x, y: this.refinery.y - 66, col: '#8ad4ff', label: L('精炼单元') });
         for (var rw = 0; rw < this.wells.length; rw++) {
           var well = this.wells[rw];
-          if (well.state === 'dry') targets.push({ x: well.x, y: well.y - 66, col: '#ffd76a', label: '油井' });
-          else if (well.state === 'broken') targets.push({ x: well.x, y: well.y - 66, col: '#ff5a4a', label: '泵停摆' });
+          if (well.state === 'dry') targets.push({ x: well.x, y: well.y - 66, col: '#ffd76a', label: L('油井') });
+          else if (well.state === 'broken') targets.push({ x: well.x, y: well.y - 66, col: '#ff5a4a', label: L('泵停摆') });
         }
       }
       if (this.isElim) {
-        if (this.cocoon && this.cocoon.state === 'intact') targets.push({ x: this.cocoon.x, y: this.cocoon.y - 64, col: '#ff7a5a', label: '虫茧' });
+        if (this.cocoon && this.cocoon.state === 'intact') targets.push({ x: this.cocoon.x, y: this.cocoon.y - 64, col: '#ff7a5a', label: L('虫茧') });
         if (this.boss && !this.boss.dead) {
           var wp = this.boss.weakPos();
-          targets.push({ x: wp.x, y: wp.y - 22, col: '#ffb03c', label: '弱点' });
+          targets.push({ x: wp.x, y: wp.y - 22, col: '#ffb03c', label: L('弱点') });
         }
       }
     }

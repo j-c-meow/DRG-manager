@@ -43,7 +43,7 @@
     this.state = 'idle';
     this.x = p.x; this.y = p.y - 10;
     this.vx = (Math.random() - 0.5) * 50; this.vy = -110;
-    if (m) m.toast('管道段掉落了——回来按 E 重新扛起', '#ffb03c', 3);
+    if (m) m.toast(L('管道段掉落了——回来按 E 重新扛起'), '#ffb03c', 3);
   };
   PipeSeg.prototype.draw = function (g, cam) {
     if (this.state === 'laid') return;
@@ -90,7 +90,7 @@
     seg.state = 'carried';
     p.carriedItem = seg;
     p.toolSelected = false;
-    m.toast('领到管道段 · 送到油井处按 E 铺设并安装泵', '#6fbde8', 3);
+    m.toast(L('领到管道段 · 送到油井处按 E 铺设并安装泵'), '#6fbde8', 3);
     DRG.audio.sfx('beep');
     return true;
   };
@@ -167,7 +167,7 @@
     g.restore();
 
     // 标签
-    gfx.text(g, '精炼单元', sx, sy - 62, { size: 12, align: 'center', col: '#9ad7ff', alpha: 0.8 });
+    gfx.text(g, L('精炼单元'), sx, sy - 62, { size: 12, align: 'center', col: '#9ad7ff', alpha: 0.8 });
   };
   RefineryUnit.prototype.lights = function (cam) {
     var sx = this.x - cam.x, sy = this.y - cam.y;
@@ -207,11 +207,11 @@
     this.pumpT = 0;
     this.pipe = { x1: m.refinery.x, y1: m.refinery.y - 30, x2: this.x, y2: this.y - 18 };
     m.fx.burst(this.x, this.y - 20, 18, { col: ['#6fbde8', '#c8ecff', '#ffd76a'], speed: 200, life: 0.55, kind: 1 });
-    m.fx.text(this.x, this.y - 74, '泵已启动', '#6fbde8', 15);
+    m.fx.text(this.x, this.y - 74, L('泵已启动'), '#6fbde8', 15);
     DRG.audio.sfx('deposit');
     DRG.audio.clipOf(['rns_1', 'rns_2', 'rns_3'], 0.55, true);
     m.spawnWaveAt(this.x, this.y, 0.9);         // 泵的轰鸣引来第一波虫
-    m.toast('管线接通 · 泵开始抽油！小心虫子啃泵', '#6fbde8', 4);
+    m.toast(L('管线接通 · 泵开始抽油！小心虫子啃泵'), '#6fbde8', 4);
     return true;
   };
 
@@ -225,7 +225,7 @@
       this.state = 'broken';
       this.repairT = 0;
       m.explode(this.x, this.y - 20, 60, 0, 0);
-      m.toast('泵被虫子打坏了！长按 E 修理', '#ff5a4a', 4);
+      m.toast(L('泵被虫子打坏了！长按 E 修理'), '#ff5a4a', 4);
       DRG.audio.sfx('alarm');
     }
   };
@@ -250,7 +250,7 @@
       this.state = 'pumping';
       this.hp = this.maxHp;
       this.repairing = false;
-      m.fx.text(this.x, this.y - 74, '泵修复', '#7fff9a', 15);
+      m.fx.text(this.x, this.y - 74, L('泵修复'), '#7fff9a', 15);
       DRG.audio.clipOf(['rns_4', 'rns_5'], 0.5, true);
       return false;
     }
@@ -356,15 +356,15 @@
 
     // 状态提示
     if (this.state === 'dry') {
-      gfx.text(g, '油井 · 未装泵', sx, sy - 66, { size: 12, align: 'center', col: '#ffd76a', alpha: 0.85 });
+      gfx.text(g, L('油井 · 未装泵'), sx, sy - 66, { size: 12, align: 'center', col: '#ffd76a', alpha: 0.85 });
     } else if (this.state === 'broken') {
-      gfx.text(g, '泵停摆', sx, sy - 66, { size: 12, align: 'center', col: gfx.pulse(t, '#ff4a3a', '#ffb0a0', 8) });
+      gfx.text(g, L('泵停摆'), sx, sy - 66, { size: 12, align: 'center', col: gfx.pulse(t, '#ff4a3a', '#ffb0a0', 8) });
       if (this.repairT > 0.02) {
         gfx.ring(g, sx, sy - 88, 16, this.repairFrac(), '#7fff9a', 4);
-        gfx.text(g, (this.repairing ? '修理中 ' : '修理进度 ') + Math.round(this.repairFrac() * 100) + '%' + (this.repairing ? '' : '（长按 E 继续）'),
+        gfx.text(g, (this.repairing ? L('修理中 ') : L('修理进度 ')) + Math.round(this.repairFrac() * 100) + '%' + (this.repairing ? '' : L('（长按 E 继续）')),
           sx, sy - 112, { size: 12, align: 'center', col: this.repairing ? '#7fff9a' : '#cfd8e0' });
       } else {
-        gfx.text(g, '长按 E 修理', sx, sy - 88 + Math.sin(t * 5) * 2, { size: 12, align: 'center', col: gfx.pulse(t, '#7fff9a', '#ffffff', 6), alpha: 0.85 });
+        gfx.text(g, L('长按 E 修理'), sx, sy - 88 + Math.sin(t * 5) * 2, { size: 12, align: 'center', col: gfx.pulse(t, '#7fff9a', '#ffffff', 6), alpha: 0.85 });
       }
     }
   };

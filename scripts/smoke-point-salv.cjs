@@ -32,6 +32,13 @@ function load(rel) {
   new Function('window', code)(global);
 }
 global.DRG = global.DRG || global.window.DRG || {};
+/* i18n：与浏览器同序，lang-en.js 先于 realtime 脚本加载（无头环境 TEXT 给空壳：
+   zh 模式 L() 原文直返不查表，词条逻辑不受影响） */
+global.TEXT = global.TEXT || {};
+new Function('window',
+  fs.readFileSync(path.join(ROOT, 'src/manager/lang-en.js'), 'utf8') +
+  '\n;window.L = L; window.I18N_EN = I18N_EN; window.currentLang = currentLang; window.applyLang = applyLang;'
+)(global);
 load('src/realtime/core.js');
 load('src/realtime/world.js');
 load('src/realtime/particles.js');

@@ -126,7 +126,7 @@ Player.prototype.carryWarn = function (m) {
   if (this.t - (this._carryWarnT || -9) < 2.5) return;
   this._carryWarnT = this.t;
   var lock = DRG.carryRestriction(this);
-  m.toast('怀里抱着' + (lock ? lock.label : '物品') + '——只能用副手武器', '#ffb03c', 2);
+  m.toast(L('怀里抱着') + (lock ? L(lock.label) : L('携带物')) + L('——只能用副手武器'), '#ffb03c', 2);
   DRG.audio.sfx('beep');
 };
 
@@ -168,20 +168,20 @@ Player.prototype.carryWarn = function (m) {
     this.shield = this.maxShield;
     DRG.audio.sfx('revive');
     DRG.audio.clipOf(['rns_1', 'rns_2', 'rns_3'], 0.8, true);
-    m.toast('BOSCO 完成救援 · REVIVED', '#7ad7ff');
+    m.toast(L('BOSCO 完成救援 · REVIVED'), '#7ad7ff');
     if (m.onPlayerRevived) m.onPlayerRevived();
   };
 
   Player.prototype.pickUp = function (ore, n, m) {
     var total = this.carry.morkite + this.carry.nitra + this.carry.gold + this.carry.crystal;
     if (total >= this.carryCap) {
-      m.toast('背包已满，去 M.U.L.E. 处存放！', '#ffb03c');
+      m.toast(L('背包已满，去 M.U.L.E. 处存放！'), '#ffb03c');
       return false;
     }
     this.carry[ore] += n;
     m.stats.mined[ore] = (m.stats.mined[ore] || 0) + n;
     DRG.audio.sfx('ore', m.panOf(this.x));
-    m.fx.text(this.x, this.y - 40, '+' + n + ' ' + DRG.ORE_INFO[ore].name, DRG.ORE_INFO[ore].color, 13);
+    m.fx.text(this.x, this.y - 40, '+' + n + ' ' + L(DRG.ORE_INFO[ore].name), DRG.ORE_INFO[ore].color, 13);
     return true;
   };
 
@@ -388,7 +388,7 @@ Player.prototype.carryWarn = function (m) {
         m.fx.burst(hit.x, hit.y, 2, { col: ['#ffffff', '#c8d0e0'], speed: 130, life: 0.25, size: 2, kind: 1 });
         DRG.audio.sfx('pick', m.panOf(this.x), 1.6);
       }
-      if (!this.hardWarn || this.t - this.hardWarn > 3) { this.hardWarn = this.t; m.toast('这是无法挖掘的硬岩！', '#ff8a5a'); }
+      if (!this.hardWarn || this.t - this.hardWarn > 3) { this.hardWarn = this.t; m.toast(L('这是无法挖掘的硬岩！'), '#ff8a5a'); }
       return;
     }
 
@@ -461,7 +461,7 @@ Player.prototype.carryWarn = function (m) {
     if ((i === this.cur && !this.toolSelected) || this.reload > 0) return;
     this.cur = i; this.toolSelected = false; this.spin = 0;
     DRG.audio.sfx('ui');
-    m.toast(W[this.weapons[i]].name, '#ffd76a', 0.9);
+    m.toast(L(W[this.weapons[i]]), '#ffd76a', 0.9);
   };
 
   Player.prototype.switchTool = function (m) {
@@ -470,7 +470,7 @@ Player.prototype.carryWarn = function (m) {
     this.spin = 0;
     this.releaseFire(0, m);
     DRG.audio.sfx('ui');
-    m.toast(this.toolSelected ? this.cls.tool.name + ' · 左键使用' : W[this.weapons[this.cur]].name, this.toolSelected ? '#8ad4ff' : '#ffd76a', 1.1);
+    m.toast(this.toolSelected ? L(this.cls.tool.name) + L(' · 左键使用') : L(W[this.weapons[this.cur]]), this.toolSelected ? '#8ad4ff' : '#ffd76a', 1.1);
   };
 
   Player.prototype.startReload = function (m) {
@@ -478,7 +478,7 @@ Player.prototype.carryWarn = function (m) {
     if (this.reload > 0 || this.ammo[this.cur] <= 0 || this.mag[this.cur] >= wp.mag) return;
     this.reload = wp.flame ? 2.2 : (wp.mag > 100 ? 3.4 : 1.9);
     DRG.audio.sfx('beep');
-    m.toast('装填中…', '#9ad7ff', 0.6);
+    m.toast(L('装填中…'), '#9ad7ff', 0.6);
   };
 
   Player.prototype.releaseFire = function (dt, m) {
@@ -578,7 +578,7 @@ Player.prototype.carryWarn = function (m) {
 
   /* ---------------- gadgets ---------------- */
   Player.prototype.throwFlare = function (m) {
-    if (this.flares <= 0) { m.toast('照明弹用完了', '#ff8a5a'); return; }
+    if (this.flares <= 0) { m.toast(L('照明弹用完了'), '#ff8a5a'); return; }
     this.flares--;
     var a = this.aim;
     m.flares.push(new DRG.Ent.Flare(
@@ -588,7 +588,7 @@ Player.prototype.carryWarn = function (m) {
   };
 
   Player.prototype.throwGrenade = function (m) {
-    if (this.grenades <= 0) { m.toast('手雷用完了', '#ff8a5a'); return; }
+    if (this.grenades <= 0) { m.toast(L('手雷用完了'), '#ff8a5a'); return; }
     this.grenades--;
     var a = this.aim;
     m.props.push(new DRG.Ent.Explosive({
@@ -611,7 +611,7 @@ Player.prototype.carryWarn = function (m) {
       DRG.audio.sfx('grapple', m.panOf(this.x));
       return;
     }
-    if (this.toolCharges <= 0) { m.toast('装备充能耗尽 · 用补给舱补充', '#ff8a5a'); return; }
+    if (this.toolCharges <= 0) { m.toast(L('装备充能耗尽 · 用补给舱补充'), '#ff8a5a'); return; }
     if (tool.id === 'platform') {
       var h2 = m.world.ray(this.x, this.y - 18, Math.cos(this.aim), Math.sin(this.aim), 420);
       var px = h2.hit ? h2.x - Math.cos(this.aim) * 6 : h2.x, py = h2.hit ? h2.y - Math.sin(this.aim) * 6 : h2.y;
@@ -620,7 +620,7 @@ Player.prototype.carryWarn = function (m) {
         var tx = tx0 + dx;
         if (m.world.at(tx, ty0) === DRG.TT.EMPTY) { m.world.set(tx, ty0, DRG.TT.PLATFORM); placed++; }
       }
-      if (!placed) { m.toast('这里放不下平台', '#ff8a5a'); return; }
+      if (!placed) { m.toast(L('这里放不下平台'), '#ff8a5a'); return; }
       this.toolCharges--; this.toolCd = tool.cd;
       DRG.audio.sfx('platform', m.panOf(this.x));
       m.fx.burst(px, py, 10, { col: ['#7fb0ff', '#d0e8ff'], speed: 140, life: 0.4, size: 2.6, kind: 1 });
@@ -631,7 +631,7 @@ Player.prototype.carryWarn = function (m) {
       m.shield = m.props[m.props.length - 1];
       this.toolCharges--; this.toolCd = tool.cd;
       DRG.audio.sfx('shield');
-      m.toast('护盾发生器展开', '#8ad4ff');
+      m.toast(L('护盾发生器展开'), '#8ad4ff');
       return;
     }
     if (tool.id === 'c4') {
@@ -643,7 +643,7 @@ Player.prototype.carryWarn = function (m) {
       });
       m.props.push(this.c4);
       this.toolCharges--; this.toolCd = 0.4;
-      m.toast('C4 已布置 · 再按 Q 引爆', '#ffb03c');
+      m.toast(L('C4 已布置 · 再按 Q 引爆'), '#ffb03c');
       DRG.audio.sfx('beep');
     }
   };
@@ -656,13 +656,13 @@ Player.prototype.carryWarn = function (m) {
   Player.prototype.useExtra = function (m) {
     var ex = this.cls.extra;
     if (!ex || this.extraCd > 0) return;
-    if (this.extraCharges <= 0) { m.toast('哨戒炮充能耗尽', '#ff8a5a'); return; }
+    if (this.extraCharges <= 0) { m.toast(L('哨戒炮充能耗尽'), '#ff8a5a'); return; }
     var gy = m.world.findFloorBelow(Math.floor(this.x / T), Math.floor((this.y - 20) / T), 6);
-    if (gy < 0) { m.toast('需要平整地面', '#ff8a5a'); return; }
+    if (gy < 0) { m.toast(L('需要平整地面'), '#ff8a5a'); return; }
     m.props.push(new DRG.Ent.Sentry(this.x, gy * T + T));
     this.extraCharges--; this.extraCd = ex.cd;
     DRG.audio.sfx('platform');
-    m.toast('哨戒炮已部署', '#ffd76a');
+    m.toast(L('哨戒炮已部署'), '#ffd76a');
   };
 
   Player.prototype.updateGrapple = function (dt, m) {
@@ -733,7 +733,7 @@ Player.prototype.carryWarn = function (m) {
 
     if (this.downed) {
       gfx.sprite(g, A().get(c.body), sx, sy - 12, bodyH * 0.8, { rot: 1.35 * this.face, flip: this.face < 0 });
-      gfx.text(g, '倒地! ' + Math.ceil(this.bleed) + 's', sx, sy - 44, { size: 15, align: 'center', col: '#ff5a4a' });
+      gfx.text(g, L('倒地! ') + Math.ceil(this.bleed) + 's', sx, sy - 44, { size: 15, align: 'center', col: '#ff5a4a' });
       return;
     }
 

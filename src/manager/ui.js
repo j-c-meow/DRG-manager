@@ -8,11 +8,12 @@ function fmtDur(gm){
   return (gm/60).toFixed(1)+L(' 游戏小时');
 }
 /* 实时小游戏接线（二期拍板 exp/escort/point/salv，三期放开 refi/elim）：
-   board 卡按钮文案按类型显示（护送=实时护送，其余=实时进入）；
+   board 卡按钮文案按类型显示（exp=实时进入，其余按任务类型实时护送/定点提取/搜救/精炼/消灭）；
    清账行动期间的危 5 任务＝终局任务：强制实时，派遣按钮导向终局编队入口 */
 const LIVE_TYPES = ['exp','escort','point','salv','refi','elim'];
 const isLiveType = (t) => LIVE_TYPES.indexOf(t) >= 0;
-const liveBtnText = (t) => t==='escort' ? L('实时护送') : L('实时进入');
+const liveBtnText = (t) => L(t==='escort' ? '实时护送' : t==='point' ? '实时定点提取' : t==='salv' ? '实时搜救'
+  : t==='refi' ? '实时精炼' : t==='elim' ? '实时消灭' : '实时进入');
 const isForcedFinale = (m) => isForcedFinaleMission(m);   /* 实现在 realtime-controller.js */
 /* ---------------- 成就系统（四系统补充设计 §一，40 项） ---------------- */
 const ACHIEVEMENTS = [
@@ -190,7 +191,7 @@ function renderBoard(){
       '<button class="btn pri" id="btn-karl-dispatch">'+L('派遣卡尔')+'</button></div>';
   }
   if(!S.board.length){
-    html = '<div class="board-empty"><img src="assets/img/w_pickaxe.png" alt="矿镐"><strong>'+TEXT.ui_mission_empty+'</strong></div>';
+    html = '<div class="board-empty"><img src="assets/img/w_pickaxe.png" alt="'+L('矿镐')+'"><strong>'+TEXT.ui_mission_empty+'</strong></div>';
   }
   if(S.campaign && CAMPAIGNS[S.campaign.ci]){
     const cst = CAMPAIGNS[S.campaign.ci].steps[S.campaign.si];
@@ -267,7 +268,7 @@ function renderDeps(){
       '<button class="btn warn" data-rt-recall>'+L('召回')+'</button></div></div>';
   }
   if(!S.deps.length && !S.realtime){
-    html = '<div class="dispatch-empty"><div class="dispatch-holo-wrap"><img class="dispatch-holo" src="assets/img/w_pickaxe.png" alt="矿镐"></div>'+
+    html = '<div class="dispatch-empty"><div class="dispatch-holo-wrap"><img class="dispatch-holo" src="assets/img/w_pickaxe.png" alt="'+L('矿镐')+'"></div>'+
       '<strong>'+L('当前没有进行中的派遣任务')+'</strong>'+
       '<p>'+L('派遣矿工前往未知的深处，挖掘属于集团的财富。')+'</p>'+
       '<button class="btn pri" data-select-mission>'+L('选择任务并派遣')+'</button></div>';
@@ -397,7 +398,7 @@ function renderGear(){
     });
     html += '<div class="note">'+L('功绩点来源：深潜（每周最多 10）+ 季度 KPI +5 + 危5 任务 +1 + 精英虫 +1。空闲精英每游戏日收集 1 个匠器（下阶段开放）。')+'</div>';
   } else {
-    html += '<div class="note">'+TEXT.el_ui_locked.replace('Lv10', 'Lv10（当前 Lv.'+S.rigLv+'）')+'</div>';
+    html += '<div class="note">'+TEXT.el_ui_locked.replace('Lv10', 'Lv10'+L('（当前 Lv.')+S.rigLv+L('）'))+'</div>';
   }
   /* 饰品（B-5）：全队佩戴；第二饰品槽（09-19 拍板）：任一矿工晋升≥3★解锁，效果叠加 */
   html += '<h3 class="sec">'+TEXT.tr_ui_title+'</h3><div class="note">'+TEXT.tr_ui_sub+'</div>';
@@ -541,7 +542,7 @@ function renderGear(){
   const gf = $('#side').querySelector('[data-gearfold]');
   if(gf) gf.onclick = () => {
     const box = $('#side').querySelector('[data-gearrule]');
-    if(box){ const open = box.style.display === 'none'; box.style.display = open ? 'block' : 'none'; gf.textContent = open ? '▾ 携带规则与升级详情' : '▸ 携带规则与升级详情'; }
+    if(box){ const open = box.style.display === 'none'; box.style.display = open ? 'block' : 'none'; gf.textContent = open ? L('▾ 携带规则与升级详情') : L('▸ 携带规则与升级详情'); }
   };
   /* 饰品佩戴/取下（第二槽：晋升≥3★ 门禁 + 同名唯一沿用） */
   const ut = $('#btn-uneq-tr');
@@ -828,7 +829,7 @@ function renderSys(){
     if(S.credits < cost){ log(L('代币不足，集团休假申请被驳回。休眠舱也是要收费的。'), 'bad'); return; }
     S.credits -= cost;
     worldAdvance(7*1440, true);
-    log(TEXT.ch_jump_brief.replace('{days}', 7)+'（-'+cost+' 代币）', 'sys');
+    log(TEXT.ch_jump_brief.replace('{days}', 7)+L('（-')+cost+L(' 代币）'), 'sys');
     chronicleTick(); renderAll(); save();
   };
 }
@@ -882,11 +883,11 @@ function stateSig(){
 function marketBuy(k, qty){
   const p = S.market.prices[k]; if(!p) return;
   if(qty === 'max'){ const u = Math.ceil(p*1.05); qty = Math.max(0, Math.floor(S.credits/u)); }
-  if(qty <= 0){ log('代币不足，买不起最小单位。', 'bad'); return; }
+  if(qty <= 0){ log(L('代币不足，买不起最小单位。'), 'bad'); return; }
   const cost = Math.ceil(p*qty*(1+TRADE_FEE));
   if(S.credits < cost) return;
   S.credits -= cost; S[k] = (S[k]||0) + qty;
-  log('交易站买入 '+k+'×'+qty+'，花费 '+cost+' 代币（含 5% 手续费）。集团感谢你的信任。', '');
+  log(L('交易站买入 ')+k+'×'+qty+L('，花费 ')+cost+L(' 代币（含 5% 手续费）。集团感谢你的信任。'), '');
   renderAll(); save();
 }
 /* ---------------- 深潜系统（B-4 双轨 WEEKLY_DIVE 版） ---------------- */
@@ -1069,7 +1070,7 @@ function diveSettle(d){
         if(cb.morkite){ S.morkite += cb.morkite; S.kpi.done += cb.morkite; cp.push(L('墨菱石×')+cb.morkite); }
         if(cb.blankMod){ S.blanks = (S.blanks||0) + cb.blankMod; cp.push(L('空白模组×')+cb.blankMod); }
         if(cb.merit){ S.merit = (S.merit||0) + cb.merit; cp.push(L('功绩点×')+cb.merit); }
-        awardRandomTrinket((d.diveVariant==='normal'?'深潜':'精英深潜')+'通关');
+        awardRandomTrinket((d.diveVariant==='normal'?L('深潜'):L('精英深潜'))+L('通关'));
         log(d.diveVariant==='elite'
           ? TEXT.dd_elite_clear+L('（奖励：')+cp.join(L('、'))+L('）')
           : TEXT['dd_clear_'+(Math.random()<0.5?'a':'b')]+L('（奖励：')+cp.join(L('、'))+L('）'), 'gold');

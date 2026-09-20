@@ -50,15 +50,15 @@ function openRealtime(mid){
   const cost = realtimeCost(m);
   let html = '<h3 style="color:var(--amber)">▶ '+liveTitle+' · '+L(biomeById(m.biome).name)+'</h3>'+
     '<div class="note">'+liveDesc+'</div>'+
-    '<div class="meta">危险等级 '+'★'.repeat(m.hazard)+'　出舱补给 -'+cost+' 硝石（持有 '+Math.floor(S.nitra)+'）</div>'+
-    '<h3 class="sec">选择主控矿工</h3>';
-  if(!idle.length) html += '<div class="note">没有士气 ≥25 的空闲矿工。</div>';
+    '<div class="meta">'+L('危险等级 ')+'★'.repeat(m.hazard)+L('　出舱补给 -')+cost+L(' 硝石（持有 ')+Math.floor(S.nitra)+L('）')+'</div>'+
+    '<h3 class="sec">'+L('选择主控矿工')+'</h3>';
+  if(!idle.length) html += '<div class="note">'+L('没有士气 ≥25 的空闲矿工。')+'</div>';
   idle.forEach((mn,i)=>{
-    const fit = mn.cls===t.best ? ' <span style="color:var(--green)">✔ 任务适配</span>' : '';
+    const fit = mn.cls===t.best ? ' <span style="color:var(--green)">'+L('✔ 任务适配')+'</span>' : '';
     html += '<label class="row" style="cursor:pointer"><input type="radio" name="rt-miner" data-rt-miner="'+mn.id+'" '+(i===0?'checked':'')+'>'+
-      minerName(mn)+' · '+CLASSES[mn.cls].name+' Lv.'+mn.lv+fit+'</label>';
+      minerName(mn)+' · '+L(CLASSES[mn.cls].name)+' Lv.'+mn.lv+fit+'</label>';
   });
-  html += '<button class="btn live" id="rt-start" style="width:100%;margin-top:8px" '+(!idle.length || S.nitra<cost?'disabled':'')+'>进入洞穴</button>';
+  html += '<button class="btn live" id="rt-start" style="width:100%;margin-top:8px" '+(!idle.length || S.nitra<cost?'disabled':'')+'>'+L('进入洞穴')+'</button>';
   showModal(html, false);
   const start = $('#rt-start');
   if(start) start.onclick = () => {
@@ -98,7 +98,7 @@ function openFinaleRealtime(mid){
   const names = squad.map(minerName).join('、');
   let html = '<h3 style="color:var(--red)">▶ '+L('终局任务 · 必须亲自下场')+' · '+L(biomeById(m.biome).name)+'</h3>'+
     '<div class="note">'+L('清账行动的终局任务不接受挂机派遣：管理层必须亲自进入洞穴。系统将自动编入最多 4 名最适矿工，胜利后按实战表现结算并推进战役；失败后任务回到任务板，可重新编队再战。')+'</div>'+
-    '<div class="meta">危险等级 '+'★'.repeat(m.hazard)+'　出舱补给 -'+cost+' 硝石（持有 '+Math.floor(S.nitra)+'）</div>'+
+    '<div class="meta">'+L('危险等级 ')+'★'.repeat(m.hazard)+L('　出舱补给 -')+cost+L(' 硝石（持有 ')+Math.floor(S.nitra)+L('）')+'</div>'+
     '<h3 class="sec">'+L('终局编队已就绪')+'</h3>'+
     (squad.length ? '<div class="note">'+names+'</div>' : '<div class="note">'+L('没有可出勤的矿工（需空闲且士气 ≥25）。')+'</div>')+
     '<button class="btn live" id="finale-go" style="width:100%;margin-top:8px" '+(!squad.length || S.nitra<cost?'disabled':'')+'>'+L('进入洞穴')+'</button>';
@@ -124,12 +124,12 @@ function startFinaleMission(m, squad, cost){
       finale:true,
     });
   }catch(error){
-    log('终局任务启动失败：'+(error && error.message || error), 'bad');
+    log(L('终局任务启动失败：')+(error && error.message || error), 'bad');
     closeModal(true);
     return;
   }
   DRG.integration.setRequest(request);
-  log('▶ 终局任务：'+minerName(lead)+' 领队（'+squad.map(minerName).join('、')+'）亲自进入 '+biomeById(m.biome).name+'。胜则全队即刻结算，败则任务回板再战。', 'gold');
+  log(L('▶ 终局任务：')+minerName(lead)+L(' 领队（')+squad.map(minerName).join(L('、'))+L('）亲自进入 ')+L(biomeById(m.biome).name)+L('。胜则全队即刻结算，败则任务回板再战。'), 'gold');
   save();
   openRealtimeGame();
 }
@@ -186,7 +186,7 @@ function settleManagerRealtimeAbsence(){
   const dt = (now - S.lastReal) / 1000;
   if(dt > 60){
     worldAdvance(Math.min(dt, 48 * 3600) * CFG.RATE * CFG.OFFLINE_EFF, true);
-    log('离线报告：实时下矿期间，钻台以 10% 效率运转了 '+(dt/3600).toFixed(1)+' 小时。', 'sys');
+    log(L('离线报告：实时下矿期间，钻台以 10% 效率运转了 ')+(dt/3600).toFixed(1)+L(' 小时。'), 'sys');
   }
   S.lastReal = now;
 }
@@ -201,7 +201,7 @@ function openRealtimeGame(){
   if(!DRG.integration.request || DRG.integration.request.id !== request.id){
     DRG.integration.setRequest(request);
   }
-  if(shell.title) shell.title.textContent = biomeById(S.realtime.mission.biome).name;
+  if(shell.title) shell.title.textContent = L(biomeById(S.realtime.mission.biome).name);
   if(shell.style) shell.style.disabled = false;
   shell.root.hidden = false;
   shell.root.setAttribute('aria-hidden', 'false');
@@ -248,7 +248,7 @@ function interveneRealtime(depId){
   if(!S || isRealtimeGameOpen()) return;
   if(S.realtime){ showPendingRealtime(); return; }
   const d = S.deps.find(x=>x.id===depId);
-  if(!d || d.paused){ log('该派遣当前无法介入（事件待处理或已暂停）。', 'bad'); return; }
+  if(!d || d.paused){ log(L('该派遣当前无法介入（事件待处理或已暂停）。'), 'bad'); return; }
   const miner = S.miners.find(x=>x.id===d.minerIds[0]);
   if(!miner) return;
   const requestId = 'rt'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
@@ -262,11 +262,11 @@ function interveneRealtime(depId){
       now:Date.now(),
     });
   }catch(error){
-    log('实时介入失败：'+(error && error.message || error), 'bad');
+    log(L('实时介入失败：')+(error && error.message || error), 'bad');
     return;
   }
   DRG.integration.setRequest(request);
-  log('▶ '+minerName(miner)+' 亲自介入【'+biomeById(d.m.biome).name+'】派遣：洞穴内见真章，胜则全队即刻结算归队。', 'gold');
+  log('▶ '+minerName(miner)+L(' 亲自介入【')+L(biomeById(d.m.biome).name)+L('】派遣：洞穴内见真章，胜则全队即刻结算归队。'), 'gold');
   save();
   openRealtimeGame();
 }
@@ -284,12 +284,12 @@ function startRealtimeMission(m, miner, cost){
       now:Date.now(),
     });
   }catch(error){
-    log('实时任务启动失败：'+(error && error.message || error), 'bad');
+    log(L('实时任务启动失败：')+(error && error.message || error), 'bad');
     closeModal(true);
     return;
   }
   DRG.integration.setRequest(request);
-  log('▶ '+minerName(miner)+' 已进入实时任务：'+biomeById(m.biome).name+'，危险 '+m.hazard+'。', 'gold');
+  log('▶ '+minerName(miner)+L(' 已进入实时任务：')+L(biomeById(m.biome).name)+L('，危险 ')+m.hazard+L('。'), 'gold');
   save();
   openRealtimeGame();
 }
@@ -299,10 +299,10 @@ function showPendingRealtime(){
   const p = S.realtime;
   const m = p.mission;
   const miner = S.miners.find(x=>x.id===p.minerId);
-  showModal('<h3 style="color:var(--amber)">实时任务仍在进行</h3>'+
-    '<div class="note">'+(miner?minerName(miner):'矿工')+' · '+(m?biomeById(m.biome).name:'未知矿区')+'。继续会回到当前洞穴进度；刷新后会以同一种子重新开始。召回按失败处理且不退补给。</div>'+
-    '<button class="btn live" id="rt-resume" style="width:100%;margin-top:10px">继续实时任务</button>'+
-    '<button class="btn warn" id="rt-recall" style="width:100%;margin-top:6px">召回矿工</button>', false);
+  showModal('<h3 style="color:var(--amber)">'+L('实时任务仍在进行')+'</h3>'+
+    '<div class="note">'+(miner?minerName(miner):L('矿工'))+' · '+(m?L(biomeById(m.biome).name):L('未知矿区'))+L('。继续会回到当前洞穴进度；刷新后会以同一种子重新开始。召回按失败处理且不退补给。')+'</div>'+
+    '<button class="btn live" id="rt-resume" style="width:100%;margin-top:10px">'+L('继续实时任务')+'</button>'+
+    '<button class="btn warn" id="rt-recall" style="width:100%;margin-top:6px">'+L('召回矿工')+'</button>', false);
   $('#rt-resume').onclick = openRealtimeGame;
   $('#rt-recall').onclick = recallRealtime;
 }
@@ -318,7 +318,7 @@ function recallRealtime(){
     S.realtime = null;
     pendingRealtimeResult = null;
     if(window.DRG && DRG.integration) DRG.integration.clear();
-    log('实时介入已召回：'+(miner?minerName(miner):'矿工')+' 归队，士气 -15。派遣恢复自动推进。', 'bad');
+    log(L('实时介入已召回：')+(miner?minerName(miner):L('矿工'))+L(' 归队，士气 -15。派遣恢复自动推进。'), 'bad');
     clearRealtimeBridge();
     closeRealtimeGame();
     closeModal(true);
@@ -333,10 +333,10 @@ function recallRealtime(){
   if(wasFinale){
     /* 终局召回：任务回板可重试，不许卡死战役进度 */
     if(!S.board.some(x=>x.id===mission.id)) S.board.push(mission);
-    log('终局任务已召回：全队归队（士气 -15），任务回到任务板——整理装备后再战。', 'bad');
+    log(L('终局任务已召回：全队归队（士气 -15），任务回到任务板——整理装备后再战。'), 'bad');
   } else {
     S.stats.realtimeFailed = (S.stats.realtimeFailed||0) + 1;
-    log('实时任务已中止：矿工被紧急召回，士气 -15，出舱补给不退。', 'bad');
+    log(L('实时任务已中止：矿工被紧急召回，士气 -15，出舱补给不退。'), 'bad');
   }
   clearRealtimeBridge();
   closeRealtimeGame();
@@ -386,7 +386,7 @@ function consumeRealtimeResult(explicitResult){
       dep.paused = false;
       miner.morale = clamp(miner.morale-15, 10, 100);
       S.stats.realtimeFailed = (S.stats.realtimeFailed||0) + 1;
-      log('实时介入失败：'+minerName(miner)+' 归队，士气 -15。派遣恢复自动推进。', 'bad');
+      log(L('实时介入失败：')+minerName(miner)+L(' 归队，士气 -15。派遣恢复自动推进。'), 'bad');
     }else{
       /* 失败：小队全员归队；终局任务回板可重试 */
       squadIds.forEach(id=>{
@@ -396,9 +396,9 @@ function consumeRealtimeResult(explicitResult){
       S.stats.realtimeFailed = (S.stats.realtimeFailed||0) + 1;
       if(pending.finale){
         if(!S.board.some(x=>x.id===m.id)) S.board.push(m);
-        log('终局任务失败：'+squadIds.length+' 人小队已归队（士气 -15）。任务回到任务板——可重新编队再战。'+(result.failReason?' '+result.failReason:''), 'bad');
+        log(L('终局任务失败：')+squadIds.length+L(' 人小队已归队（士气 -15）。任务回到任务板——可重新编队再战。')+(result.failReason?' '+result.failReason:''), 'bad');
       }else{
-        log('实时任务失败：'+minerName(miner)+' 已归队，士气 -15。'+(result.failReason?' '+result.failReason:''), 'bad');
+        log(L('实时任务失败：')+minerName(miner)+L(' 已归队，士气 -15。')+(result.failReason?' '+result.failReason:''), 'bad');
       }
     }
     DRGUnified.domain.markMissionSettled(S, result.requestId, result.finishedAt);
@@ -417,22 +417,22 @@ function showRealtimeSummary(summary){
   const r = summary.result;
   const elapsed = Math.max(0, Math.round(r.time||0));
   const elapsedText = Math.floor(elapsed/60)+':'+String(elapsed%60).padStart(2,'0');
-  const outcome = summary.win ? (summary.intervene?'介入成功 · 派遣完成':'任务完成')
-    : summary.intervene ? '介入失败 · 派遣继续'
-    : summary.finale ? '终局失败 · 任务回板可重试'
-    : '任务失败';
-  let reward = '<div class="note">本次没有管理终端报酬。</div>';
+  const outcome = summary.win ? (summary.intervene?L('介入成功 · 派遣完成'):L('任务完成'))
+    : summary.intervene ? L('介入失败 · 派遣继续')
+    : summary.finale ? L('终局失败 · 任务回板可重试')
+    : L('任务失败');
+  let reward = '<div class="note">'+L('本次没有管理终端报酬。')+'</div>';
   if(summary.win){
     const g = summary.gain;
-    reward = '<div class="meta">结算倍率 ×'+summary.performance.toFixed(2)+'</div>'+
-      '<div class="row"><span>代币</span><b>+'+fmt(Math.max(0,g.credits||0))+'</b></div>'+
-      '<div class="row"><span>墨菱石</span><b>+'+fmt(Math.max(0,g.morkite||0))+'</b></div>'+
-      '<div class="row"><span>硝石</span><b>+'+fmt(Math.max(0,g.nitra||0))+'</b></div>';
+    reward = '<div class="meta">'+L('结算倍率 ×')+summary.performance.toFixed(2)+'</div>'+
+      '<div class="row"><span>'+L('代币')+'</span><b>+'+fmt(Math.max(0,g.credits||0))+'</b></div>'+
+      '<div class="row"><span>'+L('墨菱石')+'</span><b>+'+fmt(Math.max(0,g.morkite||0))+'</b></div>'+
+      '<div class="row"><span>'+L('硝石')+'</span><b>+'+fmt(Math.max(0,g.nitra||0))+'</b></div>';
   }
-  showModal('<h3 style="color:'+(summary.win?'var(--green)':'var(--red)')+'">▶ 实时任务 · '+outcome+'</h3>'+
-    '<div class="note">'+summary.miner+'｜用时 '+elapsedText+'｜击杀 '+((r.stats&&r.stats.kills)||0)+'｜倒地 '+((r.stats&&r.stats.downs)||0)+'</div>'+
-    '<h3 class="sec">入库结果</h3>'+reward+
-    '<button class="btn pri" style="width:100%;margin-top:8px" onclick="closeModal(true)">确认入库</button>', false);
+  showModal('<h3 style="color:'+(summary.win?'var(--green)':'var(--red)')+'">'+L('▶ 实时任务 · ')+outcome+'</h3>'+
+    '<div class="note">'+summary.miner+L('｜用时 ')+elapsedText+L('｜击杀 ')+((r.stats&&r.stats.kills)||0)+L('｜倒地 ')+((r.stats&&r.stats.downs)||0)+'</div>'+
+    '<h3 class="sec">'+L('入库结果')+'</h3>'+reward+
+    '<button class="btn pri" style="width:100%;margin-top:8px" onclick="closeModal(true)">'+L('确认入库')+'</button>', false);
 }
 
 const realtimeCloseButton = document.getElementById('realtime-shell-close');
@@ -449,7 +449,7 @@ window.addEventListener('drg:realtime-complete', event => {
   if(!S || !S.realtime || !event.detail || event.detail.requestId !== S.realtime.requestId) return;
   pendingRealtimeResult = event.detail;
   const title = realtimeShell().title;
-  if(title) title.textContent = biomeById(S.realtime.mission.biome).name+' · 任务完成';
+  if(title) title.textContent = L(biomeById(S.realtime.mission.biome).name)+L(' · 任务完成');
 });
 
 window.addEventListener('drg:realtime-return', finishRealtimeMission);

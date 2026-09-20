@@ -225,7 +225,7 @@
       if (aware && this.spawnCd <= 0) {
         this.spawnCd = 9;
         for (var i = 0; i < 3; i++) m.spawnEnemy('swarmer', this.x + (Math.random() - .5) * 40, this.y + 20);
-        m.toast('孵化虫释放了虫群！', '#a8ff6a');
+        m.toast(L('孵化虫释放了虫群！'), '#a8ff6a');
       }
       this.spawnCd -= dt;
     }

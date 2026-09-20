@@ -41,14 +41,14 @@
 
       DRG.assets.load(
         function (f) {
-          DRG.ui.bootProgress(f * 0.98, f < 0.4 ? '正在装载矮人与虫子…' : (f < 0.8 ? '正在校准照明弹…' : '正在连接任务控制中心…'));
+          DRG.ui.bootProgress(f * 0.98, f < 0.4 ? L('正在装载矮人与虫子…') : (f < 0.8 ? L('正在校准照明弹…') : L('正在连接任务控制中心…')));
         },
         function () {
-          DRG.ui.bootProgress(1, '准备就绪');
+          DRG.ui.bootProgress(1, L('准备就绪'));
           if (DRG.assets.failed.length) {
             var w = document.getElementById('toast-boot');
             w.style.display = 'block';
-            w.textContent = '注意：' + DRG.assets.failed.length + ' 个素材未能加载。请刷新重试；若问题持续，请检查 CDN 或浏览器是否拦截了图片资源。';
+            w.textContent = L('注意：') + DRG.assets.failed.length + L(' 个素材未能加载。请刷新重试；若问题持续，请检查 CDN 或浏览器是否拦截了图片资源。');
             console.warn('[DRG] missing assets', DRG.assets.failed.slice());
           }
           setTimeout(function () {
@@ -106,7 +106,7 @@
         G.mission = new DRG.Mission(opt);
       } catch (e) {
         console.error('[DRG] mission generation failed', e);
-        alert('洞穴生成失败：' + e.message);
+        alert(L('洞穴生成失败：') + e.message);
         DRG.ui.show('menu');
         return;
       }
@@ -120,16 +120,16 @@
       setTimeout(function () {
         if (G.mission !== m) return;
         m.mc(opt.type === 'escort'
-          ? '欢迎来到 ' + opt.biome.name + '。朵蕾妲开路！保持警惕，就像她是你们的亲妈一样保护好她！'
+          ? L('欢迎来到 ') + L(opt.biome.name) + L('。朵蕾妲开路！保持警惕，就像她是你们的亲妈一样保护好她！')
           : opt.type === 'point'
-            ? '欢迎来到 ' + opt.biome.name + '。定点提取：开采 ' + m.pointQuota + ' 块矿块并送回莫莉入库。信标已经点亮，动手吧矮人！'
+            ? L('欢迎来到 ') + L(opt.biome.name) + L('。定点提取：开采 ') + m.pointQuota + L(' 块矿块并送回莫莉入库。信标已经点亮，动手吧矮人！')
             : opt.type === 'salv'
-              ? '欢迎来到 ' + opt.biome.name + '。搜救行动：找回 4 条矿骡腿，修好她，然后一起回家。'
+              ? L('欢迎来到 ') + L(opt.biome.name) + L('。搜救行动：找回 4 条矿骡腿，修好她，然后一起回家。')
               : opt.type === 'refi'
-                ? '欢迎来到 ' + opt.biome.name + '。就地精炼：把管线拉到油井上，装泵抽油——集齐 ' + m.oilQuota + ' 单位原油，管线就是你的命根子。'
+                ? L('欢迎来到 ') + L(opt.biome.name) + L('。就地精炼：把管线拉到油井上，装泵抽油——集齐 ') + m.oilQuota + L(' 单位原油，管线就是你的命根子。')
                 : opt.type === 'elim'
-                  ? '欢迎来到 ' + opt.biome.name + '。消灭任务：竞技场中心有个虫茧——准备好就破茧，无畏机甲在里面睡觉。'
-                  : '欢迎来到 ' + opt.biome.name + '，矮人。开采 ' + m.quota + ' 单位莫尔凯特并存入 M.U.L.E.。', 'mc_begin_1');
+                  ? L('欢迎来到 ') + L(opt.biome.name) + L('。消灭任务：竞技场中心有个虫茧——准备好就破茧，无畏机甲在里面睡觉。')
+                  : L('欢迎来到 ') + L(opt.biome.name) + L('，矮人。开采 ') + m.quota + L(' 单位莫尔凯特并存入 M.U.L.E.。'), 'mc_begin_1');
       }, 700);
       DRG.log('mission start', opt.biome.id, 'haz', opt.haz, 'cls', opt.cls, 'seed', opt.seed);
     },
@@ -137,7 +137,7 @@
     abandon: function () {
       if (!G.mission) return;
       G.mission.state = 'failed';
-      G.mission.failReason = '主动放弃任务';
+      G.mission.failReason = L('主动放弃任务');
       G.finishMission(false);
     },
 

@@ -69,8 +69,8 @@
     }
     if (this.hp / this.maxHp < 0.3 && this.critCd <= 0) {
       this.critCd = 16;
-      m.mc('朵蕾妲这样撑不下去的！');
-      m.toast('警告：朵蕾妲血量危急！', '#ff5a4a', 4);
+      m.mc(L('朵蕾妲这样撑不下去的！'));
+      m.toast(L('警告：朵蕾妲血量危急！'), '#ff5a4a', 4);
       DRG.audio.sfx('alarm');
     }
 
@@ -119,8 +119,8 @@
     this.state = 'waitFuel';
     this.fuelIn = 0;
     this.respawnT = 6;
-    m.mc('Canister ready for re-fueling! 燃料罐已准备好重新供油！');
-    m.toast('朵蕾妲停车加油 · 走近燃料罐按 E 拾起，再靠近油箱口按 E 加入', '#ffd76a', 5);
+    m.mc(L('Canister ready for re-fueling! 燃料罐已准备好重新供油！'));
+    m.toast(L('朵蕾妲停车加油 · 走近燃料罐按 E 拾起，再靠近油箱口按 E 加入'), '#ffd76a', 5);
     DRG.audio.sfx('beep');
     this.spawnCanister(m);
   };
@@ -138,7 +138,7 @@
     var live = m.props.some(function (pr) { return pr instanceof DRG.FuelCanister && pr.state === 'idle'; });
     if (!live) {
       this.respawnT -= dt;
-      if (this.respawnT <= 0) { this.respawnT = 6; this.spawnCanister(m); m.toast('补充燃料罐已投放', '#ffd76a', 2.5); }
+      if (this.respawnT <= 0) { this.respawnT = 6; this.spawnCanister(m); m.toast(L('补充燃料罐已投放'), '#ffd76a', 2.5); }
     }
   };
 
@@ -156,8 +156,8 @@
     this.fuelIn = 1;
     this.state = 'fueling';
     this.fuelT = 2.6;
-    m.mc('Canister placed! 燃料罐已放置！');
-    m.fx.text(this.x, this.y - this.h - 14, '+ 燃料罐', '#ffd76a', 16);
+    m.mc(L('Canister placed! 燃料罐已放置！'));
+    m.fx.text(this.x, this.y - this.h - 14, L('+ 燃料罐'), '#ffd76a', 16);
     DRG.audio.sfx('deposit');
     return true;
   };
@@ -165,8 +165,8 @@
   Doretta.prototype.finishFuel = function (m) {
     this.state = 'run';
     this.stationIdx++;
-    m.mc('所有燃料罐已装满！掘进机已准备好继续执行任务！');
-    m.toast('加油完成 · 朵蕾妲恢复推进', '#7fff9a', 3);
+    m.mc(L('所有燃料罐已装满！掘进机已准备好继续执行任务！'));
+    m.toast(L('加油完成 · 朵蕾妲恢复推进'), '#7fff9a', 3);
     DRG.audio.clipOf(['dwarf_resupply_1', 'dwarf_resupply_2'], 0.8, true);
     m.stats.credits += 70 * m.hazard.credit;
     m.stats.xp += 70 * m.hazard.xp;
@@ -180,7 +180,7 @@
     m.fx.burst(fromX || this.x, y, 5, { col: ['#ff8a5a', '#ffd08a', '#c8d0e0'], speed: 170, life: 0.35, kind: 1 });
     if (this.atkCd <= 0) {
       this.atkCd = 14;
-      m.mc('Doretta is under attack! 朵蕾妲在遭受攻击！');
+      m.mc(L('Doretta is under attack! 朵蕾妲在遭受攻击！'));
       DRG.audio.sfx('alarm');
       m.shake(5, 0.2);
     }
