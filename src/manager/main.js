@@ -17,6 +17,10 @@ $('#modal').addEventListener('click', e => { if(e.target.id === 'modal' && !moda
 let acc = 0;
 setInterval(() => {
   if(!S) return;
+  /* 开局弹窗链（语言→序章→起名）收尾检测：三项齐备即解除事件弹窗让位（missions.js 三处守卫读此标志） */
+  if(window.__bootChain === true && localStorage.getItem('drg_lang') !== null && S.flags.prologueDone && S.flags.nameChosen){
+    window.__bootChain = false;
+  }
   if(isRealtimeGameOpen()) return;
   const now = Date.now();
   const dt = Math.min((now - S.lastReal)/1000, 5);
@@ -261,6 +265,10 @@ function showNameRegistration(){
 
 document.addEventListener('DOMContentLoaded', async () => {
   window.__initErr = null;
+  /* 开局弹窗链标志：DOMContentLoaded 起即生效（防 await 让出事件循环期间 tick 抢挂事件弹窗）。
+     链 = 语言选择 → 序章 → 代号登记，期间派遣事件/挂机报告一律让位（dep 保持 paused 自愈），
+     三项齐备后由主循环每秒检测清除（见顶部 setInterval）。 */
+  window.__bootChain = true;
   try{
   let realtimeSummary = null;
   loadFold();
@@ -309,7 +317,9 @@ document.addEventListener('DOMContentLoaded', async () => {
      ③ 序章已完成而代号未登记 → 补起名登记 */
   if(localStorage.getItem('drg_lang') === null && typeof showLangChooser === 'function'){
     showLangChooser(() => { if(S && !S.flags.prologueDone && typeof playPrologue==='function') playPrologue(); else if(S && !S.flags.nameChosen && typeof showNameRegistration==='function') showNameRegistration(); });
-  } else if(S && !S.flags.prologueDone && typeof playPrologue === 'function'){
+  } else if(S && !S.flags.prologueDone && typeof playPrologue === 'function' && !S.deps.some(x=>x.kind==='prologue') && !S.board.some(x=>x.kind==='prologue')){
+    /* 序章遗单已在途（老档中断）时不重放静态序章——防 endPrologue 里 spawnKarlMission 重复入板；
+       该场景由遗单自身的接班路径（missions.js 接班按钮）收尾 prologueDone + 补起名 */
     playPrologue();
   } else if(S.flags.prologueDone && !S.flags.nameChosen && typeof showNameRegistration === 'function'){
     showNameRegistration();

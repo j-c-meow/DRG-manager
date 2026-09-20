@@ -248,6 +248,7 @@ function startMemeEvent(d, id){
   d.paused.html = html; d.paused.opts = opts;
   log('【'+title+'】'+String(desc).replace(/<[^>]+>/g,''), '');
   if($('#modal').style.display === 'flex' && $('#modal-box').dataset.dep === d.id) return;
+  if(window.__bootChain === true) return;   /* 开局链（语言/序章/起名）期间让位：dep 保持 paused，链结束后由主循环每秒重挂 */
   showEventModal(d);
 }
 function nitroTag(n){ return (S.mode||'idle') === 'rush' ? ' <span class="nitra-tag">' + TEXT.dm_nitra_tag.replace('{n}', n) + '</span>' : ''; }
@@ -360,6 +361,7 @@ function startEvent(d, id){
     log(L('【警报】')+(evTitle5 ? TEXT[evTitle5] : L('派遣事件'))+L('【')+biome+L('】：')+html.replace(/<[^>]+>/g,''), 'bad');
   }
   if($('#modal').style.display === 'flex' && $('#modal-box').dataset.dep === d.id) return;
+  if(window.__bootChain === true) return;   /* 开局链（语言/序章/起名）期间让位：dep 保持 paused，链结束后由主循环每秒重挂 */
   showEventModal(d);
 }
 function showEventModal(d){
@@ -877,7 +879,7 @@ function showIdleReport(){
   showModal('<h3 style="color:var(--amber)">' + TEXT.dm_report_title + '</h3><div style="display:flex;flex-direction:column;gap:6px;margin:10px 0;">' + rows + '</div><div class="note">' + TEXT.dm_report_scope + '</div><button class="btn pri" style="width:100%" onclick="closeModal(true)">' + TEXT.dm_report_sign + '</button>', false);
 }
 function autoPlayStep(){
-  if(S.autoUntil && Date.now() > S.autoUntil && !S._idleReportShown){
+  if(S.autoUntil && Date.now() > S.autoUntil && !S._idleReportShown && window.__bootChain !== true){
     S._idleReportShown = true;
     log(TEXT.dm_report_expire, 'sys');
     showIdleReport();
@@ -918,7 +920,7 @@ function worldAdvanceBody(gm, offline){
       if(d.finished) continue;   /* 防嵌套推进后重复结算 */
       if(d.paused){
         if(d.autoEvents){ autoResolveEvent(d); continue; }
-        if(!offline){
+        if(!offline && window.__bootChain !== true){   /* 开局链期间不重挂（曾每秒顶掉语言选择器/序章弹窗——boot 互顶元凶） */
           const md = document.getElementById('modal');
           if(!(md.style.display === 'flex' && document.getElementById('modal-box').dataset.dep === d.id)) showEventModal(d);   /* 防每秒重建弹窗（卡死元凶） */
         }
