@@ -15,12 +15,23 @@ $('#modal').addEventListener('click', e => { if(e.target.id === 'modal' && !moda
 
 /* ---------------- LOOP ---------------- */
 let acc = 0;
+/* 开局弹窗链收尾检测：语言已选且链上不再有任何待办弹窗（序章可重放/代号待登记）即解除事件弹窗让位。
+   遗单只在板上未派遣时不压链（A 09-21 线上老档实测：prologueDone=false+遗单在板+事件暂停，
+   若按 prologueDone 硬判会让事件弹窗无限期不挂——语言已选则先走事件，交接口径）。 */
+function bootChainTickCheck(){
+  if(window.__bootChain !== true) return;
+  if(localStorage.getItem('drg_lang') === null) return;
+  const karlInFlight = S.deps.some(x=>x.kind==='prologue');
+  const karlOnBoard = S.board.some(x=>x.kind==='prologue');
+  /* 序章待办：未完成且（遗单在途=故事弹窗将随进度冒出 | 遗单不在板=boot 尾会重放静态序章）；
+     遗单只在板上未派遣 → 无任何待办弹窗，不压链 */
+  const prologuePending = !S.flags.prologueDone && (karlInFlight || !karlOnBoard);
+  const namePending = S.flags.prologueDone && !S.flags.nameChosen;
+  if(!prologuePending && !namePending) window.__bootChain = false;
+}
 setInterval(() => {
   if(!S) return;
-  /* 开局弹窗链（语言→序章→起名）收尾检测：三项齐备即解除事件弹窗让位（missions.js 三处守卫读此标志） */
-  if(window.__bootChain === true && localStorage.getItem('drg_lang') !== null && S.flags.prologueDone && S.flags.nameChosen){
-    window.__bootChain = false;
-  }
+  bootChainTickCheck();
   if(isRealtimeGameOpen()) return;
   const now = Date.now();
   const dt = Math.min((now - S.lastReal)/1000, 5);

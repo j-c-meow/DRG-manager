@@ -99,7 +99,7 @@ const FILES = [
 ];
 const code = FILES.map(f => fs.readFileSync(path.join(ROOT, f), 'utf8')).join('\n;\n')
   + '\n;globalThis.__BOOT_T = { startEvent, startMemeEvent, worldAdvance, autoPlayStep, closeModal,'
-  + ' MEME_EVENTS, S_get: () => S, S_set: v => { S = v; }, newGame };';
+  + ' MEME_EVENTS, S_get: () => S, S_set: v => { S = v; }, newGame, bootChainTickCheck };';
 new Function('window', code)(global);
 
 const T = global.__BOOT_T;
@@ -196,6 +196,38 @@ const dep4 = Object.assign({}, dep, { id:'dep_t4', paused:null });
 T.startEvent(dep4, 'swarm');
 ok(modalOpen(), '非链期新事件弹窗即时挂载');
 ok(modalBox().dataset.dep === 'dep_t4', '弹窗标记对应新 dep');
+
+/* ================= 8. bootChainTickCheck：解链判定（线上老档实测形态回归） ================= */
+console.log('\n== 8. bootChainTickCheck 解链判定 ==');
+// 8a. 语言未选 → 保持链（等待选择器流程）
+window.__bootChain = true;
+localStorage.removeItem('drg_lang');
+S.flags.prologueDone = true; S.flags.nameChosen = true;
+T.bootChainTickCheck();
+ok(window.__bootChain === true, '语言未选 → 链保持');
+// 8b. 老档形态：语言已选 + 序章未完成 + 遗单只在板上（无遗单派遣在途）+ 未起名 → 无待办弹窗 → 解链（先走事件）
+localStorage.setItem('drg_lang', 'zh');
+S.flags.prologueDone = false; S.flags.nameChosen = false;
+S.deps = []; S.board = [{ id:'karl0', kind:'prologue', hazard:5 }];
+window.__bootChain = true;
+T.bootChainTickCheck();
+ok(window.__bootChain === false, '老档（遗单在板未派遣）→ 解链，事件弹窗先走');
+// 8c. 遗单派遣在途 → 序章进行中 → 压链（护序章故事弹窗）
+S.board = []; S.deps = [Object.assign({}, dep, { id:'dep_karl', kind:'prologue', paused:null })];
+window.__bootChain = true;
+T.bootChainTickCheck();
+ok(window.__bootChain === true, '遗单在途（序章进行中）→ 链保持');
+// 8d. 序章已完成 + 未起名 → 起名待办 → 压链
+S.deps = []; S.board = [];
+S.flags.prologueDone = true; S.flags.nameChosen = false;
+window.__bootChain = true;
+T.bootChainTickCheck();
+ok(window.__bootChain === true, '代号待登记 → 链保持');
+// 8e. 全齐 → 解链
+S.flags.nameChosen = true;
+window.__bootChain = true;
+T.bootChainTickCheck();
+ok(window.__bootChain === false, '三项无待办 → 解链');
 
 console.log('\n== 结果：' + passed + ' 通过, ' + failed + ' 失败 ==');
 process.exit(failed ? 1 : 0);
