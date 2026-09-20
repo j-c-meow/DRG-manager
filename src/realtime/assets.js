@@ -218,7 +218,8 @@
             setTimeout(function () { loadAtlas(attempt + 1); }, 250);
             return;
           }
-          runQueue(keys, 2, function (key, next) { loadImage(key, next, 0); });
+          /* 并发 8：原值 2 导致 78 个资源串行化排队，首访装载 15-30 秒（用户实录"实时下矿没反应"的体感来源之一） */
+          runQueue(keys, 8, function (key, next) { loadImage(key, next, 0); });
         });
     }
 
