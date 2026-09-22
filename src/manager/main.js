@@ -395,8 +395,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   const mqDock7 = window.matchMedia('(max-width:700px)'), mqDockC = window.matchMedia('(pointer:coarse)');
   if(mqDock7.addEventListener) mqDock7.addEventListener('change', dockTabs);
   if(mqDockC.addEventListener) mqDockC.addEventListener('change', dockTabs);
-  /* 起名：序章已结束的老档，进游戏时补一次代号登记（新档由 endPrologue 触发） */
-  if(S.flags.prologueDone && !S.flags.nameChosen) showNameRegistration();
+  /* 起名：序章已结束的老档，进游戏时补一次代号登记（新档由 endPrologue 触发）。
+     链守卫（09-21 线上实测）：语言未选时此处在选择器弹出后抢挂起名窗顶掉选择器——
+     语言未选场景由开局链接管（选择器 onPick → 补起名）；弹窗已开（分支③已挂/序章在放）也不重复挂 */
+  if(localStorage.getItem('drg_lang') !== null && S.flags.prologueDone && !S.flags.nameChosen && !modalLocked && $('#modal').style.display !== 'flex') showNameRegistration();
   $('#btn-log-modal').onclick = showLogModal;
   $('#btn-res-overview').onclick = showResourceOverview;
   $('#logMini').onclick = () => { FOLD.log = false; saveFold(); applyLogFold(); };
