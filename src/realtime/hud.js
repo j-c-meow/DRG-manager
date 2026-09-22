@@ -203,13 +203,21 @@
         gfx.text(g, m.chunksDeposited + ' / ' + m.pointQuota + L(' 矿块'), x + 34, y + 60, { size: 12, col: '#e8f6ff' });
 
         var pPhase;
-        if (m.objectiveDone) pPhase = L('目标完成 · 撤离飞船已呼叫');
+        if (m.objectiveDone && m.bonusWindow > 0 && !m.podCalled) pPhase = L('自由采挖 · 想搬就继续搬');
+        else if (m.objectiveDone) pPhase = L('目标完成 · 撤离飞船已呼叫');
         else if (m.player.carriedItem && m.player.carriedItem.kind === 'chunk') pPhase = L('把矿块搬回莫莉处按 E 入库');
         else pPhase = L('跟随蓝色光柱 · 按住左键钻采矿结');
         gfx.text(g, pPhase, x + 12, y + 78, {
           size: 12,
           col: m.objectiveDone ? gfx.pulse(m.time, '#7fff9a', '#ffffff', 5) : '#9aa8b6'
         });
+        /* 深度玩法：自由采挖窗倒计时 */
+        if (m.objectiveDone && m.bonusWindow > 0 && !m.podCalled) {
+          gfx.text(g, L('飞船抵达倒计时 ') + Math.ceil(m.bonusWindow) + L('s · 按 R 提前呼叫'), x + 12, y + 94, {
+            size: 12,
+            col: gfx.pulse(m.time, '#ffd76a', '#ffffff', 6)
+          });
+        }
       } else if (m.isSalv) {
         /* 搜救行动：矿骡腿安装 + 修复进度 */
         gfx.sprite(g, A().get('obj_molly'), x + 26, y + 30, 34);
@@ -223,7 +231,8 @@
         gfx.text(g, done ? L('矿骡已修复') : (wr && wr.state === 'ready' ? L('修复中 ') + Math.round(wr.repairFrac() * 100) + '%' : L('矿骡腿 ') + inst + ' / 4'), x + 34, y + 60, { size: 12, col: '#eefff0' });
 
         var sPhase;
-        if (done) sPhase = L('修复完成 · 撤离飞船已呼叫');
+        if (done && m.selfCheck > 0 && !m.podCalled) sPhase = L('MULE 自检中 · 顶住防御波 ') + Math.ceil(m.selfCheck) + L('s');
+        else if (done) sPhase = L('修复完成 · 撤离飞船已呼叫');
         else if (wr && wr.state === 'ready') sPhase = L('对准矿骡长按 E 修复（松开保留进度）');
         else if (m.player.carriedItem && m.player.carriedItem.kind === 'leg') sPhase = L('把矿骡腿搬到残骸处按 E 安装');
         else sPhase = L('最近的矿骡腿 ') + HUD.nearestLegDist(m) + L('m · 跟随信标');
@@ -485,9 +494,9 @@
       for (var i = 0; i < m.props.length; i++)
         if (m.props[i] instanceof DRG.Ent.Resupply) put(m.props[i].x, m.props[i].y, '#ffd76a', 4, L('补给'));
       for (var bq = 0; bq < m.beacons.length; bq++)
-        if (m.beacons[bq].state === 'active') put(m.beacons[bq].x, m.beacons[bq].y, '#7fd4ff', 4, L('富矿点'));
+        if (m.beacons[bq].state === 'active') put(m.beacons[bq].x, m.beacons[bq].y, m.beacons[bq].rich ? '#ffd76a' : '#7fd4ff', 4, m.beacons[bq].rich ? L('硬壳富矿') : L('富矿点'));
       for (var sb = 0; sb < m.salvBeacons.length; sb++)
-        if (m.salvBeacons[sb].leg && m.salvBeacons[sb].leg.state === 'idle') put(m.salvBeacons[sb].x, m.salvBeacons[sb].y, '#b0ff7a', 3, L('矿骡腿'));
+        if (m.salvBeacons[sb].leg && m.salvBeacons[sb].leg.state === 'idle') put(m.salvBeacons[sb].x, m.salvBeacons[sb].y, '#b0ff7a', 3, m.salvBeacons[sb].leg.guarded ? L('守卫矿骡腿') : L('矿骡腿'));
       if (m.wreck) put(m.wreck.x, m.wreck.y, '#cfd8e0', 5, L('矿骡残骸'));
       for (var rw2 = 0; rw2 < m.wells.length; rw2++) {
         var wst2 = m.wells[rw2].state;

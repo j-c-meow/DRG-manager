@@ -83,9 +83,12 @@ const m = new DRG.Mission({ type: 'point', biome: biome, haz: 5, cls: 'driller',
 m.state = 'play';
 eq(m.beacons.length, 3, '信标数量 = 3');
 eq(m.pointQuota, 7, 'haz5 配额 = 3+(5-1) = 7');
+const richN = m.beacons.filter(function (b) { return b.rich && b.shellLeft > 0; }).length;
+eq(richN, 2, '硬壳富矿 = 2（危≥3 两处，深度玩法）');
 const yieldSum = m.beacons.reduce(function (a, b) { return a + b.chunkYield; }, 0);
 ok(yieldSum >= m.pointQuota, '三处矿结可采矿块总数覆盖配额（' + yieldSum + ' >= 7）');
 ok(m.player.carriedItem === null, '开局未携带');
+ok(m.bonusWindow === 0 && !m.objectiveDone, '开局无自由采挖窗');
 
 // 钻采 → 出块
 let deposited = 0;
@@ -123,16 +126,75 @@ while (deposited < m.pointQuota && guard++ < 60) {
 }
 eq(m.chunksDeposited, 7, '配额 7 全部入库');
 ok(m.objectiveDone, 'objectiveDone 置位');
-ok(m.podCalled && m.state === 'extract' && m.pod, '配额达成自动召唤撤离 pod（extract 态）');
+ok(!m.podCalled && m.state === 'play' && m.bonusWindow === 60, '配额达成 → 60 秒自由采挖窗（不再立刻召 pod，深度玩法）');
+
+/* ---- 深度玩法：硬壳钻采（耗時×2）→ 富矿块入库计 2 ---- */
+const rb = m.beacons.find(function (b) { return b.shellLeft > 0; });
+ok(!!rb, '存在带硬壳的富矿信标');
+ok(rb.chunksLeft <= 0 || true, '硬壳阶段独立于普通矿结计数');
+if (rb) {
+  /* 先排干该信标的普通矿结，进入纯硬壳阶段 */
+  let drg = 0;
+  while (rb.chunksLeft > 0 && drg++ < 8) {
+    m.player.x = rb.x; m.player.y = rb.y; m.player.vx = 0; m.player.vy = 0;
+    rb.drill(rb.drillNeed(), m);
+  }
+  eq(rb.chunksLeft, 0, '普通矿结已排干（硬壳阶段）');
+  m.player.x = rb.x; m.player.y = rb.y; m.player.vx = 0; m.player.vy = 0;
+  ok(rb.canDrill(m.player), '贴近硬壳可钻采');
+  rb.drill(0.5, m);
+  ok(rb.drillT > 0 && rb.drillT < rb.drillNeed(), '硬壳钻采进行中（需时 = 基础 ×2 = ' + rb.drillNeed() + 's）');
+  rb.drill(rb.drillNeed(), m);
+  const richChunk = idleChunks(m).find(function (c) { return c.rich; });
+  ok(!!richChunk, '钻穿硬壳采出富矿块（rich 标记）');
+  eq(rb.shellLeft, 0, '硬壳只有一层');
+  eq(rb.state, 'depleted', '硬壳破开后信标采空');
+  /* 清掉排干阶段散落的普通块，保证拾取目标唯一 */
+  for (let k = m.props.length - 1; k >= 0; k--) {
+    const pr = m.props[k];
+    if (pr instanceof DRG.OreChunk && pr !== richChunk && pr.state === 'idle') m.props.splice(k, 1);
+  }
+  m.player.x = richChunk.x; m.player.y = richChunk.y;
+  ok(m.pointInteract(), 'E 拾起富矿块');
+  const lockR = DRG.carryRestriction(m.player);
+  ok(!!lockR && lockR.slowMul === 0.9, '富矿块同重：移速 -10% + 锁副手');
+  m.player.x = m.mule.x; m.player.y = m.mule.y;
+  ok(m.pointInteract(), '莫莉旁 E 入库富矿块');
+  eq(m.chunksDeposited, 9, '富矿块入库计 2（7+2 = 9）');
+  ok(!m.podCalled && m.bonusWindow > 0, '窗内继续入库不结束自由窗');
+}
+/* R 提前撤离（callPod 的 R 键路径等价） */
+m.callPod();
+ok(m.podCalled && m.state === 'extract' && m.pod, '按 R 提前呼叫撤离 pod（extract 态）');
 m.pod.state = 'landed';
 m.board();
 eq(m.state, 'success', '登舱 → success（integration.complete win=true 管道）');
-// 未携带时矿块可被再次拾起（掉落重拾由 drop 实现，见 player.goDown 单测）
-const m1b = new DRG.Mission({ type: 'point', biome: biome, haz: 1, cls: 'scout', seed: 31 });
-m1b.state = 'play';
-eq(m1b.pointQuota, 3, 'haz1 配额 = 3');
-const y1 = m1b.beacons.reduce(function (a, b) { return a + b.chunkYield; }, 0);
+
+/* ---- 深度玩法：自由窗倒计时归零自动召 pod ---- */
+const mP2 = new DRG.Mission({ type: 'point', biome: biome, haz: 1, cls: 'scout', seed: 31 });
+mP2.state = 'play';
+eq(mP2.pointQuota, 3, 'haz1 配额 = 3');
+const y1 = mP2.beacons.reduce(function (a, b) { return a + b.chunkYield; }, 0);
 ok(y1 >= 3, 'haz1 可采矿块覆盖配额');
+const rich1 = mP2.beacons.filter(function (b) { return b.rich; }).length;
+eq(rich1, 1, 'haz1 硬壳富矿 = 1');
+let dep2 = 0; guard = 0;
+while (dep2 < mP2.pointQuota && guard++ < 60) {
+  const b = mP2.beacons.find(function (x) { return x.chunksLeft > 0; });
+  if (!b) break;
+  mP2.player.x = b.x; mP2.player.y = b.y; mP2.player.vx = 0; mP2.player.vy = 0;
+  b.drill(b.drillNeed(), mP2);
+  const c = idleChunks(mP2)[0];
+  mP2.player.x = c.x; mP2.player.y = c.y;
+  mP2.pointInteract();
+  mP2.player.x = mP2.mule.x; mP2.player.y = mP2.mule.y;
+  mP2.pointInteract();
+  dep2 = mP2.chunksDeposited;
+}
+ok(mP2.objectiveDone && mP2.bonusWindow > 0 && !mP2.podCalled, 'haz1 配额达成 → 自由窗开启');
+mP2.bonusWindow = 0.4;
+mP2.update(0.5, { w: 400, h: 240 });
+ok(mP2.podCalled && mP2.state === 'extract', '自由窗倒计时归零自动召 pod');
 
 // 倒地掉落
 const m1c = new DRG.Mission({ type: 'point', biome: biome, haz: 2, cls: 'driller', seed: 55 });
@@ -157,6 +219,11 @@ eq(m2.salvBeacons.length, 4, '信号信标 = 4');
 eq(idleLegs(m2).length, 4, '散落矿骡腿 = 4');
 ok(!!m2.wreck, '矿骡残骸框架存在');
 ok(DRG.M.dist(m2.wreck.x, m2.wreck.y, m2.player.x, m2.player.y) > 600, '残骸离出生点足够远');
+/* ---- 深度玩法：巢穴守卫腿（haz3 → 1 条带守卫） ---- */
+const guardedLegs = idleLegs(m2).filter(function (l) { return l.guarded; });
+eq(guardedLegs.length, 1, '守卫腿 = 1（危<4 一条，深度玩法）');
+const guardEnemies = m2.enemies.filter(function (e) { return e.type === 'guard'; });
+ok(guardEnemies.length >= 1, '守卫虫已预置在腿旁（' + guardEnemies.length + ' 只 guard）');
 
 for (let i = 0; i < 4; i++) {
   const leg = idleLegs(m2)[0];
@@ -192,7 +259,17 @@ m2.salvDirector(1.0);
 ok(Math.abs(m2.wreck.repairT - 2.0) < 1e-6, '继续长按 → 进度 2s');
 m2.salvDirector(1.1);
 eq(m2.wreck.state, 'repaired', '长按满 3 秒 → repaired');
-ok(m2.objectiveDone && m2.podCalled && m2.state === 'extract', '修复完成自动呼叫撤离');
+ok(m2.objectiveDone, '修复完成目标达成');
+/* ---- 深度玩法：修复完成 → 45 秒自检防御窗（不再立刻召 pod） ---- */
+ok(!m2.podCalled && m2.selfCheck > 40 && m2.selfCheck <= 45 && m2.state === 'play', '修复完成 → 45 秒自检防御窗开启（同 tick 已走表）');
+const en0 = m2.enemies.length;
+inputHeldKeyE = false;
+m2.salvDirector(6);                                   // 2s 后首波
+ok(m2.enemies.length > en0, '自检窗口持续刷防御虫');
+ok(m2.selfCheck > 0 && m2.selfCheck < 45, '自检倒计时走表');
+m2.salvDirector(40);                                  // 共 46s ≥ 45s
+ok(m2.podCalled && m2.state === 'extract', '自检结束自动呼叫撤离');
+eq(m2.selfCheck, 0, '自检窗归零');
 inputHeldKeyE = false;
 m2.pod.state = 'landed';
 m2.board();

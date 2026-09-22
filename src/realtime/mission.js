@@ -58,10 +58,12 @@
     this.beacons = [];
     this.pointQuota = 3 + (this.hazard.lv - 1);
     this.chunksDeposited = 0;
+    this.bonusWindow = 0;                       // 深度玩法：配额达成后的自由采挖窗（秒）
     // 搜救行动：信号信标 ×4 + 矿骡腿 ×4 + 残骸框架 + 长按修复
     this.salvBeacons = [];
     this.wreck = null;
     this.repairWaveT = 0;
+    this.selfCheck = 0;                         // 深度玩法：修复完成后的自检防御窗（秒）
     // 就地精炼：精炼单元（出生点）+ 远处油井 ×(危险度决定) + 管线 + 产油汇总
     this.refinery = null;
     this.wells = [];
@@ -83,6 +85,10 @@
       var yield3 = Math.ceil(this.pointQuota / 3);   // 每处可采矿块数（保证配额可达成）
       if (!spots.length) spots = [{ x: this.player.x + 420, y: this.player.y }];
       for (var bi = 0; bi < spots.length; bi++) this.beacons.push(new DRG.PointBeacon(spots[bi].x, spots[bi].y, yield3));
+      /* 深度玩法：硬壳富矿（危≥3 两处，其余一处）——矿结采空后剩一层金壳，钻穿出双倍富矿块 */
+      var bPool = this.beacons.slice();
+      var richN = this.hazard.lv >= 3 ? 2 : 1;
+      for (var ri = 0; ri < richN && bPool.length; ri++) bPool.splice(rngB.int(0, bPool.length - 1), 1)[0].makeRich();
     }
     if (this.isSalv && DRG.MuleWreck) {
       if (DRG.loadSalvSprites) DRG.loadSalvSprites();
@@ -93,10 +99,23 @@
       var rngL = DRG.RNG((this.seed ^ 0x1e955) | 0);
       var legSpots = this.pickFarFloors(rngL, 4, 560, 0, 360);
       while (legSpots.length < 4) legSpots.push({ x: this.player.x + 300 + legSpots.length * 180, y: this.player.y });
+      var legsAll = [];
       for (var li = 0; li < legSpots.length; li++) {
         var leg = new DRG.MuleLeg(legSpots[li].x, legSpots[li].y);
         this.props.push(leg);
         this.salvBeacons.push(new DRG.SalvBeacon(legSpots[li].x, legSpots[li].y, leg));
+        legsAll.push(leg);
+      }
+      /* 深度玩法：巢穴守卫腿（危≥4 两条，其余一条）——腿旁预置守卫虫 */
+      var legPool = legsAll.slice();
+      var guardedN = this.hazard.lv >= 4 ? 2 : 1;
+      for (var gi = 0; gi < guardedN && legPool.length; gi++) {
+        var gl = legPool.splice(rngL.int(0, legPool.length - 1), 1)[0];
+        gl.guarded = true;
+        var gs1 = this.findStandSpotNear(gl.x + 30, gl.y, 5);
+        var gs2 = this.findStandSpotNear(gl.x - 30, gl.y, 5);
+        if (gs1) this.spawnEnemy('guard', gs1.x, gs1.y);
+        if (gs2) this.spawnEnemy('grunt', gs2.x, gs2.y);
       }
     }
     if (this.isRefi && DRG.OilWell) {
@@ -169,7 +188,8 @@
         { t: 3.5, text: L('定点提取：跟着蓝色光柱找到富矿信标（共 3 处）'), col: '#7fd4ff' },
         { t: 11, text: L('走近信标按住左键钻采大矿结，采出的矿块顶在头上'), col: '#7fd4ff' },
         { t: 19, text: L('携带矿块时移速 -10%、只能用副手武器——把它搬回莫莉旁按 E 入库'), col: '#ffd76a' },
-        { t: 27, text: L('每入库 1 块会引来一小波虫潮；集齐 ') + this.pointQuota + L(' 块即可撤离'), col: '#ff8a5a' }
+        { t: 27, text: L('每入库 1 块会引来一小波虫潮；集齐 ') + this.pointQuota + L(' 块即可撤离'), col: '#ff8a5a' },
+        { t: 33, text: L('发着金光的矿结封在硬壳里——钻穿它，采出双倍富矿块'), col: '#ffd76a' }
       ];
     }
     if (this.isSalv) {
@@ -177,7 +197,8 @@
         { t: 3.5, text: L('搜救行动：信号信标指向失联的矿骡腿——跟着 HUD 箭头走'), col: '#ffd76a' },
         { t: 11, text: L('走近矿骡腿按 E 扛起来：移速 -30%，只能用副手武器'), col: '#b0ff7a' },
         { t: 19, text: L('把腿搬到矿骡残骸处按 E 安装；每装一条会刷出防御虫'), col: '#ff8a5a' },
-        { t: 27, text: L('四条腿装齐后，对准矿骡长按 E 修复 3 秒（松开保留进度）'), col: '#b0ff7a' }
+        { t: 27, text: L('四条腿装齐后，对准矿骡长按 E 修复 3 秒（松开保留进度）'), col: '#b0ff7a' },
+        { t: 33, text: L('缠着虫巢的腿附近有守卫——备好武器再靠近；修好后她还要自检 45 秒'), col: '#ff8a5a' }
       ];
     }
     if (this.isRefi) {
@@ -485,13 +506,13 @@
     return null;
   };
 
-  /** 钻采完成：矿块从矿结里蹦出来 */
-  Mission.prototype.spawnChunk = function (x, y) {
-    var c = new DRG.OreChunk(x, y);
+  /** 钻采完成：矿块从矿结里蹦出来（深度玩法：rich=true 为硬壳里采出的富矿块） */
+  Mission.prototype.spawnChunk = function (x, y, rich) {
+    var c = new DRG.OreChunk(x, y, rich);
     this.props.push(c);
-    this.fx.burst(x, y, 18, { col: ['#7fd4ff', '#c8ecff', '#ffffff'], speed: 220, life: 0.6, kind: 1 });
+    this.fx.burst(x, y, 18, { col: rich ? ['#ffd76a', '#ffe9b0', '#ffffff'] : ['#7fd4ff', '#c8ecff', '#ffffff'], speed: 220, life: 0.6, kind: 1 });
     DRG.audio.clipOf(['lootbug', 'rns_5'], 0.5, true);
-    this.toast(L('采出矿块！按 E 扛起来（只能用副手武器）'), '#7fd4ff', 3);
+    this.toast(rich ? L('采出富矿块！入库计 2（按 E 扛起来）') : L('采出矿块！按 E 扛起来（只能用副手武器）'), rich ? '#ffd76a' : '#7fd4ff', 3);
     return c;
   };
 
@@ -522,18 +543,19 @@
     return false;
   };
 
-  /** 矿块入库 +1 → 一小波虫潮 → 配额达成自动召pod */
+  /** 矿块入库（富矿块计 2）→ 一小波虫潮 → 配额达成进入自由采挖窗 */
   Mission.prototype.depositChunk = function (chunk) {
     var p = this.player;
     p.carriedItem = null;
     chunk.state = 'spent';
-    this.chunksDeposited++;
-    this.deposited.morkite += 1;
+    var n = chunk.rich ? 2 : 1;
+    this.chunksDeposited += n;
+    this.deposited.morkite += n;
     this.stats.deposits++;
-    this.stats.credits += 26 * this.hazard.credit;
-    this.stats.xp += 30 * this.hazard.xp;
+    this.stats.credits += 26 * n * this.hazard.credit;
+    this.stats.xp += 30 * n * this.hazard.xp;
     this.mule.flash = 1;
-    this.fx.text(this.mule.x, this.mule.y - 50, L('入库 ') + this.chunksDeposited + ' / ' + this.pointQuota, '#7fd4ff', 16);
+    this.fx.text(this.mule.x, this.mule.y - 50, L('入库 ') + this.chunksDeposited + ' / ' + this.pointQuota + (chunk.rich ? L('（富矿 +2）') : ''), '#7fd4ff', 16);
     DRG.audio.sfx('deposit');
     DRG.audio.clipOf(['rns_4', 'rns_5', 'rns_6'], 0.55, true);
     this.spawnWaveAt(this.mule.x, this.mule.y, 0.85);   // 每入库 1 块触发一小波虫潮
@@ -543,12 +565,23 @@
   Mission.prototype.checkObjectivePoint = function () {
     if (this.objectiveDone || this.chunksDeposited < this.pointQuota) return;
     this.objectiveDone = true;
-    this.mc(L('定点提取完成！矿块全部入库，撤离飞船正在赶来。'), 'mc_objective_1');
-    this.toast(L('配额达成 · 撤离飞船已呼叫'), '#7fff9a', 6);
+    /* 深度玩法：配额达成不立刻召飞船——60 秒自由采挖窗，多搬多赚，按 R 随时提前走 */
+    this.bonusWindow = 60;
+    this.mc(L('配额达成！飞船 60 秒后抵达——想多搬几块就抓紧，按 R 可随时提前撤离。'), 'mc_objective_1');
+    this.toast(L('配额达成 · 自由采挖窗 60 秒开启'), '#7fff9a', 6);
     DRG.audio.clipOf(['salute_1', 'salute_2', 'salute_3'], 0.9, true);
     this.stats.credits += 250 * this.hazard.credit;
     this.stats.xp += 320 * this.hazard.xp;
-    this.callPod();
+  };
+
+  /** 深度玩法：自由采挖窗导演（由 update 每帧调用；归零或按 R 提前 → 召 pod） */
+  Mission.prototype.pointWindowDirector = function (dt) {
+    if (this.bonusWindow <= 0 || this.podCalled) return;
+    this.bonusWindow -= dt;
+    if (this.bonusWindow <= 0) {
+      this.bonusWindow = 0;
+      this.callPod();
+    }
   };
 
   /** E 键的搜救交互：安装矿骡腿 > 拾起矿骡腿（修复走 salvDirector 的长按） */
@@ -579,7 +612,7 @@
     return false;
   };
 
-  /** 搜救导演：长按修复（松开保留进度）+ 修复期持续刷防御虫 */
+  /** 搜救导演：长按修复（松开保留进度）+ 修复期/自检期持续刷防御虫 */
   Mission.prototype.salvDirector = function (dt) {
     var w = this.wreck;
     if (!w || this.state !== 'play') return;
@@ -596,19 +629,34 @@
         }
       }
     }
+    /* 深度玩法：修复完成后的 45 秒自检防御窗——顶住才召 pod */
+    if (this.selfCheck > 0 && !this.podCalled) {
+      this.selfCheck -= dt;
+      this.repairWaveT -= dt;
+      if (this.repairWaveT <= 0) {
+        this.repairWaveT = 5.5 / this.hazard.rate;
+        this.spawnWaveAt(w.x, w.y, 0.85);
+        this.toast(L('防御虫涌向矿骡——顶住！'), '#ff5a4a', 2.5);
+      }
+      if (this.selfCheck <= 0) {
+        this.selfCheck = 0;
+        this.callPod();
+      }
+    }
     if (w.repairing) this.shake(0.6, 0.04);
   };
 
-  /** 修复完成 → 自动呼叫撤离 */
+  /** 修复完成 → 45 秒自检防御窗（深度玩法）→ 窗毕自动呼叫撤离 */
   Mission.prototype.onWreckRepaired = function () {
     if (this.state !== 'play') return;
-    this.mc(L('矿骡修好了！她能自己走回降落区——我们撤！'));
-    this.toast(L('矿骡已修复 · 撤离飞船已呼叫'), '#7fff9a', 6);
+    this.mc(L('矿骡修好了！她正在启动自检——守住她 45 秒，我们马上回家！'));
+    this.toast(L('自检防御 · 顶住 45 秒'), '#7fff9a', 6);
     DRG.audio.clipOf(['salute_1', 'salute_2', 'salute_3'], 0.9, true);
     this.stats.credits += 300 * this.hazard.credit;
     this.stats.xp += 380 * this.hazard.xp;
     this.objectiveDone = true;
-    this.callPod();
+    this.selfCheck = 45;
+    this.repairWaveT = 2;
   };
 
   /** 小股虫潮：以 (x,y) 为中心（入库/安装/修复的定向压力） */
@@ -880,6 +928,7 @@
       for (i = 0; i < this.salvBeacons.length; i++) this.salvBeacons[i].update(dt, this);
       if (this.wreck) this.wreck.t += dt;
       if (this.isSalv) this.salvDirector(dt);
+      if (this.isPoint) this.pointWindowDirector(dt);   /* 深度玩法：自由采挖窗倒计时 */
       if (this.refinery) this.refinery.update(dt, this);
       for (i = 0; i < this.wells.length; i++) this.wells[i].update(dt, this);
       if (this.cocoon) this.cocoon.update(dt, this);

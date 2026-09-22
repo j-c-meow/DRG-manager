@@ -1149,7 +1149,7 @@ function recruit(cls){
   S.recruited[cls] = true;
   const m = newMiner(cls);
   S.miners.push(m);
-  log(TEXT.log_recruit.replace('{name}', minerName(m)).replace('{cls}', C.name), '');
+  log(TEXT.log_recruit.replace('{name}', minerName(m)).replace('{cls}', L(C.name)), '');
   renderAll(); save();
 }
 /* 晋升框：官方晋升阶梯（铜→银→金→铂→祖母绿→蓝宝石→钻石→红），红3 之后只显示额外晋升次数 */
@@ -1163,7 +1163,7 @@ function frameOf(stars){
 function frameHtml(stars){
   const f = frameOf(stars); if(!f) return '';
   const col = FRAME_COLORS[f.replace(/[0-9]/g,'').replace(/ · .*/,'')] || 'var(--gold)';
-  return '<span style="border:1px solid '+col+';color:'+col+';padding:0 4px;border-radius:2px;font-size:11px;">'+ic('promo_star')+f+'</span> ';
+  return '<span style="border:1px solid '+col+';color:'+col+';padding:0 4px;border-radius:2px;font-size:11px;">'+ic('promo_star')+L(f)+'</span> ';
 }
 function promoteCost(m){ return Math.round(800 * Math.pow(1.9, m.stars)); }
 function promoteMiner(id){
@@ -1183,7 +1183,7 @@ function hire(){
   const cls = pick(Object.keys(CLASSES));
   const m = newMiner(cls);
   S.miners.push(m);
-  log(TEXT.log_recruit.replace('{name}', minerName(m)).replace('{cls}', CLASSES[cls].name), '');
+  log(TEXT.log_recruit.replace('{name}', minerName(m)).replace('{cls}', L(CLASSES[cls].name)), '');
   renderAll(); save();
 }
 /* 旧 buyDrink（四酒单版）已随酒吧 v2 抽酒制移除 */

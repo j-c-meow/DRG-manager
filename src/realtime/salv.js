@@ -95,6 +95,7 @@
     this.t = 0; this.dead = false;
     this.kind = 'leg';
     this.label = '矿骡腿';
+    this.guarded = false;                       // 深度玩法：缠着虫巢的腿（附近有守卫）
     this.slowMul = 0.7;                         // 携带移速 -30%
   }
   MuleLeg.prototype.update = function (dt, m) {
@@ -141,6 +142,24 @@
     if (this.state === 'idle' && this.pl && !this.pl.carriedItem &&
         Math.abs(this.pl.x - this.x) < 90 && Math.abs(this.pl.y - this.y) < 80) {
       gfx.text(g, 'E', sx, sy - 32, { size: 13, align: 'center', col: gfx.pulse(this.t, '#b0ff7a', '#ffffff', 5), alpha: 0.9 });
+    }
+    /* 深度玩法：虫巢缠腿——深色须根 + 呼吸的红点（提醒附近有守卫） */
+    if (this.guarded && this.state === 'idle') {
+      g.save();
+      g.strokeStyle = 'rgba(90,60,40,0.85)';
+      g.lineWidth = 2.2;
+      for (var wv = 0; wv < 4; wv++) {
+        var wa = wv * 1.57 + 0.4, wr = 13 + (wv % 2) * 5;
+        g.beginPath();
+        g.moveTo(sx + Math.cos(wa) * wr, sy - 6 + Math.sin(wa) * wr);
+        g.quadraticCurveTo(sx + Math.cos(wa + 0.9) * (wr + 9), sy - 2 + Math.sin(wa + 0.9) * (wr + 9), sx + Math.cos(wa + 1.8) * wr, sy + 4 + Math.sin(wa + 1.8) * wr);
+        g.stroke();
+      }
+      g.globalCompositeOperation = 'lighter';
+      g.globalAlpha = 0.5 + 0.35 * Math.sin(this.t * 3.2);
+      g.fillStyle = '#ff5a4a';
+      g.beginPath(); g.arc(sx, sy - 8, 3, 0, 6.283); g.fill();
+      g.restore();
     }
   };
   MuleLeg.prototype.lights = function (cam) {

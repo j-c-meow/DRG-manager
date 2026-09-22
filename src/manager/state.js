@@ -74,12 +74,14 @@ function newGame(){
     blanks:0, modsOwned:{}, equipped:{}, drawSinceT1:0, rerolled:false,
     dive:{week:'', normal:{stage:0, done:false}, elite:{locked:true, stage:0, done:false}, modifiers:[]},
     log:[], flags:{}, speed:1, stats:{missions:0, inj:0}, mode:'idle', idleReport:null, muleLv:1,
+    achievements:{},   /* 成就墙直读 S.achievements[id]——newGame 必须有 init（load 迁移救不了新档） */
     managerName:'',   /* 玩家代号：开局登记后，称呼位升级为「管理层·代号」 */
     unlocked:{kpi:false, bar:false, market:false, med:false, gear:false},
     recruited:{scout:true, engineer:false, gunner:false, driller:false},
     realtime:null, settledRealtime:{}, realtimeProfile:null,
   };
   DRGUnified.domain.migrateSave(S);
+  ensureWeaponV2();   /* 新档也要初始化武器等级表（纪念堂武器页签直读 S.wlv，缺表即崩） */
   migrateLegacyRealtimeStorage();
   S.miners.push(newMiner('scout'));
   genBoard();

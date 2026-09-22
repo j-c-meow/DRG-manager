@@ -207,7 +207,7 @@ function renderBoard(){
     const b = biomeById(m.biome), t = mtypeById(m.type);
     if(FOLD.boardCompact){
       html += '<div class="mcard compact-card">'+
-        '<span class="nm" style="flex:1">'+t.name+' · '+b.name+' <span class="hz">'+'★'.repeat(m.hazard)+'</span>'+
+        '<span class="nm" style="flex:1">'+L(t.name)+' · '+L(b.name)+' <span class="hz">'+'★'.repeat(m.hazard)+'</span>'+
         (m.clause?' <span class="note">'+L('【')+L(m.clause.name)+L('】')+'</span>':'')+'</span>'+
         (isLiveType(m.type) && !isForcedFinale(m)?'<button class="btn live" data-live="'+m.id+'">'+liveBtnText(m.type)+'</button>':'')+
         '<button class="btn '+(isForcedFinale(m)?'live':'pri')+'" data-disp="'+m.id+'">'+(isForcedFinale(m)?L('终局 · 亲自下场'):L('派遣小队'))+'</button></div>';
@@ -220,7 +220,7 @@ function renderBoard(){
         '<img src="assets/icons/missions/'+(MIS_BANNER[m.type]||('mis_'+m.type))+'.png" alt="">'+
         '<span class="hazard-chip">'+L('危险等级 ')+m.hazard+'</span></div>'+
       '<div class="mission-copy">'+
-        '<div class="t"><span class="nm">'+t.name+'</span><span class="mission-biome">'+b.name+'</span></div>'+
+        '<div class="t"><span class="nm">'+L(t.name)+'</span><span class="mission-biome">'+L(b.name)+'</span></div>'+
         '<div class="mission-description">'+L(missionDescriptions[m.type]||'执行集团指派的深层采掘任务。')+'</div>'+
         '<div class="meta"><span class="yield-label">'+L('预计产出：')+'</span>'+rewards+
           '<span class="detail-toggle" data-detbtn>'+L('详情 ›')+'</span></div>'+
@@ -284,7 +284,7 @@ function renderDeps(){
     let hs = 0; for(let j=0;j<d.id.length;j++) hs = (hs*31 + d.id.charCodeAt(j))>>>0;
     const mPos = [12+hs%16, 34+(hs>>>4)%18, 58+(hs>>>8)%16, 82+(hs>>>12)%14];
     html += '<div class="dep'+(d.paused?' evt':'')+'" data-dep="'+d.id+'" data-biome="'+d.m.biome+'">'+
-      '<div class="t"><span class="nm">'+mtypeById(d.m.type).name+' · '+biomeById(d.m.biome).name+'</span>'+
+      '<div class="t"><span class="nm">'+L(mtypeById(d.m.type).name)+' · '+L(biomeById(d.m.biome).name)+'</span>'+
       '<span class="hz">'+'★'.repeat(d.m.hazard)+'</span></div>'+
       '<div class="meta">'+team+L('　剩余 ')+remainTxt+'</div>'+
       '<div class="prog" style="--m1:'+mPos[0]+'%;--m2:'+mPos[1]+'%;--m3:'+mPos[2]+'%;--m4:'+mPos[3]+'%"><i style="width:'+pct+'%"></i>'+
@@ -341,7 +341,7 @@ function renderRoster(){
     const rigOk = S.rigLv >= C.rig;
     html += '<section class="roster-unit">'+
       '<div class="roster-title role-'+c+'">'+ic('class_'+c)+
-      '<div class="role-copy"><strong>'+C.name+'</strong><small>'+roleEnglish[c]+'</small></div>'+
+      '<div class="role-copy"><strong>'+L(C.name)+'</strong><small>'+roleEnglish[c]+'</small></div>'+
       '<span class="roster-level">Lv.'+S.licenses[c]+'</span></div>';
     if(!hired){
       html += '<div class="miner locked-card"><div class="locked-avatar"></div>'+
@@ -1372,7 +1372,7 @@ function showMemorial(){
   if(tab === 0){
     CHRONICLE.nodes.forEach(n => {
       const reached = gameDay() >= n.day;
-      body += '<div class="drow"><span class="dlabel" style="color:'+(reached?'var(--amber)':'var(--dim)')+'">'+(reached?'★':'☆')+' D'+n.day+' · '+n.name+'</span><span class="dvalue">'+(reached?L('已到达'):'D'+n.day)+'</span></div>';
+      body += '<div class="drow"><span class="dlabel" style="color:'+(reached?'var(--amber)':'var(--dim)')+'">'+(reached?'★':'☆')+' D'+n.day+' · '+L(n.name)+'</span><span class="dvalue">'+(reached?L('已到达'):'D'+n.day)+'</span></div>';
     });
     body += '<div class="note" style="margin-top:6px">'+L('今日：D')+gameDay()+' · '+dateOfStr(gameDay())+L('（终点 D2316，之后转无尽）')+'</div>';
   } else if(tab === 1){
