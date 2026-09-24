@@ -43,6 +43,7 @@ function genBoard(){
 
 /* ---------------- DISPATCH ---------------- */
 function missionDur(m, hc, modEff){
+  if(!m || !m.min || !Number.isFinite(m.min)) return 360;   /* 剧情单等无 min 字段的任务禁入时长公式——NaN 会造出永不结算的派遣（09-23 soak 实锤） */
   const dur = m.min * (1 + 0.15*(m.hazard-1)) * CFG.HC_FAC[hc-1] * (m.clause && m.clause.id==='night' ? 1.1 : 1)
             * (1 + ((modEff && modEff.duration) || 0)/100);
   return Math.max(60, Math.round(dur));
@@ -891,8 +892,12 @@ function autoPlayStep(){
     }
   });
   const idle = S.miners.filter(x => x.state==='idle' && x.morale>=25);
-  if(idle.length >= 1 && S.board.length){   /* F1 修复：单人开局也要自动接单（规格=所有空闲矿工） */
-    const m = S.board.slice().sort((a,b)=>a.hazard-b.hazard)[0];
+  /* 剧情单（卡尔遗单，kind='prologue'，无 type/min 字段）禁入自动派单：
+     曾被当普通任务派出——missionDur NaN 被 dispatchCost 的 dur||240 兜底洗掉硝石守卫，
+     造出 done/dur 全 NaN 的派遣永不结算、矿工永久卡死（09-23 soak 四轮实锤） */
+  const pool = S.board.filter(x => !x.kind);
+  if(idle.length >= 1 && pool.length){   /* F1 修复：单人开局也要自动接单（规格=所有空闲矿工） */
+    const m = pool.slice().sort((a,b)=>a.hazard-b.hazard)[0];
     const capN = hcCap();
     const ids = idle.slice(0, capN).map(x=>x.id);
     const cost = dispatchCost(m, ids.length, null, missionDur(m, ids.length, null));

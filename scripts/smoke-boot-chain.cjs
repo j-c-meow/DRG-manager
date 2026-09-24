@@ -99,7 +99,7 @@ const FILES = [
 ];
 const code = FILES.map(f => fs.readFileSync(path.join(ROOT, f), 'utf8')).join('\n;\n')
   + '\n;globalThis.__BOOT_T = { startEvent, startMemeEvent, worldAdvance, autoPlayStep, closeModal,'
-  + ' MEME_EVENTS, S_get: () => S, S_set: v => { S = v; }, newGame, bootChainTickCheck };';
+  + ' MEME_EVENTS, S_get: () => S, S_set: v => { S = v; }, newGame, bootChainTickCheck };';;
 new Function('window', code)(global);
 
 const T = global.__BOOT_T;
@@ -228,6 +228,23 @@ S.flags.nameChosen = true;
 window.__bootChain = true;
 T.bootChainTickCheck();
 ok(window.__bootChain === false, '三项无待办 → 解链');
+
+/* ================= 9. autoPlayStep 自动派单不碰剧情单（09-23 soak P1 回归） ================= */
+console.log('\n== 9. 自动派单跳过剧情单 ==');
+S.board = [
+  { id:'karl0', kind:'prologue', biome:'salt', hazard:5, r:{} },   // 无 type/min 字段
+  { id:'mn1', type:'exp', biome:'salt', hazard:1, r:{}, min:360 },
+];
+S.deps = [];
+S.autoUntil = Date.now() + 60000;
+S.miners.forEach(m => { m.state = 'idle'; m.morale = 90; });
+S.nitra = 500;
+const before = JSON.stringify(S.board.filter(x => x.kind === 'prologue').map(x => x.id));
+T.autoPlayStep();
+const afterDeps = S.deps.map(d => ({ kind: d.m && d.m.kind, type: d.m && d.m.type, dur: d.dur }));
+ok(afterDeps.every(d => d.kind !== 'prologue' && Number.isFinite(d.dur)), '自动派单产生的派遣全部是普通单且时长有限（' + JSON.stringify(afterDeps) + '）');
+ok(JSON.stringify(S.board.filter(x => x.kind === 'prologue').map(x => x.id)) === before, '剧情单仍在板上未被消费');
+ok(S.miners.every(m => m.state !== 'mission' || S.deps.some(d => d.minerIds && d.minerIds.includes(m.id))), '矿工只会挂在合法派遣上');
 
 console.log('\n== 结果：' + passed + ' 通过, ' + failed + ' 失败 ==');
 process.exit(failed ? 1 : 0);
